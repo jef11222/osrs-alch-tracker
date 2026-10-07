@@ -437,6 +437,8 @@ class OSRSAlchDashboard(tk.Tk):
         )
 
         style.configure("Vertical.TScrollbar", background="#2d2d30", troughcolor="#1e1e1e", borderwidth=0, arrowcolor="#cccccc")
+        style.configure("Horizontal.TScrollbar", background="#2d2d30", troughcolor="#1e1e1e", borderwidth=0, arrowcolor="#cccccc")
+        style.configure("TScrollbar", background="#2d2d30", troughcolor="#1e1e1e", borderwidth=0, arrowcolor="#cccccc")
 
     def build_ui(self):
         # 1. Top Control Strip
@@ -484,8 +486,9 @@ class OSRSAlchDashboard(tk.Tk):
         self.build_status_bar()
 
     def build_top_controls(self):
+        # Row 1: Item & Market Filters
         p1 = tk.Frame(self.top_frame, bg="#252528")
-        p1.pack(fill="x", padx=8, pady=4)
+        p1.pack(fill="x", padx=8, pady=(4, 2))
 
         # Filters: Members / F2P
         self.var_members = tk.BooleanVar(value=self.state.config.get("members", True))
@@ -505,23 +508,23 @@ class OSRSAlchDashboard(tk.Tk):
         self.var_use_cash = tk.BooleanVar(value=self.state.config.get("use_cash_stack", True))
         self.cb_cash = tk.Checkbutton(p1, text="Cash Stack:", variable=self.var_use_cash, command=self.on_cash_toggle_changed,
                                       bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#2ecc71")
-        self.cb_cash.pack(side="left", padx=(2, 0))
+        self.cb_cash.pack(side="left", padx=(4, 0))
         ToolTip(self.cb_cash, "Toggle budget constraint. Uncheck for unlimited cash.")
 
-        self.ent_cash = tk.Entry(p1, width=9, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        self.ent_cash = tk.Entry(p1, width=8, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
         self.ent_cash.insert(0, format_gp(self.state.config.get("cash_stack", 5000000)))
         if not self.var_use_cash.get():
             self.ent_cash.config(state="disabled")
-        self.ent_cash.pack(side="left", padx=(1, 5))
+        self.ent_cash.pack(side="left", padx=(1, 6))
         self.ent_cash.bind("<FocusOut>", self.on_cash_changed)
         self.ent_cash.bind("<Return>", self.on_cash_changed)
         ToolTip(self.ent_cash, "Your current in-game cash stack. Supports 900k, 1.5m, etc.")
 
         # Max Item Spend
         tk.Label(p1, text="Max Spend:", fg="#cccccc", bg="#252528").pack(side="left")
-        self.ent_max_spend = tk.Entry(p1, width=8, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
+        self.ent_max_spend = tk.Entry(p1, width=7, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
         self.ent_max_spend.insert(0, format_gp(self.state.config.get("max_item_cost", 500000)))
-        self.ent_max_spend.pack(side="left", padx=(2, 5))
+        self.ent_max_spend.pack(side="left", padx=(2, 6))
         self.ent_max_spend.bind("<FocusOut>", self.on_filter_changed)
         self.ent_max_spend.bind("<Return>", self.on_filter_changed)
         ToolTip(self.ent_max_spend, "Maximum buy price of a single item to display.")
@@ -530,7 +533,7 @@ class OSRSAlchDashboard(tk.Tk):
         tk.Label(p1, text="Min Vol:", fg="#cccccc", bg="#252528").pack(side="left")
         self.ent_min_vol = tk.Entry(p1, width=6, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
         self.ent_min_vol.insert(0, str(self.state.config.get("min_volume", 5000)))
-        self.ent_min_vol.pack(side="left", padx=(2, 5))
+        self.ent_min_vol.pack(side="left", padx=(2, 6))
         self.ent_min_vol.bind("<FocusOut>", self.on_filter_changed)
         self.ent_min_vol.bind("<Return>", self.on_filter_changed)
         ToolTip(self.ent_min_vol, "Minimum 24-hour traded volume on Grand Exchange.")
@@ -541,14 +544,14 @@ class OSRSAlchDashboard(tk.Tk):
         m_prof = self.state.config.get("min_profit")
         if m_prof is not None and m_prof > 0:
             self.ent_min_profit.insert(0, str(m_prof))
-        self.ent_min_profit.pack(side="left", padx=(2, 5))
+        self.ent_min_profit.pack(side="left", padx=(2, 6))
         self.ent_min_profit.bind("<KeyRelease>", lambda e: self.recalculate_alch_table())
         ToolTip(self.ent_min_profit, "Minimum GP profit per alch. Leave blank to show all items (even 0 or negative for XP).")
 
         # Live Search Bar
         tk.Label(p1, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 1))
         self.ent_search = tk.Entry(p1, width=9, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
-        self.ent_search.pack(side="left", padx=(1, 5))
+        self.ent_search.pack(side="left", padx=(1, 8))
         self.ent_search.bind("<KeyRelease>", lambda e: self.recalculate_alch_table())
         self.ent_search.bind("<Escape>", lambda e: self.clear_search())
         ToolTip(self.ent_search, "Live search by item name (e.g. 'rune', 'bow'). Press Esc to clear, Ctrl+F to focus.")
@@ -562,7 +565,7 @@ class OSRSAlchDashboard(tk.Tk):
         strat_display = "smart (Bid+1)" if curr_strat == "smart" else ("instant (Ask)" if curr_strat == "instant" else "patient (Bid)")
         self.var_strat = tk.StringVar(value=strat_display)
         cb_strat = ttk.Combobox(p1, textvariable=self.var_strat, values=["patient (Bid)", "smart (Bid+1)", "instant (Ask)"], width=13, state="readonly")
-        cb_strat.pack(side="left", padx=(2, 5))
+        cb_strat.pack(side="left", padx=(2, 8))
         cb_strat.bind("<<ComboboxSelected>>", self.on_strategy_changed)
         ToolTip(cb_strat, "patient (Bid) = Lowest price, maximum profit.\nsmart (Bid+1) = Bid + 1 gp for top queue priority (much faster fills!).\ninstant (Ask) = Instant fill from active sellers.")
 
@@ -573,50 +576,57 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.var_speed = tk.StringVar(value=self.state.config.get("speed_filter", "All"))
         cb_spd = ttk.Combobox(p1, textvariable=self.var_speed, values=["All", "⚡ Fast (<15m)", "⏱️ Steady (<1h)"], width=12, state="readonly")
-        cb_spd.pack(side="left", padx=(2, 5))
+        cb_spd.pack(side="left", padx=(2, 4))
         cb_spd.bind("<<ComboboxSelected>>", self.on_speed_filter_changed)
         ToolTip(cb_spd, "Filter by buy fill speed:\n⚡ Fast (<15m) = Active sales happening right now (fills in minutes!)\n⏱️ Steady (<1h) = Consistent volume\nAll = Show all items regardless of wait time")
 
-        # Right side pinned controls
-        self.btn_update = tk.Button(p1, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
-                                    bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, cursor="hand2")
-        self.btn_update.pack(side="right", padx=(2, 0))
-        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}.\nClick to check GitHub for updates.")
+        # Row 2: Toggles, Alerts, Auto-Sync & Action Buttons
+        p2 = tk.Frame(self.top_frame, bg="#252528")
+        p2.pack(fill="x", padx=8, pady=(2, 4))
 
-        self.btn_refresh = tk.Button(p1, text="🔄 Refresh", command=self.trigger_refresh,
-                                     bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, cursor="hand2")
-        self.btn_refresh.pack(side="right", padx=2)
-        ToolTip(self.btn_refresh, "Fetch latest live prices from OSRS Wiki API. Shortcut: F5")
+        # Toggles on Left
+        self.var_free_alch = tk.BooleanVar(value=self.state.config.get("free_alchs_mode", False))
+        self.var_sound = tk.BooleanVar(value=self.state.config.get("sound_enabled", True))
+        self.var_desktop = tk.BooleanVar(value=self.state.config.get("desktop_alerts", True))
 
-        self.lbl_countdown = tk.Label(p1, text="(02:00)", fg="#888888", bg="#252528", font=("Segoe UI", 8))
-        self.lbl_countdown.pack(side="right", padx=(1, 4))
-        ToolTip(self.lbl_countdown, "Time until next automatic price sync with OSRS Wiki.")
+        cb_free = tk.Checkbutton(p2, text="🌿 Ring (0 Nat)", variable=self.var_free_alch, command=self.on_filter_changed,
+                                 bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528")
+        cb_free.pack(side="left", padx=(0, 6))
+        ToolTip(cb_free, "Explorer's Ring Mode: Calculates profit assuming 0 Nature Rune cost.")
 
+        cb_snd = tk.Checkbutton(p2, text="🔊 Sound Alerts", variable=self.var_sound, command=self.save_preferences,
+                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
+        cb_snd.pack(side="left", padx=6)
+        ToolTip(cb_snd, "Play audio chime when a 4h limit resets or a high margin alert triggers.")
+
+        cb_dsk = tk.Checkbutton(p2, text="🔔 Desktop Popups", variable=self.var_desktop, command=self.save_preferences,
+                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
+        cb_dsk.pack(side="left", padx=6)
+        ToolTip(cb_dsk, "Show desktop popup notifications on 4h limit resets.")
+
+        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=6)
+
+        tk.Label(p2, text="⏱️ Auto-Sync:", fg="#888888", bg="#252528", font=("Segoe UI", 8)).pack(side="left")
         self.var_refresh = tk.StringVar(value=f"{self.state.config.get('auto_refresh_mins', 2)} min")
-        cb_ref = ttk.Combobox(p1, textvariable=self.var_refresh, values=["1 min", "2 min", "5 min", "10 min", "Off"], width=6, state="readonly")
-        cb_ref.pack(side="right", padx=(1, 1))
+        cb_ref = ttk.Combobox(p2, textvariable=self.var_refresh, values=["1 min", "2 min", "5 min", "10 min", "Off"], width=6, state="readonly")
+        cb_ref.pack(side="left", padx=(2, 6))
         cb_ref.bind("<<ComboboxSelected>>", self.on_refresh_rate_changed)
         ToolTip(cb_ref, "Configure how often market prices automatically refresh.")
 
-        # Toggles
-        self.var_sound = tk.BooleanVar(value=self.state.config.get("sound_enabled", True))
-        self.var_desktop = tk.BooleanVar(value=self.state.config.get("desktop_alerts", True))
-        self.var_free_alch = tk.BooleanVar(value=self.state.config.get("free_alchs_mode", False))
+        # Action Buttons on Right
+        self.btn_update = tk.Button(p2, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
+                                    bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
+        self.btn_update.pack(side="right", padx=(4, 0))
+        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}.\nClick to check GitHub for updates.")
 
-        cb_dsk = tk.Checkbutton(p1, text="Popups", variable=self.var_desktop, command=self.save_preferences,
-                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
-        cb_dsk.pack(side="right", padx=1)
-        ToolTip(cb_dsk, "Show desktop popup toasts on 4h limit reset or price spikes.")
+        self.btn_refresh = tk.Button(p2, text="🔄 Refresh Now", command=self.trigger_refresh,
+                                     bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=10, pady=1, cursor="hand2")
+        self.btn_refresh.pack(side="right", padx=(4, 2))
+        ToolTip(self.btn_refresh, "Fetch latest live prices from OSRS Wiki API. Shortcut: F5")
 
-        cb_snd = tk.Checkbutton(p1, text="Sound", variable=self.var_sound, command=self.save_preferences,
-                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
-        cb_snd.pack(side="right", padx=1)
-        ToolTip(cb_snd, "Play sound chimes on alerts.")
-
-        cb_free = tk.Checkbutton(p1, text="Ring (0 Nat)", variable=self.var_free_alch, command=self.on_filter_changed,
-                                 bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528")
-        cb_free.pack(side="right", padx=2)
-        ToolTip(cb_free, "Explorer's Ring Mode: Calculates profit assuming 0 Nature Rune cost.")
+        self.lbl_countdown = tk.Label(p2, text="(Next: 02:00)", fg="#888888", bg="#252528", font=("Segoe UI", 8))
+        self.lbl_countdown.pack(side="right", padx=(0, 4))
+        ToolTip(self.lbl_countdown, "Time until next automatic price sync with OSRS Wiki.")
 
     def build_sub_bar(self):
         p = tk.Frame(self.sub_bar, bg="#252528")
@@ -724,10 +734,12 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_alch.column("volume", width=80, anchor="e")
 
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.tree_alch.yview)
-        self.tree_alch.configure(yscrollcommand=scrollbar.set)
+        h_scrollbar = ttk.Scrollbar(container, orient="horizontal", command=self.tree_alch.xview)
+        self.tree_alch.configure(yscrollcommand=scrollbar.set, xscrollcommand=h_scrollbar.set)
 
-        self.tree_alch.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        h_scrollbar.pack(side="bottom", fill="x")
+        self.tree_alch.pack(side="left", fill="both", expand=True)
 
         self.tree_alch.bind("<Button-1>", self.on_alch_click)
         self.tree_alch.bind("<Double-1>", self.on_alch_double_click)
@@ -810,10 +822,12 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_craft.column("profit_hr", width=140, anchor="e")
 
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.tree_craft.yview)
-        self.tree_craft.configure(yscrollcommand=scrollbar.set)
+        h_scrollbar = ttk.Scrollbar(container, orient="horizontal", command=self.tree_craft.xview)
+        self.tree_craft.configure(yscrollcommand=scrollbar.set, xscrollcommand=h_scrollbar.set)
 
-        self.tree_craft.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        h_scrollbar.pack(side="bottom", fill="x")
+        self.tree_craft.pack(side="left", fill="both", expand=True)
 
         self.tree_craft.bind("<Button-1>", self.on_craft_click)
 
