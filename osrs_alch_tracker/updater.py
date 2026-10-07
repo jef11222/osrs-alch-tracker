@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.3"
+APP_VERSION = "1.3.4"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
@@ -58,22 +58,29 @@ def check_for_updates(current_version=APP_VERSION):
                 curr_tuple = parse_version_tuple(current_version)
 
                 if remote_tuple > curr_tuple:
-                    # Look for Windows executable asset (.exe)
+                    # Look for Windows executable asset (.exe) matching the running edition
+                    curr_name = os.path.basename(sys.executable).lower() if getattr(sys, "frozen", False) else "osrs_alch_tracker.exe"
                     download_url = None
+                    exact_match_url = None
+                    fallback_exe_url = None
                     setup_url = None
+
                     for asset in data.get("assets", []):
                         name = asset.get("name", "").lower()
                         cand_url = asset.get("browser_download_url")
                         if not is_safe_https_url(cand_url):
                             continue
-                        if name in ("osrs_alch_tracker.exe", "osrs_alch_tracker_portable.exe"):
-                            download_url = cand_url
+                        if name == curr_name:
+                            exact_match_url = cand_url
                             break
+                        elif name in ("osrs_alch_tracker.exe", "osrs_alch_tracker_portable.exe"):
+                            fallback_exe_url = cand_url
                         elif name.endswith("_setup.exe") or name.endswith("_installer.exe"):
                             setup_url = cand_url
-                        elif name.endswith(".exe") and not download_url:
-                            download_url = cand_url
+                        elif name.endswith(".exe") and not fallback_exe_url:
+                            fallback_exe_url = cand_url
 
+                    download_url = exact_match_url or fallback_exe_url
                     if not download_url:
                         html_url = data.get("html_url")
                         download_url = setup_url or (html_url if is_safe_https_url(html_url) else None)
@@ -114,6 +121,7 @@ def download_file_with_progress(url, dest_path, progress_callback=None):
 def apply_update_and_restart(new_exe_path):
     """
     Replaces the current executable with the new one and relaunches.
+    Cleans PyInstaller environment variables (_MEIPASS2) to prevent DLL load errors.
     """
     is_frozen = getattr(sys, "frozen", False)
     if not is_frozen:
@@ -131,7 +139,10 @@ def apply_update_and_restart(new_exe_path):
     temp_dir = tempfile.gettempdir()
     bat_path = os.path.join(temp_dir, f"osrs_update_{int(time.time())}.bat")
 
+    # Clear _MEIPASS2 and _MEIPASS so child PyInstaller process extracts cleanly
     bat_content = f"""@echo off
+set _MEIPASS2=
+set _MEIPASS=
 timeout /t 2 /nobreak >nul
 :retry
 move /y "{clean_new}" "{clean_curr}" >nul 2>&1
@@ -146,14 +157,18 @@ del "%~f0"
     with open(bat_path, "w", encoding="utf-8") as f:
         f.write(bat_content)
 
-    # Launch batch file detached
+    # Launch batch file detached with cleaned PyInstaller environment
     flags = 0
     if os.name == "nt":
         DETACHED_PROCESS = 0x00000008
         CREATE_NO_WINDOW = 0x08000000
         flags = DETACHED_PROCESS | CREATE_NO_WINDOW
 
-    subprocess.Popen(["cmd.exe", "/c", bat_path], creationflags=flags, close_fds=True)
+    clean_env = os.environ.copy()
+    clean_env.pop("_MEIPASS2", None)
+    clean_env.pop("_MEIPASS", None)
+
+    subprocess.Popen(["cmd.exe", "/c", bat_path], env=clean_env, creationflags=flags, close_fds=True)
     return True, "Restarting application..."
 
 class UpdateDialog(tk.Toplevel):
@@ -294,17 +309,17 @@ class WhatsNewDialog(tk.Toplevel):
         txt.pack(fill="both", expand=True)
 
         features = (
-            "✨ WHAT'S NEW IN v1.3.3:\n\n"
+            "✨ WHAT'S NEW IN v1.3.4:\n\n"
+            "• 🛠️ In-App Update Reliability Fix:\n"
+            "  Resolved PyInstaller _MEIPASS environment inheritance so in-place restarts never hit python DLL loader errors.\n\n"
             "• 🌟 Two-Tier Responsive Top Control Bar:\n"
-            "  Filters and search are now cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off or disappear!\n\n"
+            "  Filters and search are now cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off!\n\n"
             "• ↔️ Dark-Themed Horizontal Table Scrollbars:\n"
             "  Both Pure High Alch and Craft & Alch tables now include smooth horizontal scrolling so columns are never lost on narrower displays.\n\n"
             "• ⚡ Fill Speed & Transaction Velocity Tracking:\n"
             "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n\n"
-            "• 🛡️ Complete Security Hardening & AppData Isolation:\n"
-            "  Trusted GitHub domain whitelisting, URL verification, and per-user isolated data storage.\n\n"
-            "• 🚀 Differentiated Portable & Installer Editions:\n"
-            "  Seamless in-app updates for both standalone portable and full Windows setup editions.\n"
+            "• 🚀 Edition-Aware Downloads:\n"
+            "  Updater automatically matches your running edition (Portable vs Installed) for seamless upgrades.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")
