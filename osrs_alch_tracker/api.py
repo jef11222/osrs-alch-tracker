@@ -23,6 +23,7 @@ class OSRSPricesAPI:
         self.mapping = {} # id -> item metadata
         self.latest_prices = {} # id -> {high, highTime, low, lowTime}
         self.volumes_24h = {} # id -> volume
+        self.volumes_5m = {} # id -> {high, low, total}
         self.nature_rune_price = 170
         self.nature_rune_bid = 168
         self.nature_rune_ask = 172
@@ -71,7 +72,7 @@ class OSRSPricesAPI:
             return len(self.mapping)
 
     def fetch_latest_and_volumes(self):
-        """Fetches /latest prices and /24h volume data."""
+        """Fetches /latest prices, /5m trade velocity, and /24h volume data."""
         try:
             latest_url = "https://prices.runescape.wiki/api/v1/osrs/latest"
             latest_res = fetch_url_json(latest_url)
@@ -96,6 +97,24 @@ class OSRSPricesAPI:
         except Exception as e:
             print(f"Error fetching latest prices: {e}")
 
+        # Fetch 5-minute real-time transaction velocity
+        try:
+            five_url = "https://prices.runescape.wiki/api/v1/osrs/5m"
+            five_res = fetch_url_json(five_url)
+            five_data = five_res.get("data", {})
+            self.volumes_5m = {}
+            for item_id_str, vinfo in five_data.items():
+                h_vol = vinfo.get("highPriceVolume", 0) or 0
+                l_vol = vinfo.get("lowPriceVolume", 0) or 0
+                self.volumes_5m[item_id_str] = {
+                    "high": h_vol,
+                    "low": l_vol,
+                    "total": h_vol + l_vol
+                }
+        except Exception as e:
+            print(f"Error fetching 5m volumes: {e}")
+
+        # Fetch 24-hour total volumes
         try:
             vol_url = "https://prices.runescape.wiki/api/v1/osrs/24h"
             vol_res = fetch_url_json(vol_url)
@@ -110,11 +129,56 @@ class OSRSPricesAPI:
 
         self.last_sync_time = time.time()
 
+    def get_fill_speed_info(self, item_id, target_qty=70):
+        """
+        Calculates transaction fill velocity based on 5m lowPriceVolume and trade timestamps.
+        Returns: (category: str, badge: str, est_minutes: int, score: int)
+        category: 'fast' | 'steady' | 'slow'
+        score: 3 (fast), 2 (steady), 1 (slow) - for table sorting
+        """
+        iid_str = str(item_id)
+        now = time.time()
+        pdata = self.latest_prices.get(iid_str, {})
+        low_time = pdata.get("lowTime", 0) or 0
+        secs_since_trade = (now - low_time) if low_time > 0 else 999999
+
+        v5 = self.volumes_5m.get(iid_str, {})
+        bid_vol_5m = v5.get("low", 0)
+        total_5m = v5.get("total", 0)
+        v24 = self.volumes_24h.get(iid_str, 0)
+
+        # Estimate hourly sell rate into bids
+        if bid_vol_5m > 0:
+            rate_per_hour = bid_vol_5m * 12
+        elif total_5m > 0:
+            rate_per_hour = (total_5m * 12) // 2
+        else:
+            rate_per_hour = (v24 // 24) // 2
+
+        qty = max(1, target_qty)
+
+        # Determine Category & Time Estimate
+        if secs_since_trade < 600 and (bid_vol_5m >= 8 or rate_per_hour >= 60):
+            mins = max(3, int(round((qty / max(1, rate_per_hour)) * 60)))
+            mins = min(15, mins)
+            return "fast", f"⚡ Fast (~{mins}m)", mins, 3
+        elif secs_since_trade < 3600 and (rate_per_hour >= 15 or v24 >= 1000):
+            mins = max(15, int(round((qty / max(1, rate_per_hour)) * 60)))
+            mins = min(60, mins)
+            return "steady", f"⏱️ Steady (~{mins}m)", mins, 2
+        else:
+            return "slow", "🐢 Slow (>1h)", 120, 1
+
     def get_price(self, item_id, strategy="patient"):
-        """Returns price based on strategy: 'patient' (bid) or 'instant' (ask)."""
+        """Returns price based on strategy: 'patient' (bid), 'smart' (bid+1), or 'instant' (ask)."""
         bid, ask = self.get_bid_ask(item_id)
-        if strategy == "instant":
+        strat_lower = str(strategy).lower()
+        if "instant" in strat_lower:
             return ask or bid or 0
+        elif "smart" in strat_lower:
+            if bid and ask and ask > bid:
+                return bid + 1
+            return bid or ask or 0
         else: # patient
             return bid or ask or 0
 

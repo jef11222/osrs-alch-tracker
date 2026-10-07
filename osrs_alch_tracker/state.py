@@ -29,7 +29,8 @@ DEFAULT_CONFIG = {
     "only_usable_recipes": False,
     "use_cash_stack": True,
     "min_profit": None, # None or 0 = show everything
-    "owned_nature_runes": 0
+    "owned_nature_runes": 0,
+    "speed_filter": "All"
 }
 
 class AppState:

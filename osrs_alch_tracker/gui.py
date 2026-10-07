@@ -209,6 +209,59 @@ class ToolTip:
             self.tip_window.destroy()
             self.tip_window = None
 
+class HeadingToolTip:
+    """Dynamic hover tooltip for Treeview column headings."""
+    def __init__(self, tree, col_tooltips_map, delay=300):
+        self.tree = tree
+        self.tooltips = col_tooltips_map
+        self.delay = delay
+        self.tip_window = None
+        self.curr_col = None
+        self.id = None
+        self.tree.bind("<Motion>", self.on_motion, add="+")
+        self.tree.bind("<Leave>", self.on_leave, add="+")
+
+    def on_motion(self, event):
+        region = self.tree.identify_region(event.x, event.y)
+        if region == "heading":
+            col = self.tree.identify_column(event.x)
+            if col != self.curr_col:
+                self.curr_col = col
+                self.hide_tip()
+                tip_text = self.tooltips.get(col)
+                if tip_text:
+                    x = self.tree.winfo_rootx() + event.x + 10
+                    y = self.tree.winfo_rooty() + 25
+                    if self.id:
+                        self.tree.after_cancel(self.id)
+                    self.id = self.tree.after(self.delay, lambda: self.show_tip(x, y, tip_text))
+        else:
+            self.on_leave()
+
+    def on_leave(self, event=None):
+        if self.id:
+            self.tree.after_cancel(self.id)
+            self.id = None
+        self.curr_col = None
+        self.hide_tip()
+
+    def show_tip(self, x, y, text):
+        if self.tip_window or not text:
+            return
+        self.tip_window = tw = tk.Toplevel(self.tree)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=text, justify="left",
+                         background="#181818", foreground="#f1f1f1",
+                         relief="solid", borderwidth=1,
+                         font=("Segoe UI", 8), padx=7, pady=4)
+        label.pack()
+
+    def hide_tip(self):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
+
 class SetQuantityDialog(tk.Toplevel):
     def __init__(self, parent, item_name, current_qty, max_allowed, on_save):
         super().__init__(parent)
@@ -501,12 +554,28 @@ class OSRSAlchDashboard(tk.Tk):
         ToolTip(self.ent_search, "Live search by item name (e.g. 'rune', 'bow'). Press Esc to clear, Ctrl+F to focus.")
 
         # Strategy Combobox
-        tk.Label(p1, text="Strategy:", fg="#cccccc", bg="#252528").pack(side="left")
-        self.var_strat = tk.StringVar(value="patient (Bid)" if self.state.config.get("strategy") == "patient" else "instant (Ask)")
-        cb_strat = ttk.Combobox(p1, textvariable=self.var_strat, values=["patient (Bid)", "instant (Ask)"], width=13, state="readonly")
+        lbl_strat = tk.Label(p1, text="Strategy:", fg="#cccccc", bg="#252528")
+        lbl_strat.pack(side="left")
+        ToolTip(lbl_strat, "Select your buy pricing strategy on the Grand Exchange.")
+
+        curr_strat = self.state.config.get("strategy", "patient")
+        strat_display = "smart (Bid+1)" if curr_strat == "smart" else ("instant (Ask)" if curr_strat == "instant" else "patient (Bid)")
+        self.var_strat = tk.StringVar(value=strat_display)
+        cb_strat = ttk.Combobox(p1, textvariable=self.var_strat, values=["patient (Bid)", "smart (Bid+1)", "instant (Ask)"], width=13, state="readonly")
         cb_strat.pack(side="left", padx=(2, 5))
         cb_strat.bind("<<ComboboxSelected>>", self.on_strategy_changed)
-        ToolTip(cb_strat, "patient (Bid) = best profit, waits for seller.\ninstant (Ask) = instant buy price from active sellers.")
+        ToolTip(cb_strat, "patient (Bid) = Lowest price, maximum profit.\nsmart (Bid+1) = Bid + 1 gp for top queue priority (much faster fills!).\ninstant (Ask) = Instant fill from active sellers.")
+
+        # Speed Filter Combobox
+        lbl_spd = tk.Label(p1, text="Speed:", fg="#cccccc", bg="#252528")
+        lbl_spd.pack(side="left")
+        ToolTip(lbl_spd, "Filter items by estimated transaction fill wait time.")
+
+        self.var_speed = tk.StringVar(value=self.state.config.get("speed_filter", "All"))
+        cb_spd = ttk.Combobox(p1, textvariable=self.var_speed, values=["All", "⚡ Fast (<15m)", "⏱️ Steady (<1h)"], width=12, state="readonly")
+        cb_spd.pack(side="left", padx=(2, 5))
+        cb_spd.bind("<<ComboboxSelected>>", self.on_speed_filter_changed)
+        ToolTip(cb_spd, "Filter by buy fill speed:\n⚡ Fast (<15m) = Active sales happening right now (fills in minutes!)\n⏱️ Steady (<1h) = Consistent volume\nAll = Show all items regardless of wait time")
 
         # Right side pinned controls
         self.btn_update = tk.Button(p1, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
@@ -521,11 +590,13 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.lbl_countdown = tk.Label(p1, text="(02:00)", fg="#888888", bg="#252528", font=("Segoe UI", 8))
         self.lbl_countdown.pack(side="right", padx=(1, 4))
+        ToolTip(self.lbl_countdown, "Time until next automatic price sync with OSRS Wiki.")
 
         self.var_refresh = tk.StringVar(value=f"{self.state.config.get('auto_refresh_mins', 2)} min")
         cb_ref = ttk.Combobox(p1, textvariable=self.var_refresh, values=["1 min", "2 min", "5 min", "10 min", "Off"], width=6, state="readonly")
         cb_ref.pack(side="right", padx=(1, 1))
         cb_ref.bind("<<ComboboxSelected>>", self.on_refresh_rate_changed)
+        ToolTip(cb_ref, "Configure how often market prices automatically refresh.")
 
         # Toggles
         self.var_sound = tk.BooleanVar(value=self.state.config.get("sound_enabled", True))
@@ -564,6 +635,7 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.lbl_nat_details = tk.Label(nat_card, text="Ask: 172 gp | Limit: 18k", font=("Segoe UI", 8), fg="#aaaaaa", bg="#1e1e1e")
         self.lbl_nat_details.pack(side="left", padx=3)
+        ToolTip(self.lbl_nat_details, "Nature Rune instant buy (Ask) price and 4h GE buy limit (18,000).")
 
         tk.Label(nat_card, text="Lock:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left", padx=(2, 1))
         self.ent_custom_nat = tk.Entry(nat_card, width=4, bg="#252528", fg="#f39c12", relief="flat")
@@ -616,12 +688,13 @@ class OSRSAlchDashboard(tk.Tk):
         self.lbl_cart_status = tk.Label(p, text="🛒 Slots: 0/8 | Allocated: 0 gp | Left: 5.00M gp | Profit: +0 gp",
                                         font=("Segoe UI", 8, "bold"), fg="#2ecc71", bg="#252528")
         self.lbl_cart_status.pack(side="left", padx=2)
+        ToolTip(self.lbl_cart_status, "Shopping cart status: slots used, gold budget allocated, projected profit, and casting time.")
 
     def build_alch_tab(self):
         container = ttk.Frame(self.tab_alch)
         container.pack(fill="both", expand=True)
 
-        cols = ("cart", "name", "offer_bid", "instant_ask", "alch_val", "profit_ea", "profit_hr", "limit", "batch_profit", "max_afford", "volume")
+        cols = ("cart", "name", "offer_bid", "instant_ask", "alch_val", "profit_ea", "profit_hr", "speed", "limit", "batch_profit", "max_afford", "volume")
         self.tree_alch = ttk.Treeview(container, columns=cols, show="headings", selectmode="browse")
 
         self.tree_alch.heading("cart", text="Cart", command=lambda: self.toggle_sort_alch("cart"))
@@ -631,22 +704,24 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_alch.heading("alch_val", text="Alch Value", command=lambda: self.toggle_sort_alch("alch_val"))
         self.tree_alch.heading("profit_ea", text="Profit / Alch ▼", command=lambda: self.toggle_sort_alch("profit_ea"))
         self.tree_alch.heading("profit_hr", text="Profit / Hr (1.2k)", command=lambda: self.toggle_sort_alch("profit_hr"))
+        self.tree_alch.heading("speed", text="Fill Speed", command=lambda: self.toggle_sort_alch("speed"))
         self.tree_alch.heading("limit", text="4h Limit", command=lambda: self.toggle_sort_alch("limit"))
         self.tree_alch.heading("batch_profit", text="4h Batch Profit", command=lambda: self.toggle_sort_alch("batch_profit"))
         self.tree_alch.heading("max_afford", text="Max Afford", command=lambda: self.toggle_sort_alch("max_afford"))
         self.tree_alch.heading("volume", text="24h Volume", command=lambda: self.toggle_sort_alch("volume"))
 
-        self.tree_alch.column("cart", width=48, anchor="center")
-        self.tree_alch.column("name", width=180, anchor="w")
-        self.tree_alch.column("offer_bid", width=110, anchor="e")
-        self.tree_alch.column("instant_ask", width=110, anchor="e")
-        self.tree_alch.column("alch_val", width=90, anchor="e")
-        self.tree_alch.column("profit_ea", width=105, anchor="e")
-        self.tree_alch.column("profit_hr", width=115, anchor="e")
-        self.tree_alch.column("limit", width=85, anchor="center")
-        self.tree_alch.column("batch_profit", width=110, anchor="e")
-        self.tree_alch.column("max_afford", width=85, anchor="center")
-        self.tree_alch.column("volume", width=85, anchor="e")
+        self.tree_alch.column("cart", width=46, anchor="center")
+        self.tree_alch.column("name", width=170, anchor="w")
+        self.tree_alch.column("offer_bid", width=105, anchor="e")
+        self.tree_alch.column("instant_ask", width=105, anchor="e")
+        self.tree_alch.column("alch_val", width=85, anchor="e")
+        self.tree_alch.column("profit_ea", width=100, anchor="e")
+        self.tree_alch.column("profit_hr", width=110, anchor="e")
+        self.tree_alch.column("speed", width=105, anchor="center")
+        self.tree_alch.column("limit", width=80, anchor="center")
+        self.tree_alch.column("batch_profit", width=105, anchor="e")
+        self.tree_alch.column("max_afford", width=80, anchor="center")
+        self.tree_alch.column("volume", width=80, anchor="e")
 
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.tree_alch.yview)
         self.tree_alch.configure(yscrollcommand=scrollbar.set)
@@ -657,6 +732,23 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_alch.bind("<Button-1>", self.on_alch_click)
         self.tree_alch.bind("<Double-1>", self.on_alch_double_click)
         self.tree_alch.bind("<Button-3>", self.on_alch_right_click)
+
+        # Hover descriptions for every table column header
+        alch_col_tooltips = {
+            "#1": "Shopping Cart:\nShows items in cart. Click row cell to copy quantity number to clipboard.\nRight-click row to set custom cart quantity.",
+            "#2": "Item Name:\nGrand Exchange item name. Click row cell to copy name to clipboard for GE search.",
+            "#3": "Target Offer (Bid):\nBest patient buy price from active sellers. Click cell to copy price.\nIf using Smart strategy, bids Bid + 1 gp for queue priority.",
+            "#4": "Instant Buy (Ask):\nInstant purchase price from active sellers. Fills immediately. Click cell to copy.",
+            "#5": "High Alch Value:\nFixed gold returned by casting the High Level Alchemy spell.",
+            "#6": "Profit / Alch:\nNet GP profit per cast = High Alch Value - Item Buy Price - Nature Rune Cost.\nClick column header to sort.",
+            "#7": "Profit / Hr:\nEstimated profit per hour at standard 1,200 casts/hour rate.\nClick column header to sort.",
+            "#8": "Fill Speed:\nEstimated wait time for buy offer to fill based on real-time 5-minute sales velocity.\n⚡ Fast (<15m) | ⏱️ Steady (<1h) | 🐢 Slow (>1h)\nClick column header to sort.",
+            "#9": "4h GE Buy Limit:\nOfficial Grand Exchange purchase limit every 4 hours.\nDisplays remaining count (e.g. 50/70) if currently on cooldown.",
+            "#10": "4h Batch Profit:\nTotal profit achievable for a full 4-hour limit batch (Profit ea * Available limit).\nClick column header to sort.",
+            "#11": "Max Afford:\nMaximum quantity your current cash stack can afford out of remaining available limit.\nClick column header to sort.",
+            "#12": "24h Volume:\nTotal units traded on Grand Exchange over the last 24 hours.\nClick column header to sort."
+        }
+        HeadingToolTip(self.tree_alch, alch_col_tooltips)
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
@@ -670,23 +762,27 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_craft_lvl.insert(0, str(levels.get("Crafting", 99)))
         self.ent_craft_lvl.pack(side="left", padx=(2, 6))
         self.ent_craft_lvl.bind("<FocusOut>", self.on_levels_changed)
+        ToolTip(self.ent_craft_lvl, "Your in-game Crafting level. Recipes above this level are flagged or hidden.")
 
         tk.Label(sub_top, text="Fletching:", fg="#cccccc", bg="#252528").pack(side="left")
         self.ent_fletch_lvl = tk.Entry(sub_top, width=4, bg="#1e1e1e", fg="#ffffff", relief="flat")
         self.ent_fletch_lvl.insert(0, str(levels.get("Fletching", 99)))
         self.ent_fletch_lvl.pack(side="left", padx=(2, 6))
         self.ent_fletch_lvl.bind("<FocusOut>", self.on_levels_changed)
+        ToolTip(self.ent_fletch_lvl, "Your in-game Fletching level.")
 
         tk.Label(sub_top, text="Magic:", fg="#cccccc", bg="#252528").pack(side="left")
         self.ent_mage_lvl = tk.Entry(sub_top, width=4, bg="#1e1e1e", fg="#ffffff", relief="flat")
         self.ent_mage_lvl.insert(0, str(levels.get("Magic", 99)))
         self.ent_mage_lvl.pack(side="left", padx=(2, 10))
         self.ent_mage_lvl.bind("<FocusOut>", self.on_levels_changed)
+        ToolTip(self.ent_mage_lvl, "Your in-game Magic level.")
 
         self.var_only_usable = tk.BooleanVar(value=self.state.config.get("only_usable_recipes", False))
         cb_usable = tk.Checkbutton(sub_top, text="Only Show Usable Recipes", variable=self.var_only_usable, command=self.on_levels_changed,
                                    bg="#252528", fg="#2ecc71", selectcolor="#2d2d30", activebackground="#252528")
         cb_usable.pack(side="left", padx=6)
+        ToolTip(cb_usable, "Filter out recipes that exceed your current Crafting, Fletching, or Magic levels.")
 
         container = ttk.Frame(self.tab_craft)
         container.pack(fill="both", expand=True)
@@ -721,6 +817,18 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.tree_craft.bind("<Button-1>", self.on_craft_click)
 
+        craft_col_tooltips = {
+            "#0": "Recipe / Ingredient Breakdown:\nItem to create. Click row expander [+] to see required raw materials breakdown.\nClick item name to copy to clipboard.",
+            "#1": "Skill & Req:\nSkill and minimum level required to craft this item.",
+            "#2": "Materials Cost:\nTotal purchase cost of raw materials needed to craft one item.",
+            "#3": "Alch Value:\nHigh Alchemy gold value returned upon casting.",
+            "#4": "Profit (Craft + Alch):\nTotal profit earned by buying raw materials, crafting, and alching the finished item.\nClick column header to sort.",
+            "#5": "Bonus vs Buying Finished:\nExtra profit gained compared to buying the finished item directly on the GE.\nClick column header to sort.",
+            "#6": "XP / Item:\nCrafting or Fletching experience granted per created item.\nClick column header to sort.",
+            "#7": "Est Craft+Alch GP/Hr:\nProjected hourly profit accounting for crafting + alching speed.\nClick column header to sort."
+        }
+        HeadingToolTip(self.tree_craft, craft_col_tooltips)
+
     def build_timers_tab(self):
         container = ttk.Frame(self.tab_timers)
         container.pack(fill="both", expand=True, padx=10, pady=10)
@@ -744,9 +852,18 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.tree_timers.pack(fill="both", expand=True)
 
+        timers_col_tooltips = {
+            "#1": "Item Name:\nItem currently on 4-hour Grand Exchange buy limit cooldown.",
+            "#2": "Quantity Bought:\nNumber of units purchased in this 4-hour limit window.",
+            "#3": "Time Remaining:\nCount down until the 4-hour Grand Exchange limit completely resets.",
+            "#4": "Status:\nShows whether cooldown is actively ticking or ready to purchase again."
+        }
+        HeadingToolTip(self.tree_timers, timers_col_tooltips)
+
         btn_del = tk.Button(container, text="Remove Selected Timer", command=self.remove_selected_timer,
                             bg="#c0392b", fg="#ffffff", relief="flat", padx=8, pady=4, cursor="hand2")
         btn_del.pack(anchor="e", pady=6)
+        ToolTip(btn_del, "Remove selected item cooldown timer from active watchlist.")
 
     def build_session_tab(self):
         container = ttk.Frame(self.tab_session)
@@ -755,10 +872,10 @@ class OSRSAlchDashboard(tk.Tk):
         cards_frame = tk.Frame(container, bg="#1e1e1e")
         cards_frame.pack(fill="x", pady=(0, 15))
 
-        self.card_alchs = self.create_stat_card(cards_frame, "Total Casts Done", "0", "#3498db")
-        self.card_profit = self.create_stat_card(cards_frame, "Realized Profit", "0 gp", "#2ecc71")
-        self.card_xp = self.create_stat_card(cards_frame, "Magic XP Gained", "0 XP", "#9b59b6")
-        self.card_nats = self.create_stat_card(cards_frame, "Natures Used", "0", "#f39c12")
+        self.card_alchs = self.create_stat_card(cards_frame, "Total Casts Done", "0", "#3498db", "Total High Alchemy casts completed during this session.")
+        self.card_profit = self.create_stat_card(cards_frame, "Realized Profit", "0 gp", "#2ecc71", "Total net profit realized across all logged alch batches.")
+        self.card_xp = self.create_stat_card(cards_frame, "Magic XP Gained", "0 XP", "#9b59b6", "Total Magic experience gained (65 XP per High Alchemy cast).")
+        self.card_nats = self.create_stat_card(cards_frame, "Natures Used", "0", "#f39c12", "Total Nature Runes consumed during this session.")
 
         # Top of History table with Action Buttons
         hist_bar = tk.Frame(container, bg="#1e1e1e")
@@ -770,10 +887,12 @@ class OSRSAlchDashboard(tk.Tk):
         btn_edit = tk.Button(hist_bar, text="✏️ Edit Selected Entry", command=self.open_edit_session_dialog,
                              bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, cursor="hand2")
         btn_edit.pack(side="right", padx=4)
+        ToolTip(btn_edit, "Edit Selected Entry:\nManually adjust buy price, nature cost, or quantity if actual GE purchase differed.")
 
         btn_del = tk.Button(hist_bar, text="🗑️ Delete Entry", command=self.delete_session_entry,
                             bg="#c0392b", fg="#ffffff", font=("Segoe UI", 8), relief="flat", padx=8, cursor="hand2")
         btn_del.pack(side="right", padx=4)
+        ToolTip(btn_del, "Delete Entry:\nRemove the selected transaction from your session history log.")
 
         cols = ("time", "item", "qty", "buy_price", "nat_price", "alch_val", "profit")
         self.tree_session = ttk.Treeview(container, columns=cols, show="headings", height=10)
@@ -796,11 +915,23 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_session.pack(fill="both", expand=True)
         self.tree_session.bind("<Double-1>", lambda e: self.open_edit_session_dialog())
 
+        session_col_tooltips = {
+            "#1": "Time:\nTimestamp when this alch batch was recorded.",
+            "#2": "Item Name:\nName of the alched item.",
+            "#3": "Quantity:\nNumber of items alched in this batch.",
+            "#4": "Bought At (ea):\nGold price paid per item on the Grand Exchange.",
+            "#5": "Nat Cost (ea):\nPrice paid per Nature Rune.",
+            "#6": "Alch Value (Fixed):\nFixed High Alchemy gold payout per item.",
+            "#7": "Realized Profit:\nNet profit earned = (Alch Value - Buy Price - Nat Cost) * Quantity."
+        }
+        HeadingToolTip(self.tree_session, session_col_tooltips)
+
         btn_reset = tk.Button(container, text="Reset Session", command=self.reset_session,
                               bg="#7f8c8d", fg="#ffffff", relief="flat", padx=10, pady=4, cursor="hand2")
         btn_reset.pack(anchor="e", pady=8)
+        ToolTip(btn_reset, "Reset Session:\nClears all session stats and history log back to zero.")
 
-    def create_stat_card(self, parent, title, initial_val, val_color):
+    def create_stat_card(self, parent, title, initial_val, val_color, tooltip=""):
         card = tk.Frame(parent, bg="#252528", relief="solid", borderwidth=1, padx=14, pady=10)
         card.pack(side="left", expand=True, fill="both", padx=6)
 
@@ -809,6 +940,10 @@ class OSRSAlchDashboard(tk.Tk):
 
         lbl_v = tk.Label(card, text=initial_val, font=("Segoe UI", 14, "bold"), fg=val_color, bg="#252528")
         lbl_v.pack(anchor="w", pady=(4, 0))
+        if tooltip:
+            ToolTip(card, tooltip)
+            ToolTip(lbl_t, tooltip)
+            ToolTip(lbl_v, tooltip)
         return lbl_v
 
     def build_alerts_tab(self):
@@ -819,6 +954,7 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.lst_alerts = tk.Listbox(container, bg="#252528", fg="#f1f1f1", font=("Segoe UI", 10), selectbackground="#3e3e42", relief="flat", highlightthickness=0)
         self.lst_alerts.pack(fill="both", expand=True)
+        ToolTip(self.lst_alerts, "Feed of real-time high margin price alerts detected while running.")
 
     def build_status_bar(self):
         self.lbl_status_left = tk.Label(self.status_bar, text="Initializing...", font=("Segoe UI", 8), fg="#888888", bg="#181818")
@@ -1004,6 +1140,7 @@ class OSRSAlchDashboard(tk.Tk):
         min_vol = self.state.config.get("min_volume", 5000)
         mem_ok = self.var_members.get()
         f2p_ok = self.var_f2p.get()
+        speed_filter = self.var_speed.get() if hasattr(self, "var_speed") else "All"
 
         # Parse user min profit filter (leave blank to show ALL items)
         min_p_val = None
@@ -1033,7 +1170,7 @@ class OSRSAlchDashboard(tk.Tk):
                 pass
 
             bid, ask = self.api.get_bid_ask(item_id_str)
-            buy_price = bid if strat == "patient" else ask
+            buy_price = self.api.get_price(item_id_str, strat)
             if not buy_price or buy_price <= 0:
                 continue
             if buy_price > max_spend:
@@ -1052,6 +1189,14 @@ class OSRSAlchDashboard(tk.Tk):
 
             base_limit = mdata.get("limit", 0) or 0
             rem_limit, secs_left, is_cd = self.state.get_remaining_limit(mdata["id"], base_limit)
+
+            speed_cat, speed_badge, est_mins, speed_score = self.api.get_fill_speed_info(mdata["id"], base_limit if base_limit > 0 else 70)
+
+            # Apply Speed Filter
+            if "Fast" in speed_filter and speed_cat != "fast":
+                continue
+            if "Steady" in speed_filter and speed_cat not in ("fast", "steady"):
+                continue
 
             limit_cap = rem_limit if is_cd else (base_limit if base_limit > 0 else 1000)
 
@@ -1089,6 +1234,9 @@ class OSRSAlchDashboard(tk.Tk):
                 "alch_val": high_alch,
                 "profit_ea": profit,
                 "profit_hr": profit_hr,
+                "speed_cat": speed_cat,
+                "speed_badge": speed_badge,
+                "speed_score": speed_score,
                 "limit": rem_limit if is_cd else base_limit,
                 "base_limit": base_limit,
                 "limit_str": limit_str,
@@ -1104,6 +1252,7 @@ class OSRSAlchDashboard(tk.Tk):
             "cart": "cart",
             "offer_bid": "bid",
             "instant_ask": "ask",
+            "speed": "speed_score",
             "max_afford": "max_afford"
         }
         k = sort_key_map.get(self.alch_sort_col, self.alch_sort_col)
@@ -1134,6 +1283,7 @@ class OSRSAlchDashboard(tk.Tk):
                 f"{row['alch_val']:,} gp",
                 p_ea_str,
                 p_hr_str,
+                row["speed_badge"],
                 limit_str,
                 b_p_str,
                 f"{row['max_afford']:,}",
@@ -1177,6 +1327,7 @@ class OSRSAlchDashboard(tk.Tk):
             "alch_val": "Alch Value",
             "profit_ea": "Profit / Alch",
             "profit_hr": "Profit / Hr (1.2k)",
+            "speed": "Fill Speed",
             "limit": "4h Limit",
             "batch_profit": "4h Batch Profit",
             "max_afford": "Max Afford",
@@ -1774,6 +1925,11 @@ class OSRSAlchDashboard(tk.Tk):
         self.state.config["strategy"] = strat
         self.save_preferences()
         self.recalculate_all()
+
+    def on_speed_filter_changed(self, event=None):
+        self.state.config["speed_filter"] = self.var_speed.get()
+        self.save_preferences()
+        self.recalculate_alch_table()
 
     def on_refresh_rate_changed(self, event=None):
         val = self.var_refresh.get()
