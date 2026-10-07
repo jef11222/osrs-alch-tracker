@@ -193,12 +193,10 @@ class ToolTip:
     def show_tip(self):
         if self.tip_window or not self.text:
             return
-        app = self.widget.winfo_toplevel()
         x = self.widget.winfo_rootx() + 15
         y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
-        self.tip_window = tw = tk.Toplevel(app)
+        self.tip_window = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
-        tw.transient(app)
         tw.attributes("-topmost", True)
         tw.wm_geometry(f"+{x}+{y}")
         label = tk.Label(tw, text=self.text, justify="left",
@@ -206,6 +204,7 @@ class ToolTip:
                          relief="solid", borderwidth=1,
                          font=("Segoe UI", 8), padx=7, pady=4)
         label.pack()
+        tw.lift()
 
     def hide_tip(self):
         if self.tip_window:
@@ -251,10 +250,8 @@ class HeadingToolTip:
     def show_tip(self, x, y, text):
         if self.tip_window or not text:
             return
-        app = self.tree.winfo_toplevel()
-        self.tip_window = tw = tk.Toplevel(app)
+        self.tip_window = tw = tk.Toplevel(self.tree)
         tw.wm_overrideredirect(True)
-        tw.transient(app)
         tw.attributes("-topmost", True)
         tw.wm_geometry(f"+{x}+{y}")
         label = tk.Label(tw, text=text, justify="left",
@@ -262,6 +259,7 @@ class HeadingToolTip:
                          relief="solid", borderwidth=1,
                          font=("Segoe UI", 8), padx=7, pady=4)
         label.pack()
+        tw.lift()
 
     def hide_tip(self):
         if self.tip_window:
@@ -314,10 +312,8 @@ class RowToolTip:
             return
 
         try:
-            app = self.tree.winfo_toplevel()
-            self.tip_window = tw = tk.Toplevel(app)
+            self.tip_window = tw = tk.Toplevel(self.tree)
             tw.wm_overrideredirect(True)
-            tw.transient(app)
             tw.attributes("-topmost", True)
 
             border_col = "#e67e22" if tip_info.get("has_warning") else "#4a4a52"
@@ -365,6 +361,7 @@ class RowToolTip:
             h = tw.winfo_reqheight()
 
             # Bound STRICTLY inside the application window boundaries across multi-monitors
+            app = self.tree.winfo_toplevel()
             app_x = app.winfo_rootx()
             app_y = app.winfo_rooty()
             app_w = app.winfo_width()
@@ -387,6 +384,7 @@ class RowToolTip:
                 y = app_y + 35
 
             tw.wm_geometry(f"+{x}+{y}")
+            tw.lift()
         except Exception:
             self.hide_tip()
 
