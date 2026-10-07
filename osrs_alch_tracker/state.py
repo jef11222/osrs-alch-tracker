@@ -1,8 +1,16 @@
 import os
+import sys
 import json
 import time
+import shutil
 
-STATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+def get_app_data_dir():
+    if getattr(sys, "frozen", False):
+        base = os.getenv("LOCALAPPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "OSRS_Alch_Tracker", "data")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+STATE_DIR = get_app_data_dir()
 CONFIG_FILE = os.path.join(STATE_DIR, "config.json")
 TIMERS_FILE = os.path.join(STATE_DIR, "timers.json")
 SESSION_FILE = os.path.join(STATE_DIR, "session.json")
@@ -36,6 +44,17 @@ DEFAULT_CONFIG = {
 class AppState:
     def __init__(self):
         os.makedirs(STATE_DIR, exist_ok=True)
+        # Migrate existing state if transitioning to user AppData
+        old_local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+        if STATE_DIR != old_local_dir and os.path.exists(old_local_dir):
+            for fname in ("config.json", "timers.json", "session.json"):
+                old_f = os.path.join(old_local_dir, fname)
+                new_f = os.path.join(STATE_DIR, fname)
+                if os.path.exists(old_f) and not os.path.exists(new_f):
+                    try:
+                        shutil.copy2(old_f, new_f)
+                    except Exception:
+                        pass
         self.config = dict(DEFAULT_CONFIG)
         self.timers = {} # item_id -> {"name": ..., "bought_time": ..., "qty": ...}
         self.session = {

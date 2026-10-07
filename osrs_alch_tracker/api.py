@@ -1,11 +1,19 @@
 import os
+import sys
 import json
 import time
 import urllib.request
 import urllib.error
 
 USER_AGENT = "OSRS-Alch-Dashboard/1.0 (Windows; Contact: osrs-tools)"
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+
+def get_app_cache_dir():
+    if getattr(sys, "frozen", False):
+        base = os.getenv("LOCALAPPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "OSRS_Alch_Tracker", "cache")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+
+CACHE_DIR = get_app_cache_dir()
 MAPPING_CACHE_FILE = os.path.join(CACHE_DIR, "mapping.json")
 MAPPING_CACHE_TTL = 86400 * 3 # 3 days cache for static mapping
 
@@ -13,6 +21,8 @@ NATURE_RUNE_ID = 561
 FIRE_RUNE_ID = 554
 
 def fetch_url_json(url, timeout=10):
+    if not str(url).startswith("https://prices.runescape.wiki/"):
+        raise ValueError(f"Disallowed API host: {url}")
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))

@@ -8,12 +8,24 @@ import threading
 import webbrowser
 import urllib.request
 import urllib.error
+import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
 APP_VERSION = "1.3.2"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+
+def is_safe_https_url(url, allowed_domains=("github.com", "objects.githubusercontent.com", "api.github.com")):
+    """Validates that a URL strictly uses HTTPS and originates from trusted GitHub domains."""
+    try:
+        parsed = urllib.parse.urlparse(str(url))
+        if parsed.scheme.lower() != "https":
+            return False
+        hostname = (parsed.hostname or "").lower()
+        return any(hostname == d or hostname.endswith("." + d) for d in allowed_domains)
+    except Exception:
+        return False
 
 def parse_version_tuple(v_str):
     """Converts 'v1.3.0' or '1.3' into a comparable tuple of integers (1, 3, 0)."""
@@ -51,18 +63,23 @@ def check_for_updates(current_version=APP_VERSION):
                     setup_url = None
                     for asset in data.get("assets", []):
                         name = asset.get("name", "").lower()
+                        cand_url = asset.get("browser_download_url")
+                        if not is_safe_https_url(cand_url):
+                            continue
                         if name == "osrs_alch_tracker.exe":
-                            download_url = asset.get("browser_download_url")
+                            download_url = cand_url
                             break
                         elif name.endswith("_setup.exe"):
-                            setup_url = asset.get("browser_download_url")
+                            setup_url = cand_url
                         elif name.endswith(".exe") and not download_url:
-                            download_url = asset.get("browser_download_url")
+                            download_url = cand_url
 
                     if not download_url:
-                        download_url = setup_url or data.get("html_url")
+                        html_url = data.get("html_url")
+                        download_url = setup_url or (html_url if is_safe_https_url(html_url) else None)
 
-                    return True, tag_name, download_url, data.get("body", "")
+                    if download_url:
+                        return True, tag_name, download_url, data.get("body", "")
     except Exception as e:
         print(f"Update check failed: {e}")
 
@@ -72,6 +89,9 @@ def download_file_with_progress(url, dest_path, progress_callback=None):
     """
     Downloads file from URL in chunks, calling progress_callback(percent_int, downloaded_bytes, total_bytes).
     """
+    if not is_safe_https_url(url):
+        raise ValueError(f"Untrusted download URL: {url}")
+
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "OSRS-Alch-Tracker-App"}
@@ -102,6 +122,11 @@ def apply_update_and_restart(new_exe_path):
     current_exe = sys.executable
     app_dir = os.path.dirname(os.path.abspath(current_exe))
 
+    # Sanitize path strings against injection/syntax breakage
+    clean_new = os.path.abspath(new_exe_path).replace('"', '').replace('%', '%%')
+    clean_curr = os.path.abspath(current_exe).replace('"', '').replace('%', '%%')
+    clean_dir = os.path.abspath(app_dir).replace('"', '').replace('%', '%%')
+
     # Write small batch script to swap the exe after exit
     temp_dir = tempfile.gettempdir()
     bat_path = os.path.join(temp_dir, f"osrs_update_{int(time.time())}.bat")
@@ -109,13 +134,13 @@ def apply_update_and_restart(new_exe_path):
     bat_content = f"""@echo off
 timeout /t 2 /nobreak >nul
 :retry
-move /y "{new_exe_path}" "{current_exe}" >nul 2>&1
-if exist "{new_exe_path}" (
+move /y "{clean_new}" "{clean_curr}" >nul 2>&1
+if exist "{clean_new}" (
     timeout /t 1 /nobreak >nul
     goto retry
 )
-cd /d "{app_dir}"
-start "" "{current_exe}"
+cd /d "{clean_dir}"
+start "" "{clean_curr}"
 del "%~f0"
 """
     with open(bat_path, "w", encoding="utf-8") as f:
@@ -190,11 +215,9 @@ class UpdateDialog(tk.Toplevel):
 
         is_frozen = getattr(sys, "frozen", False)
         if not is_frozen or not self.download_url or not self.download_url.lower().endswith(".exe"):
-            # If running in python source code or no direct exe url, open web page
-            if self.download_url:
-                webbrowser.open(self.download_url)
-            else:
-                webbrowser.open(f"https://github.com/{GITHUB_REPO}/releases/latest")
+            # If running in python source code or no direct exe url, open trusted web page
+            target_url = self.download_url if (self.download_url and is_safe_https_url(self.download_url)) else f"https://github.com/{GITHUB_REPO}/releases/latest"
+            webbrowser.open(target_url)
             self.destroy()
             return
 
