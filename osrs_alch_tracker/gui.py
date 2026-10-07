@@ -936,11 +936,11 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_alch.column("alch_val", width=85, anchor="e")
         self.tree_alch.column("profit_ea", width=100, anchor="e")
         self.tree_alch.column("profit_hr", width=110, anchor="e")
-        self.tree_alch.column("speed", width=112, anchor="center")
+        self.tree_alch.column("speed", width=128, anchor="center")
         self.tree_alch.column("limit", width=95, anchor="center")
         self.tree_alch.column("batch_profit", width=110, anchor="e")
         self.tree_alch.column("max_afford", width=85, anchor="center")
-        self.tree_alch.column("volume", width=85, anchor="e")
+        self.tree_alch.column("volume", width=115, anchor="e")
 
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.tree_alch.yview)
         h_scrollbar = ttk.Scrollbar(container, orient="horizontal", command=self.tree_alch.xview)
@@ -963,11 +963,11 @@ class OSRSAlchDashboard(tk.Tk):
             "#5": "High Alch Value:\nFixed gold returned by casting the High Level Alchemy spell.",
             "#6": "Profit / Alch:\nNet GP profit per cast = High Alch Value - Item Buy Price - Nature Rune Cost.\nClick column header to sort.",
             "#7": "Profit / Hr:\nEstimated profit per hour at standard 1,200 casts/hour rate.\nClick column header to sort.",
-            "#8": "Fill Speed:\nEstimated wait time for buy offer to fill based on real-time 5-minute sales velocity.\n⚡ Fast (<15m) | ⏱️ Steady (<1h) | 🐢 Slow (>1h) | ⚠️ Stale (>45m)\nClick column header to sort.",
+            "#8": "Fill Speed & 5m Sold:\nEstimated wait time or live 5-minute sales velocity.\nIn 1-Trade Tick mode, shows exact quantity sold into bids in the past 5 minutes (e.g. '3 sold') to verify real market activity.\nClick column header to sort.",
             "#9": "4h GE Buy Limit:\nOfficial Grand Exchange purchase limit every 4 hours.\n⚠️ Volume Capped: If 24h market volume is lower than GE limit, shows 'Volume / Limit ⚠️' to avoid illiquid paper profit traps.",
             "#10": "4h Batch Profit:\nRealistic profit achievable for a full 4-hour batch (Profit ea * Effective volume-capped limit).\nClick column header to sort.",
             "#11": "Max Afford:\nMaximum quantity your current cash stack can afford out of remaining available limit.\nClick column header to sort.",
-            "#12": "24h Volume:\nTotal units traded on Grand Exchange over the last 24 hours.\nClick column header to sort."
+            "#12": "24h Volume & 5m Sold:\nTotal units traded on Grand Exchange over the last 24 hours.\nIn 1-Trade Tick mode, displays '24h Vol (5m Sold)' to verify active trades.\nClick column header to sort."
         }
         HeadingToolTip(self.tree_alch, alch_col_tooltips)
         RowToolTip(self.tree_alch, self.get_alch_row_tooltip)
@@ -1278,11 +1278,11 @@ class OSRSAlchDashboard(tk.Tk):
                 # Only alert if brand new OR margin shifted by >= 2 gp
                 if last_profit is None or abs(profit - last_profit) >= 2:
                     self.state.last_alerted_profits[iid] = profit
-                    alert_msg = f"{row['name']} margin: +{profit:,} gp/ea ({row['profit_hr']/1000:.0f}k/hr)"
+                    alert_msg = f"{row['name']} margin: +{profit:,} gp/ea ({row['profit_hr']/1000:.0f}k/hr) | 5m: {vol_5m_low} sold"
                     self.state.alert_history.insert(0, f"[{time.strftime('%H:%M:%S')}] 🚨 {alert_msg}")
                     self.state.alert_history = self.state.alert_history[:60]
                     self.update_alerts_display()
-                    self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr)", item_id=row["id"])
+                    self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr) | 5m: {vol_5m_low} sold", item_id=row["id"])
 
     # ------------------ GITHUB AUTO-UPDATER ------------------
 
@@ -1414,7 +1414,10 @@ class OSRSAlchDashboard(tk.Tk):
 
         new_rows = []
 
-        basis = "5m" if (hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get()) else self.state.config.get("price_basis", "5m")
+        if hasattr(self, "var_price_basis"):
+            basis = "5m" if "5m" in self.var_price_basis.get() else "latest"
+        else:
+            basis = self.state.config.get("price_basis", "5m")
 
         for item_id_str, mdata in self.api.mapping.items():
             high_alch = mdata.get("highalch", 0)
@@ -1457,10 +1460,18 @@ class OSRSAlchDashboard(tk.Tk):
 
             speed_cat, speed_badge, est_mins, speed_score = self.api.get_fill_speed_info(mdata["id"], base_limit if base_limit > 0 else 70)
 
-            # Detect 1-item freak spike vs 5m volume average
+            # Detect 1-item freak spike vs 5m volume average & format 1-tick sold count
             is_spike, spike_pct, lat_low, avg_low_p, vol_5m_l = self.api.get_spike_info(mdata["id"])
-            if is_spike and basis == "latest":
-                speed_badge = f"⚡ Spike (-{spike_pct:.0f}%)"
+            if basis == "latest":
+                if is_spike:
+                    speed_badge = f"⚠️ Spike ({vol_5m_l} sold)"
+                elif vol_5m_l > 0:
+                    badge_prefix = "⚡ Fast" if speed_cat == "fast" else "⏱️ Steady"
+                    speed_badge = f"{badge_prefix} ({vol_5m_l} sold)"
+                elif str(speed_badge).startswith("⚠️ Stale"):
+                    speed_badge = "⚠️ Stale (0 sold)"
+                else:
+                    speed_badge = f"🐢 Slow ({vol_5m_l} sold)"
 
             # Apply Speed Filter
             if "Fast" in speed_filter and speed_cat != "fast":
@@ -1553,10 +1564,21 @@ class OSRSAlchDashboard(tk.Tk):
             new_rows.sort(key=lambda x: x.get(k, 0), reverse=self.alch_sort_desc)
         self.alch_rows = new_rows
 
+        # Dynamically sync column headings with active pricing basis
+        arrow = " ▼" if self.alch_sort_desc else " ▲"
+        speed_header = "Fill Speed (5m Sold)" if basis == "latest" else "Fill Speed"
+        vol_header = "24h Vol (5m Sold)" if basis == "latest" else "24h Volume"
+        self.tree_alch.heading("speed", text=speed_header + (arrow if self.alch_sort_col == "speed" else ""))
+        self.tree_alch.heading("volume", text=vol_header + (arrow if self.alch_sort_col == "volume" else ""))
+
         self.tree_alch.delete(*self.tree_alch.get_children())
         for row in self.alch_rows[:300]:
             cart_str = f"{row['cart']}x" if row['cart'] > 0 else ""
-            vol_str = f"{row['volume']:,}" if row['volume'] < 100000 else f"{row['volume']/1000:.0f}k"
+            vol_base = f"{row['volume']/1000:.0f}k" if row['volume'] >= 100000 else f"{row['volume']:,}"
+            if basis == "latest":
+                vol_str = f"{vol_base} ({row['vol_5m_low']} sold)"
+            else:
+                vol_str = vol_base
             limit_str = row["limit_str"]
 
             p_ea_str = f"+{row['profit_ea']:,} gp" if row['profit_ea'] >= 0 else f"{row['profit_ea']:,} gp"
@@ -1610,6 +1632,12 @@ class OSRSAlchDashboard(tk.Tk):
             self.alch_sort_desc = False if col == "name" else True
 
         arrow = " ▼" if self.alch_sort_desc else " ▲"
+        if hasattr(self, "var_price_basis"):
+            basis = "5m" if "5m" in self.var_price_basis.get() else "latest"
+        else:
+            basis = self.state.config.get("price_basis", "5m")
+        speed_header = "Fill Speed (5m Sold)" if basis == "latest" else "Fill Speed"
+        vol_header = "24h Vol (5m Sold)" if basis == "latest" else "24h Volume"
         headers = {
             "cart": "Cart",
             "name": "Item Name",
@@ -1618,11 +1646,11 @@ class OSRSAlchDashboard(tk.Tk):
             "alch_val": "Alch Value",
             "profit_ea": "Profit / Alch",
             "profit_hr": "Profit / Hr (1.2k)",
-            "speed": "Fill Speed",
+            "speed": speed_header,
             "limit": "4h Limit",
             "batch_profit": "4h Batch Profit",
             "max_afford": "Max Afford",
-            "volume": "24h Volume"
+            "volume": vol_header
         }
         for c, title in headers.items():
             self.tree_alch.heading(c, text=title + (arrow if c == self.alch_sort_col else ""))
@@ -1938,11 +1966,27 @@ class OSRSAlchDashboard(tk.Tk):
                 ("Profit / Hr (1.2k):", f"{p_hr_k:+.1f}k GP/hr", "#2ecc71" if p_hr_k >= 0 else "#e74c3c"),
                 ("Fill Velocity:", speed_badge, speed_col),
                 ("24h Vol / 5m:", f"{row['volume']:,}  (5m: {metrics['vol_5m_total']:,})", "#f1f1f1"),
-                ("5m Sold into Bids:", f"{metrics['vol_5m_low']:,} items", "#3498db" if metrics['vol_5m_low'] >= 5 else "#e67e22"),
+                ("5m Sold into Bids:", f"{metrics['vol_5m_low']:,} items", "#2ecc71" if metrics['vol_5m_low'] >= 3 else ("#f1c40f" if metrics['vol_5m_low'] > 0 else "#e74c3c")),
                 ("4h Buy Limit:", limit_info, "#e67e22" if row.get("is_vol_capped") else "#f1f1f1"),
                 ("4h Batch Profit:", f"{row['batch_profit']:+,} gp", "#2ecc71" if row["batch_profit"] >= 0 else "#e74c3c"),
                 ("Quote Freshness:", metrics["age_str"], "#e67e22" if metrics["is_stale"] else "#95a5a6"),
             ]
+
+            if hasattr(self, "var_price_basis"):
+                basis = "5m" if "5m" in self.var_price_basis.get() else "latest"
+            else:
+                basis = self.state.config.get("price_basis", "5m")
+            if basis == "latest":
+                if metrics['vol_5m_low'] >= 3:
+                    verdict_txt = f"✓ Real Activity ({metrics['vol_5m_low']} sold in 5m) - Worth bidding!"
+                    verdict_col = "#2ecc71"
+                elif metrics['vol_5m_low'] in (1, 2):
+                    verdict_txt = f"⚠️ Low Activity ({metrics['vol_5m_low']} sold in 5m) - Small batch recommended"
+                    verdict_col = "#f1c40f"
+                else:
+                    verdict_txt = "⚠️ No 5m Sales Recorded (0 sold) - Potential outlier tick"
+                    verdict_col = "#e74c3c"
+                rows.insert(7, ("1-Tick Activity:", verdict_txt, verdict_col))
 
             warnings = []
             if metrics.get("is_spike"):
