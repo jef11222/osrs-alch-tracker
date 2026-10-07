@@ -123,6 +123,10 @@ class EditSessionDialog(tk.Toplevel):
         lbl_alch = tk.Label(form, text=f"{entry.get('alch_val', 0):,} gp (Fixed)", fg="#888888", bg="#252528")
         lbl_alch.grid(row=3, column=1, sticky="w", pady=5, padx=5)
 
+        # 4h Cooldown auto-sync note
+        tk.Label(form, text="💡 4h GE buy limit cooldown will auto-sync with this quantity.",
+                 fg="#888888", bg="#252528", font=("Segoe UI", 8, "italic")).grid(row=4, column=0, columnspan=2, pady=(4, 0))
+
         # Dynamic Profit preview
         self.lbl_profit_preview = tk.Label(self, text="Realized Profit: ...", font=("Segoe UI", 10, "bold"), fg="#2ecc71", bg="#252528")
         self.lbl_profit_preview.pack(pady=8)
@@ -157,10 +161,64 @@ class EditSessionDialog(tk.Toplevel):
             q = int(self.ent_qty.get().strip().replace(",", ""))
             b = int(self.ent_buy.get().strip().replace(",", ""))
             n = int(self.ent_nat.get().strip().replace(",", ""))
+            if q < 0 or b < 0 or n < 0:
+                messagebox.showerror("Invalid Input", "Quantity and prices cannot be negative.")
+                return
             self.on_save_callback(self.entry["id"], q, b, n)
             self.destroy()
         except ValueError:
             messagebox.showerror("Invalid Input", "Please enter valid whole numbers.")
+
+
+class EditTimerDialog(tk.Toplevel):
+    """Dialog to manually adjust quantity bought on an active 4h GE cooldown timer."""
+    def __init__(self, parent, item_id, tinfo, on_save_callback):
+        super().__init__(parent)
+        self.title("Edit 4h GE Limit Timer")
+        self.geometry("380x190")
+        self.configure(bg="#252528")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.item_id = item_id
+        self.tinfo = tinfo
+        self.on_save_callback = on_save_callback
+
+        lbl_title = tk.Label(self, text=f"Edit Timer: {tinfo.get('name', 'Item')}", font=("Segoe UI", 11, "bold"), fg="#f39c12", bg="#252528")
+        lbl_title.pack(pady=(15, 8))
+
+        form = tk.Frame(self, bg="#252528")
+        form.pack(padx=20, fill="x")
+
+        tk.Label(form, text="Quantity Bought:", fg="#cccccc", bg="#252528").grid(row=0, column=0, sticky="w", pady=5)
+        self.ent_qty = tk.Entry(form, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff")
+        self.ent_qty.insert(0, str(tinfo.get("qty", 0)))
+        self.ent_qty.grid(row=0, column=1, pady=5, padx=5)
+
+        tk.Label(form, text="💡 Set to 0 to clear this cooldown timer.", fg="#888888", bg="#252528", font=("Segoe UI", 8, "italic")).grid(row=1, column=0, columnspan=2, pady=(4, 0))
+
+        btn_box = tk.Frame(self, bg="#252528")
+        btn_box.pack(pady=15)
+
+        tk.Button(btn_box, text="Save Changes", command=self.save, bg="#27ae60", fg="#ffffff", relief="flat", padx=10, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_box, text="Cancel", command=self.destroy, bg="#7f8c8d", fg="#ffffff", relief="flat", padx=10, cursor="hand2").pack(side="left", padx=6)
+
+        self.ent_qty.focus_set()
+        self.ent_qty.select_range(0, tk.END)
+        self.bind("<Return>", lambda e: self.save())
+        self.bind("<Escape>", lambda e: self.destroy())
+
+    def save(self):
+        try:
+            q = int(self.ent_qty.get().strip().replace(",", ""))
+            if q < 0:
+                messagebox.showerror("Invalid Input", "Quantity cannot be negative.")
+                return
+            self.on_save_callback(self.item_id, q)
+            self.destroy()
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter a valid whole number.")
 
 class ToolTip:
     """Lightweight hover tooltip for widgets."""
@@ -1010,10 +1068,20 @@ class OSRSAlchDashboard(tk.Tk):
         }
         HeadingToolTip(self.tree_timers, timers_col_tooltips)
 
-        btn_del = tk.Button(container, text="Remove Selected Timer", command=self.remove_selected_timer,
+        btn_bar = tk.Frame(container, bg="#1e1e1e")
+        btn_bar.pack(fill="x", pady=6)
+
+        btn_edit_timer = tk.Button(btn_bar, text="✏️ Edit Quantity Bought", command=self.edit_selected_timer,
+                                   bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=4, cursor="hand2")
+        btn_edit_timer.pack(side="left")
+        ToolTip(btn_edit_timer, "Edit Quantity Bought:\nAdjust the purchased amount for this 4h cooldown timer.")
+
+        btn_del = tk.Button(btn_bar, text="🗑️ Remove Selected Timer", command=self.remove_selected_timer,
                             bg="#c0392b", fg="#ffffff", relief="flat", padx=8, pady=4, cursor="hand2")
-        btn_del.pack(anchor="e", pady=6)
+        btn_del.pack(side="right")
         ToolTip(btn_del, "Remove selected item cooldown timer from active watchlist.")
+
+        self.tree_timers.bind("<Double-1>", lambda e: self.edit_selected_timer())
 
     def build_session_tab(self):
         container = ttk.Frame(self.tab_session)
@@ -1265,12 +1333,20 @@ class OSRSAlchDashboard(tk.Tk):
                 return # Cancelled, stay in app
         self.destroy()
 
+    def update_owned_nat_display(self):
+        if hasattr(self, "ent_owned_nat"):
+            self.ent_owned_nat.delete(0, tk.END)
+            owned = self.state.config.get("owned_nature_runes", 0)
+            if owned > 0:
+                self.ent_owned_nat.insert(0, str(owned))
+
     def recalculate_all(self):
         self.recalculate_alch_table()
         self.recalculate_craft_table()
         self.update_cart_display()
         self.update_session_display()
         self.update_timers_display()
+        self.update_owned_nat_display()
 
     def focus_search(self):
         self.notebook.select(self.tab_alch)
@@ -2017,14 +2093,19 @@ class OSRSAlchDashboard(tk.Tk):
             clean_name = text_val.split("(")[0].strip()
             self.copy_to_clipboard(clean_name, f"Copied '{clean_name}' to clipboard!")
 
+    def show_status_message(self, message, fg="#f39c12", duration_ms=3000):
+        if not hasattr(self, "lbl_status_right"):
+            return
+        self.lbl_status_right.config(text=message, fg=fg)
+        if self.clipboard_clear_timer:
+            self.after_cancel(self.clipboard_clear_timer)
+        self.clipboard_clear_timer = self.after(duration_ms, lambda: self.lbl_status_right.config(text="Ready", fg="#888888"))
+
     def copy_to_clipboard(self, text, message=""):
         self.clipboard_clear()
         self.clipboard_append(text)
         if message:
-            self.lbl_status_right.config(text=message, fg="#f39c12")
-            if self.clipboard_clear_timer:
-                self.after_cancel(self.clipboard_clear_timer)
-            self.clipboard_clear_timer = self.after(3000, lambda: self.lbl_status_right.config(text="Ready", fg="#888888"))
+            self.show_status_message(message)
 
     def export_master_bank_tag(self):
         """Exports all currently profitable items matching active filters as a RuneLite bank tag."""
@@ -2075,17 +2156,7 @@ class OSRSAlchDashboard(tk.Tk):
                 self.state.add_timer(row["id"], row["name"], qty)
 
         self.state.cart_items.clear()
-
-        # Update owned nature runes display if decremented
-        self.ent_owned_nat.delete(0, tk.END)
-        owned = self.state.config.get("owned_nature_runes", 0)
-        if owned > 0:
-            self.ent_owned_nat.insert(0, str(owned))
-
-        self.recalculate_alch_table()
-        self.update_cart_display()
-        self.update_session_display()
-        self.update_timers_display()
+        self.recalculate_all()
 
         messagebox.showinfo("Logged Successfully", f"Logged {count} items into your session tracker and started their 4-hour GE limit timers!\n\nYou can click 'Edit Selected Entry' in the Session Tracker anytime if your actual buy price was different.")
 
@@ -2102,8 +2173,8 @@ class OSRSAlchDashboard(tk.Tk):
 
     def _on_entry_edited(self, entry_id, new_qty, new_buy_price, new_nat_price):
         self.state.update_session_entry(entry_id, new_qty, new_buy_price, new_nat_price)
-        self.update_session_display()
-        self.copy_to_clipboard("", "Session entry updated successfully!")
+        self.recalculate_all()
+        self.show_status_message(f"Session entry updated ({new_qty:,} bought) & 4h GE timer synced!")
 
     def delete_session_entry(self):
         selected_id = self.tree_session.selection()
@@ -2111,19 +2182,47 @@ class OSRSAlchDashboard(tk.Tk):
             return
         if messagebox.askyesno("Delete Entry", "Delete this history entry from your session?"):
             self.state.delete_session_entry(selected_id[0])
-            self.update_session_display()
+            self.recalculate_all()
+            self.show_status_message("Session entry deleted & 4h GE timer updated.")
 
     def clear_cart(self):
         self.state.cart_items.clear()
         self.recalculate_alch_table()
         self.update_cart_display()
 
+    def edit_selected_timer(self):
+        selected = self.tree_timers.selection()
+        if not selected:
+            messagebox.showinfo("Select Timer", "Please select a timer from the list to edit.")
+            return
+
+        item_id = selected[0]
+        tinfo = self.state.timers.get(item_id)
+        if not tinfo:
+            return
+
+        EditTimerDialog(self, item_id, tinfo, self._on_timer_edited)
+
+    def _on_timer_edited(self, item_id, new_qty):
+        tinfo = self.state.timers.get(item_id)
+        item_name = tinfo.get("name", "Item") if tinfo else "Item"
+        if new_qty <= 0:
+            self.state.remove_timer(item_id)
+            self.show_status_message(f"Cleared timer for {item_name} (cooldown reset).")
+        else:
+            if item_id in self.state.timers:
+                self.state.timers[item_id]["qty"] = new_qty
+                self.state.save_timers()
+                self.show_status_message(f"Updated timer for {item_name} to {new_qty:,} bought.")
+        self.recalculate_all()
+
     def remove_selected_timer(self):
         selected = self.tree_timers.selection()
         if selected:
             for item_id in selected:
                 self.state.remove_timer(item_id)
-            self.update_timers_display()
+            self.recalculate_all()
+            self.show_status_message("Selected cooldown timer(s) removed.")
 
     def reset_session(self):
         if messagebox.askyesno("Reset Session", "Are you sure you want to reset all session statistics?"):

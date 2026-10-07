@@ -152,9 +152,12 @@ class AppState:
         return remaining, seconds_left, True
 
     def remove_timer(self, item_id):
-        if str(item_id) in self.timers:
-            del self.timers[str(item_id)]
-            self.save_timers()
+        iid_str = str(item_id)
+        if iid_str in self.timers:
+            del self.timers[iid_str]
+        if iid_str in self.notified_timers:
+            self.notified_timers.remove(iid_str)
+        self.save_timers()
 
     def check_expired_timers(self):
         now = time.time()
@@ -167,15 +170,86 @@ class AppState:
                     self.notified_timers.add(iid)
         return expired
 
+    def _adjust_timer_qty(self, item_id, item_name, diff_qty, entry=None):
+        """Adjusts the 4-hour Grand Exchange cooldown timer when a session batch quantity changes."""
+        if diff_qty == 0:
+            return
+
+        iid_str = str(item_id) if item_id is not None else None
+        found_iid = None
+
+        if iid_str and iid_str in self.timers:
+            found_iid = iid_str
+        elif item_name:
+            name_clean = str(item_name).strip().lower()
+            for tid, tinfo in self.timers.items():
+                if tinfo.get("name", "").strip().lower() == name_clean:
+                    found_iid = tid
+                    break
+
+        now = time.time()
+
+        if found_iid:
+            tinfo = self.timers[found_iid]
+            # Only adjust active timers within the 4-hour window
+            elapsed = now - tinfo.get("bought_time", 0)
+            if elapsed < 14400:
+                new_qty = tinfo.get("qty", 0) + diff_qty
+                if new_qty <= 0:
+                    self.remove_timer(found_iid)
+                else:
+                    tinfo["qty"] = new_qty
+                    self.save_timers()
+        else:
+            # If no timer exists, but this batch was recorded within 4 hours and has positive quantity,
+            # recreate the active cooldown timer
+            entry_qty = entry.get("qty", 0) if entry else diff_qty
+            if entry_qty > 0:
+                entry_time = None
+                if entry:
+                    entry_time = entry.get("timestamp")
+                    if not entry_time and "id" in entry:
+                        parts = str(entry["id"]).split("_")
+                        if parts and parts[0].isdigit():
+                            try:
+                                ts = float(parts[0])
+                                entry_time = ts / 1000.0 if ts > 1e11 else ts
+                            except (ValueError, TypeError):
+                                pass
+                if not entry_time:
+                    entry_time = now
+
+                if (now - entry_time) < 14400:
+                    target_id = iid_str
+                    if not target_id and entry:
+                        target_id = str(entry.get("item_id", "")) if entry.get("item_id") else None
+                    if not target_id and entry:
+                        parts = str(entry.get("id", "")).split("_")
+                        if len(parts) >= 2 and parts[1].isdigit():
+                            target_id = parts[1]
+                    if not target_id:
+                        target_id = str(int(now))
+
+                    self.timers[target_id] = {
+                        "name": item_name or "Unknown Item",
+                        "bought_time": entry_time,
+                        "qty": entry_qty
+                    }
+                    if target_id in self.notified_timers:
+                        self.notified_timers.remove(target_id)
+                    self.save_timers()
+
     def log_alch_batch(self, item_id, item_name, qty, buy_price, nat_price, alch_val):
-        entry_id = str(int(time.time() * 1000)) + f"_{item_id}"
+        now = time.time()
+        entry_id = str(int(now * 1000)) + f"_{item_id}"
         profit_ea = alch_val - (buy_price + nat_price)
         total_profit = qty * profit_ea
 
         entry = {
             "id": entry_id,
             "item_id": item_id,
-            "time": time.strftime("%H:%M:%S"),
+            "timestamp": now,
+            "time": time.strftime("%H:%M:%S", time.localtime(now)),
             "item": item_name,
             "qty": qty,
             "buy_price": buy_price,
@@ -199,16 +273,51 @@ class AppState:
     def update_session_entry(self, entry_id, new_qty, new_buy_price, new_nat_price):
         for entry in self.session["history"]:
             if entry["id"] == entry_id:
+                old_qty = entry.get("qty", 0)
+                diff_qty = new_qty - old_qty
                 entry["qty"] = new_qty
                 entry["buy_price"] = new_buy_price
                 entry["nat_price"] = new_nat_price
                 alch_val = entry["alch_val"]
                 entry["profit"] = new_qty * (alch_val - (new_buy_price + new_nat_price))
+
+                # Update nature runes stockpile if tracked
+                if "owned_nature_runes" in self.config and self.config.get("owned_nature_runes", 0) > 0:
+                    self.config["owned_nature_runes"] = max(0, self.config["owned_nature_runes"] - diff_qty)
+                    self.save_config()
+
+                # Adjust 4h GE timer for this item
+                item_id = entry.get("item_id")
+                if not item_id:
+                    parts = str(entry.get("id", "")).split("_")
+                    if len(parts) >= 2 and parts[1].isdigit():
+                        item_id = int(parts[1])
+                self._adjust_timer_qty(item_id, entry.get("item"), diff_qty, entry)
                 break
         self._recalc_session_totals()
         self.save_session()
 
     def delete_session_entry(self, entry_id):
+        entry_to_delete = None
+        for entry in self.session["history"]:
+            if entry["id"] == entry_id:
+                entry_to_delete = entry
+                break
+
+        if entry_to_delete:
+            old_qty = entry_to_delete.get("qty", 0)
+            item_id = entry_to_delete.get("item_id")
+            if not item_id:
+                parts = str(entry_to_delete.get("id", "")).split("_")
+                if len(parts) >= 2 and parts[1].isdigit():
+                    item_id = int(parts[1])
+            self._adjust_timer_qty(item_id, entry_to_delete.get("item"), -old_qty, entry_to_delete)
+
+            # Restore nature runes if stockpile tracked
+            if "owned_nature_runes" in self.config and self.config.get("owned_nature_runes", 0) > 0:
+                self.config["owned_nature_runes"] += old_qty
+                self.save_config()
+
         self.session["history"] = [e for e in self.session["history"] if e["id"] != entry_id]
         self._recalc_session_totals()
         self.save_session()
