@@ -262,6 +262,117 @@ class HeadingToolTip:
             self.tip_window.destroy()
             self.tip_window = None
 
+class RowToolTip:
+    """Dynamic hover tooltip card for Treeview data rows."""
+    def __init__(self, tree, get_tooltip_callback, delay=400):
+        self.tree = tree
+        self.get_tooltip_callback = get_tooltip_callback
+        self.delay = delay
+        self.tip_window = None
+        self.curr_iid = None
+        self.id = None
+        self.tree.bind("<Motion>", self.on_motion, add="+")
+        self.tree.bind("<Leave>", self.on_leave, add="+")
+        self.tree.bind("<ButtonPress>", self.on_leave, add="+")
+        self.tree.bind("<MouseWheel>", self.on_leave, add="+")
+
+    def on_motion(self, event):
+        region = self.tree.identify_region(event.x, event.y)
+        if region in ("cell", "tree"):
+            iid = self.tree.identify_row(event.y)
+            if iid and iid != self.curr_iid:
+                self.curr_iid = iid
+                self.hide_tip()
+                if self.id:
+                    self.tree.after_cancel(self.id)
+                gx = event.x_root + 16
+                gy = event.y_root + 16
+                self.id = self.tree.after(self.delay, lambda: self.show_tip(gx, gy, iid))
+            elif not iid:
+                self.on_leave()
+        else:
+            self.on_leave()
+
+    def on_leave(self, event=None):
+        if self.id:
+            self.tree.after_cancel(self.id)
+            self.id = None
+        self.curr_iid = None
+        self.hide_tip()
+
+    def show_tip(self, x, y, iid):
+        if self.tip_window or not iid:
+            return
+        tip_info = self.get_tooltip_callback(iid)
+        if not tip_info:
+            return
+
+        try:
+            self.tip_window = tw = tk.Toplevel(self.tree)
+            tw.wm_overrideredirect(True)
+            tw.attributes("-topmost", True)
+
+            border_col = "#e67e22" if tip_info.get("has_warning") else "#4a4a52"
+            card = tk.Frame(tw, bg="#1a1a1d", highlightthickness=1,
+                            highlightbackground=border_col, padx=12, pady=9)
+            card.pack()
+
+            # Title
+            title_box = tk.Frame(card, bg="#1a1a1d")
+            title_box.pack(fill="x", pady=(0, 4))
+            tk.Label(title_box, text=tip_info.get("title", ""), font=("Segoe UI", 9, "bold"),
+                     fg=tip_info.get("title_color", "#f1c40f"), bg="#1a1a1d").pack(side="left")
+            if tip_info.get("subtitle"):
+                tk.Label(title_box, text=f" ({tip_info['subtitle']})", font=("Segoe UI", 8),
+                         fg="#888888", bg="#1a1a1d").pack(side="left")
+
+            tk.Frame(card, bg="#2f2f35", height=1).pack(fill="x", pady=(2, 6))
+
+            # Metric Rows
+            for label_text, val_text, val_color in tip_info.get("rows", []):
+                rf = tk.Frame(card, bg="#1a1a1d")
+                rf.pack(fill="x", pady=1)
+                tk.Label(rf, text=label_text, font=("Segoe UI", 8), fg="#9e9ea7",
+                         bg="#1a1a1d", width=23, anchor="w").pack(side="left")
+                is_num = any(char.isdigit() for char in val_text)
+                tk.Label(rf, text=val_text, font=("Segoe UI", 8, "bold" if is_num else "normal"),
+                         fg=val_color, bg="#1a1a1d", anchor="e").pack(side="right")
+
+            # Warnings
+            warnings = tip_info.get("warnings", [])
+            if warnings:
+                tk.Frame(card, bg="#2f2f35", height=1).pack(fill="x", pady=(5, 5))
+                for w in warnings:
+                    tk.Label(card, text=f"⚠️ {w}", font=("Segoe UI", 8, "bold"),
+                             fg="#e67e22", bg="#1a1a1d", wraplength=340, justify="left", anchor="w").pack(fill="x", pady=1)
+
+            # Footer
+            if tip_info.get("hint"):
+                tk.Frame(card, bg="#2f2f35", height=1).pack(fill="x", pady=(5, 3))
+                tk.Label(card, text=tip_info["hint"], font=("Segoe UI", 7, "italic"),
+                         fg="#6e6e77", bg="#1a1a1d", anchor="w").pack(fill="x")
+
+            tw.update_idletasks()
+            w = tw.winfo_reqwidth()
+            h = tw.winfo_reqheight()
+            screen_w = self.tree.winfo_screenwidth()
+            screen_h = self.tree.winfo_screenheight()
+            if x + w > screen_w - 15:
+                x = x - w - 25
+            if y + h > screen_h - 20:
+                y = y - h - 15
+            tw.wm_geometry(f"+{max(10, x)}+{max(10, y)}")
+        except Exception:
+            self.hide_tip()
+
+    def hide_tip(self):
+        if self.tip_window:
+            try:
+                self.tip_window.destroy()
+            except Exception:
+                pass
+            self.tip_window = None
+
 class SetQuantityDialog(tk.Toplevel):
     def __init__(self, parent, item_name, current_qty, max_allowed, on_save):
         super().__init__(parent)
@@ -727,11 +838,11 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_alch.column("alch_val", width=85, anchor="e")
         self.tree_alch.column("profit_ea", width=100, anchor="e")
         self.tree_alch.column("profit_hr", width=110, anchor="e")
-        self.tree_alch.column("speed", width=105, anchor="center")
-        self.tree_alch.column("limit", width=80, anchor="center")
-        self.tree_alch.column("batch_profit", width=105, anchor="e")
-        self.tree_alch.column("max_afford", width=80, anchor="center")
-        self.tree_alch.column("volume", width=80, anchor="e")
+        self.tree_alch.column("speed", width=112, anchor="center")
+        self.tree_alch.column("limit", width=95, anchor="center")
+        self.tree_alch.column("batch_profit", width=110, anchor="e")
+        self.tree_alch.column("max_afford", width=85, anchor="center")
+        self.tree_alch.column("volume", width=85, anchor="e")
 
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.tree_alch.yview)
         h_scrollbar = ttk.Scrollbar(container, orient="horizontal", command=self.tree_alch.xview)
@@ -754,13 +865,14 @@ class OSRSAlchDashboard(tk.Tk):
             "#5": "High Alch Value:\nFixed gold returned by casting the High Level Alchemy spell.",
             "#6": "Profit / Alch:\nNet GP profit per cast = High Alch Value - Item Buy Price - Nature Rune Cost.\nClick column header to sort.",
             "#7": "Profit / Hr:\nEstimated profit per hour at standard 1,200 casts/hour rate.\nClick column header to sort.",
-            "#8": "Fill Speed:\nEstimated wait time for buy offer to fill based on real-time 5-minute sales velocity.\n⚡ Fast (<15m) | ⏱️ Steady (<1h) | 🐢 Slow (>1h)\nClick column header to sort.",
-            "#9": "4h GE Buy Limit:\nOfficial Grand Exchange purchase limit every 4 hours.\nDisplays remaining count (e.g. 50/70) if currently on cooldown.",
-            "#10": "4h Batch Profit:\nTotal profit achievable for a full 4-hour limit batch (Profit ea * Available limit).\nClick column header to sort.",
+            "#8": "Fill Speed:\nEstimated wait time for buy offer to fill based on real-time 5-minute sales velocity.\n⚡ Fast (<15m) | ⏱️ Steady (<1h) | 🐢 Slow (>1h) | ⚠️ Stale (>45m)\nClick column header to sort.",
+            "#9": "4h GE Buy Limit:\nOfficial Grand Exchange purchase limit every 4 hours.\n⚠️ Volume Capped: If 24h market volume is lower than GE limit, shows 'Volume / Limit ⚠️' to avoid illiquid paper profit traps.",
+            "#10": "4h Batch Profit:\nRealistic profit achievable for a full 4-hour batch (Profit ea * Effective volume-capped limit).\nClick column header to sort.",
             "#11": "Max Afford:\nMaximum quantity your current cash stack can afford out of remaining available limit.\nClick column header to sort.",
             "#12": "24h Volume:\nTotal units traded on Grand Exchange over the last 24 hours.\nClick column header to sort."
         }
         HeadingToolTip(self.tree_alch, alch_col_tooltips)
+        RowToolTip(self.tree_alch, self.get_alch_row_tooltip)
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
@@ -842,6 +954,7 @@ class OSRSAlchDashboard(tk.Tk):
             "#7": "Est Craft+Alch GP/Hr:\nProjected hourly profit accounting for crafting + alching speed.\nClick column header to sort."
         }
         HeadingToolTip(self.tree_craft, craft_col_tooltips)
+        RowToolTip(self.tree_craft, self.get_craft_row_tooltip)
 
     def build_timers_tab(self):
         container = ttk.Frame(self.tab_timers)
@@ -1212,29 +1325,39 @@ class OSRSAlchDashboard(tk.Tk):
             if "Steady" in speed_filter and speed_cat not in ("fast", "steady"):
                 continue
 
-            limit_cap = rem_limit if is_cd else (base_limit if base_limit > 0 else 1000)
+            # Realistic Volume Capping (inspired by QuantScapers analysis engine)
+            avail_limit = rem_limit if is_cd else base_limit
+            is_vol_capped = False
+            if vol > 0 and avail_limit > 0 and vol < avail_limit:
+                effective_limit = vol
+                is_vol_capped = True
+            elif avail_limit > 0:
+                effective_limit = avail_limit
+            else:
+                effective_limit = min(vol, 125) if vol > 0 else 125
+                if vol > 0 and vol < 125:
+                    is_vol_capped = True
 
             if is_cd:
                 if rem_limit > 0:
-                    limit_str = f"{rem_limit}/{base_limit}"
+                    limit_str = f"{effective_limit}/{base_limit} ⚠️" if is_vol_capped else f"{rem_limit}/{base_limit}"
                 else:
                     hours = int(secs_left // 3600)
                     mins = int((secs_left % 3600) // 60)
                     limit_str = f"0 ({hours}h {mins:02d}m)"
             else:
-                limit_str = f"{base_limit}" if base_limit > 0 else "-"
+                if base_limit > 0:
+                    limit_str = f"{effective_limit}/{base_limit} ⚠️" if is_vol_capped else f"{base_limit}"
+                else:
+                    limit_str = f"{effective_limit} (Cap)" if is_vol_capped else "-"
 
             profit_hr = profit * 1200
-
-            if is_cd:
-                batch_profit = profit * rem_limit
-            else:
-                batch_profit = profit * base_limit if base_limit > 0 else profit * 125
+            batch_profit = profit * effective_limit
 
             if self.var_use_cash.get():
-                afford_qty = min(limit_cap, cash_stack // buy_price) if buy_price > 0 else 0
+                afford_qty = min(effective_limit, cash_stack // buy_price) if buy_price > 0 else 0
             else:
-                afford_qty = limit_cap
+                afford_qty = effective_limit
 
             cart_qty = self.state.cart_items.get(str(mdata["id"]), 0)
 
@@ -1250,9 +1373,12 @@ class OSRSAlchDashboard(tk.Tk):
                 "profit_hr": profit_hr,
                 "speed_cat": speed_cat,
                 "speed_badge": speed_badge,
+                "est_mins": est_mins,
                 "speed_score": speed_score,
-                "limit": rem_limit if is_cd else base_limit,
+                "limit": effective_limit,
                 "base_limit": base_limit,
+                "effective_limit": effective_limit,
+                "is_vol_capped": is_vol_capped,
                 "limit_str": limit_str,
                 "is_cd": is_cd,
                 "batch_profit": batch_profit,
@@ -1267,7 +1393,10 @@ class OSRSAlchDashboard(tk.Tk):
             "offer_bid": "bid",
             "instant_ask": "ask",
             "speed": "speed_score",
-            "max_afford": "max_afford"
+            "limit": "limit",
+            "batch_profit": "batch_profit",
+            "max_afford": "max_afford",
+            "volume": "volume"
         }
         k = sort_key_map.get(self.alch_sort_col, self.alch_sort_col)
         if k == "name":
@@ -1619,6 +1748,130 @@ class OSRSAlchDashboard(tk.Tk):
         for a in self.state.alert_history:
             self.lst_alerts.insert(tk.END, a)
 
+    # ------------------ HOVER ROW TOOLTIPS (QuantScapers Inspired) ------------------
+
+    def get_alch_row_tooltip(self, iid):
+        try:
+            row = next((r for r in self.alch_rows if str(r["id"]) == str(iid)), None)
+            if not row:
+                return None
+
+            m_id = row["id"]
+            metrics = self.api.get_quote_metrics(m_id)
+            nat_cost = self.get_effective_nature_price()
+            buy_at = row["buy_at"]
+            total_cost = buy_at + nat_cost
+            profit_ea = row["profit_ea"]
+            roi_pct = (profit_ea / max(1, total_cost) * 100.0) if total_cost > 0 else 0.0
+
+            title_col = "#2ecc71" if profit_ea >= 200 else ("#f1c40f" if profit_ea >= 0 else "#e74c3c")
+            speed_badge = row["speed_badge"]
+            if "Fast" in speed_badge:
+                speed_col = "#2ecc71"
+            elif "Steady" in speed_badge:
+                speed_col = "#3498db"
+            elif "Stale" in speed_badge:
+                speed_col = "#e67e22"
+            else:
+                speed_col = "#95a5a6"
+
+            limit_info = f"{row['effective_limit']:,}"
+            if row.get("is_vol_capped"):
+                limit_info = f"{row['effective_limit']:,} (Capped from {row['base_limit']:,})"
+
+            p_hr_k = row["profit_hr"] / 1000.0
+
+            rows = [
+                ("Target Offer (Bid):", f"{row['bid']:,} gp", "#f1f1f1"),
+                ("Instant Buy (Ask):", f"{row['ask']:,} gp ({metrics['spread_pct']:.1f}% sprd)", "#f1f1f1"),
+                ("Nature Rune Cost:", f"{nat_cost:,} gp", "#95a5a6"),
+                ("High Alch Value:", f"{row['alch_val']:,} gp", "#f1c40f"),
+                ("Net Profit / Alch:", f"{profit_ea:+,} gp ({roi_pct:+.1f}%)", "#2ecc71" if profit_ea >= 0 else "#e74c3c"),
+                ("Profit / Hr (1.2k):", f"{p_hr_k:+.1f}k GP/hr", "#2ecc71" if p_hr_k >= 0 else "#e74c3c"),
+                ("Fill Velocity:", speed_badge, speed_col),
+                ("24h Vol / 5m:", f"{row['volume']:,}  (5m: {metrics['vol_5m_total']:,})", "#f1f1f1"),
+                ("4h Buy Limit:", limit_info, "#e67e22" if row.get("is_vol_capped") else "#f1f1f1"),
+                ("4h Batch Profit:", f"{row['batch_profit']:+,} gp", "#2ecc71" if row["batch_profit"] >= 0 else "#e74c3c"),
+                ("Quote Freshness:", metrics["age_str"], "#e67e22" if metrics["is_stale"] else "#95a5a6"),
+            ]
+
+            warnings = []
+            if metrics["is_stale"]:
+                warnings.append(f"Stale Quote: Last GE trade was {metrics['age_str']}. Check in-game GE price.")
+            if row.get("is_vol_capped"):
+                warnings.append(f"Volume Capped: 24h volume ({row['volume']:,}) < 4h limit ({row['base_limit']:,}). Batch profit adjusted.")
+            if metrics["is_wide_spread"]:
+                warnings.append(f"Wide Spread ({metrics['spread_pct']:.1f}%): Low liquidity. Offer may take long to fill.")
+
+            return {
+                "title": row["name"],
+                "subtitle": f"ID: {m_id}",
+                "title_color": title_col,
+                "rows": rows,
+                "warnings": warnings,
+                "has_warning": bool(warnings),
+                "hint": "💡 Click Bid/Ask to copy price | Double-click row to add to cart"
+            }
+        except Exception:
+            return None
+
+    def get_craft_row_tooltip(self, iid):
+        try:
+            item_text = self.tree_craft.item(iid, "text").strip()
+        except Exception:
+            return None
+        if not item_text:
+            return None
+
+        # If it's a sub-ingredient row
+        if item_text.startswith("↳"):
+            clean_name = item_text.lstrip("↳").strip()
+            parent_id = self.tree_craft.parent(iid)
+            parent_text = self.tree_craft.item(parent_id, "text").strip() if parent_id else "Recipe"
+            return {
+                "title": f"Ingredient: {clean_name}",
+                "subtitle": f"For {parent_text}",
+                "title_color": "#95a5a6",
+                "rows": [("Material:", clean_name, "#f1f1f1")],
+                "warnings": [],
+                "has_warning": False,
+                "hint": "💡 Click cell to copy ingredient name to clipboard"
+            }
+
+        # Parent Recipe row
+        cr = next((r for r in self.craft_rows if r["recipe"] == item_text), None)
+        if not cr:
+            return None
+
+        p_ea = cr["profit_ea"]
+        bonus = cr["bonus"]
+        hr_p = cr["hr_profit"] / 1000.0
+
+        rows = [
+            ("Skill Required:", cr["skill_req"], "#f1c40f" if not cr["can_make"] else "#f1f1f1"),
+            ("Materials Total:", f"{cr['mat_cost']:,} gp", "#f1f1f1"),
+            ("Nature Rune Cost:", f"{cr['nat_cost']:,} gp", "#95a5a6"),
+            ("High Alch Value:", f"{cr['alch_val']:,} gp", "#f1c40f"),
+            ("Craft + Alch Profit:", f"{p_ea:+,} gp ea", "#2ecc71" if p_ea >= 0 else "#e74c3c"),
+            ("Bonus vs Buy Finished:", f"{bonus:+,} gp", "#2ecc71" if bonus >= 0 else "#e74c3c"),
+            ("Est GP / Hr:", f"{hr_p:+.1f}k GP/hr", "#2ecc71" if hr_p >= 0 else "#e74c3c"),
+            ("XP Earned / Item:", f"{cr['xp']} Craft/Fletch + 65 Magic", "#3498db")
+        ]
+
+        warnings = []
+        if not cr["can_make"]:
+            warnings.append(f"Level Requirement Unmet: You need {cr['skill_req']} to craft this item.")
+
+        return {
+            "title": f"Recipe: {cr['recipe']}",
+            "subtitle": cr["skill_req"],
+            "title_color": "#2ecc71" if p_ea >= 250 else ("#f1c40f" if p_ea >= 0 else "#e74c3c"),
+            "rows": rows,
+            "warnings": warnings,
+            "has_warning": bool(warnings),
+            "hint": "💡 Click row to copy name | Click [+] to expand ingredient breakdown"
+        }
+
     # ------------------ CLICKS, EXPORTS & ACTIONS ------------------
 
     def on_alch_click(self, event):
@@ -1667,7 +1920,7 @@ class OSRSAlchDashboard(tk.Tk):
                     )
                     return
 
-                limit_cap = rem_limit if is_cd else (base_limit if base_limit > 0 else 70)
+                limit_cap = row.get("effective_limit", rem_limit if is_cd else (base_limit if base_limit > 0 else 70))
                 use_cash = self.var_use_cash.get()
 
                 if use_cash:

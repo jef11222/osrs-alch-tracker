@@ -144,13 +144,15 @@ class OSRSPricesAPI:
         Calculates transaction fill velocity based on 5m lowPriceVolume and trade timestamps.
         Returns: (category: str, badge: str, est_minutes: int, score: int)
         category: 'fast' | 'steady' | 'slow'
-        score: 3 (fast), 2 (steady), 1 (slow) - for table sorting
+        score: 3 (fast), 2 (steady), 1 (slow), 0 (stale) - for table sorting
         """
         iid_str = str(item_id)
         now = time.time()
         pdata = self.latest_prices.get(iid_str, {})
         low_time = pdata.get("lowTime", 0) or 0
-        secs_since_trade = (now - low_time) if low_time > 0 else 999999
+        high_time = pdata.get("highTime", 0) or 0
+        last_trade = max(low_time, high_time)
+        secs_since_trade = (now - last_trade) if last_trade > 0 else 999999
 
         v5 = self.volumes_5m.get(iid_str, {})
         bid_vol_5m = v5.get("low", 0)
@@ -167,6 +169,10 @@ class OSRSPricesAPI:
 
         qty = max(1, target_qty)
 
+        # Stale Detection: If quote has had no trades in >= 45m (2700s)
+        if secs_since_trade >= 2700:
+            return "slow", "⚠️ Stale (>45m)", 120, 0
+
         # Determine Category & Time Estimate
         if secs_since_trade < 600 and (bid_vol_5m >= 8 or rate_per_hour >= 60):
             mins = max(3, int(round((qty / max(1, rate_per_hour)) * 60)))
@@ -178,6 +184,69 @@ class OSRSPricesAPI:
             return "steady", f"⏱️ Steady (~{mins}m)", mins, 2
         else:
             return "slow", "🐢 Slow (>1h)", 120, 1
+
+    def get_quote_metrics(self, item_id):
+        """
+        Returns rich metadata for an item:
+        - last_trade_time: float timestamp
+        - age_secs: seconds since last recorded trade
+        - age_str: human-readable time (e.g. '2m ago', '48m ago', '3h ago')
+        - is_stale: bool (True if >= 45 minutes)
+        - vol_5m_total: int
+        - vol_5m_low: int
+        - vol_5m_high: int
+        - vol_24h: int
+        - spread_gp: int (ask - bid)
+        - spread_pct: float ((ask - bid) / ask * 100)
+        - is_wide_spread: bool (True if spread >= 25% and vol_24h < 5000)
+        """
+        iid_str = str(item_id)
+        now = time.time()
+        pdata = self.latest_prices.get(iid_str, {})
+        ht = pdata.get("highTime", 0) or 0
+        lt = pdata.get("lowTime", 0) or 0
+        last_trade_time = max(ht, lt)
+
+        if last_trade_time > 0:
+            age_secs = max(0, int(now - last_trade_time))
+            if age_secs < 60:
+                age_str = f"{age_secs}s ago"
+            elif age_secs < 3600:
+                age_str = f"{age_secs // 60}m ago"
+            elif age_secs < 86400:
+                age_str = f"{age_secs // 3600}h {(age_secs % 3600) // 60}m ago"
+            else:
+                age_str = ">24h ago"
+            is_stale = age_secs >= 2700
+        else:
+            age_secs = 999999
+            age_str = "No recent trades"
+            is_stale = True
+
+        v5 = self.volumes_5m.get(iid_str, {})
+        vol_5m_low = v5.get("low", 0) or 0
+        vol_5m_high = v5.get("high", 0) or 0
+        vol_5m_total = v5.get("total", 0) or 0
+        vol_24h = self.volumes_24h.get(iid_str, 0) or 0
+
+        bid, ask = self.get_bid_ask(item_id)
+        spread_gp = max(0, ask - bid) if (bid and ask) else 0
+        spread_pct = (spread_gp / ask * 100.0) if ask > 0 else 0.0
+        is_wide_spread = (spread_pct >= 25.0 and vol_24h < 5000) if ask > 0 else False
+
+        return {
+            "last_trade_time": last_trade_time,
+            "age_secs": age_secs,
+            "age_str": age_str,
+            "is_stale": is_stale,
+            "vol_5m_low": vol_5m_low,
+            "vol_5m_high": vol_5m_high,
+            "vol_5m_total": vol_5m_total,
+            "vol_24h": vol_24h,
+            "spread_gp": spread_gp,
+            "spread_pct": spread_pct,
+            "is_wide_spread": is_wide_spread
+        }
 
     def get_price(self, item_id, strategy="patient"):
         """Returns price based on strategy: 'patient' (bid), 'smart' (bid+1), or 'instant' (ask)."""
