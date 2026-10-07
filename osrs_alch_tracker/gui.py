@@ -503,10 +503,10 @@ class OSRSAlchDashboard(tk.Tk):
         ToolTip(cb_strat, "patient (Bid) = best profit, waits for seller.\ninstant (Ask) = instant buy price from active sellers.")
 
         # Right side pinned controls
-        self.btn_update = tk.Button(p1, text=f"v{APP_VERSION}", command=self.on_update_button_click,
-                                    bg="#2d2d30", fg="#888888", font=("Segoe UI", 8), relief="flat", padx=5, cursor="hand2")
+        self.btn_update = tk.Button(p1, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
+                                    bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, cursor="hand2")
         self.btn_update.pack(side="right", padx=(2, 0))
-        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}. Click to check for GitHub updates.")
+        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}.\nClick to check GitHub for updates.")
 
         self.btn_refresh = tk.Button(p1, text="🔄 Refresh", command=self.trigger_refresh,
                                      bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, cursor="hand2")
@@ -901,6 +901,9 @@ class OSRSAlchDashboard(tk.Tk):
                 self.after(0, self._render_update_available)
         except Exception as e:
             print(f"Startup update check: {e}")
+        finally:
+            # Automatically re-checks GitHub every 30 minutes while running
+            self.after(30 * 60 * 1000, lambda: threading.Thread(target=self._check_update_startup, daemon=True).start())
 
     def _render_update_available(self):
         if self.latest_update_info:
