@@ -66,10 +66,10 @@ def check_for_updates(current_version=APP_VERSION):
                         cand_url = asset.get("browser_download_url")
                         if not is_safe_https_url(cand_url):
                             continue
-                        if name == "osrs_alch_tracker.exe":
+                        if name in ("osrs_alch_tracker.exe", "osrs_alch_tracker_portable.exe"):
                             download_url = cand_url
                             break
-                        elif name.endswith("_setup.exe"):
+                        elif name.endswith("_setup.exe") or name.endswith("_installer.exe"):
                             setup_url = cand_url
                         elif name.endswith(".exe") and not download_url:
                             download_url = cand_url

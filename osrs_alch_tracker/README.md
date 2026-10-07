@@ -51,13 +51,21 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ---
 
-## 🚀 Getting Started
+## 📥 Download & Installation
 
-### Option 1: Standalone Windows Executable (No Python Required)
-1. Download `OSRS_Alch_Tracker.exe` from the latest [GitHub Releases](https://github.com/jef11222/osrs-alch-tracker/releases).
-2. Double-click to run! All user settings, session history, and timers persist locally in a `data/` folder.
+Choose the version that best fits your needs:
 
-### Option 2: Running from Source
+| Edition | File | Best For | Direct Download Link |
+| :--- | :--- | :--- | :--- |
+| **🚀 Windows Installer (Recommended)** | `OSRS_Alch_Tracker_Setup.exe` | Standard installation with Start Menu & Desktop shortcuts, clean uninstall, and repair mode. | [⬇️ Download Installer](https://github.com/jef11222/osrs-alch-tracker/releases/latest/download/OSRS_Alch_Tracker_Setup.exe) |
+| **⚡ Portable Edition** | `OSRS_Alch_Tracker_Portable.exe` | Zero installation required. Run directly from your Downloads folder, USB drive, or desktop. | [⬇️ Download Portable (.exe)](https://github.com/jef11222/osrs-alch-tracker/releases/latest/download/OSRS_Alch_Tracker_Portable.exe) |
+
+> 🔗 **All Versions & Release Notes:** [View Latest GitHub Release](https://github.com/jef11222/osrs-alch-tracker/releases/latest)
+
+---
+
+## 🚀 Running from Source
+
 Ensure you have **Python 3.10+** installed:
 ```bash
 # Clone the repository
@@ -68,10 +76,10 @@ cd osrs-alch-tracker
 python main.py
 ```
 
-### Option 3: Building Standalone Executable with PyInstaller
+### Building Standalone Executable
 ```bash
 pip install pyinstaller
-python -m PyInstaller --noconsole --onefile --name "OSRS_Alch_Tracker" main.py
+python -m PyInstaller --noconsole --onefile --add-binary "%LOCALAPPDATA%\..\Local\Programs\Python\Python312\python3.dll;." --add-binary "%LOCALAPPDATA%\..\Local\Programs\Python\Python312\vcruntime140_1.dll;." --name "OSRS_Alch_Tracker" main.py
 ```
 
 ---
