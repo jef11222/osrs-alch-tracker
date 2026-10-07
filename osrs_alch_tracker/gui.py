@@ -780,6 +780,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.var_free_alch = tk.BooleanVar(value=self.state.config.get("free_alchs_mode", False))
         self.var_sound = tk.BooleanVar(value=self.state.config.get("sound_enabled", True))
         self.var_desktop = tk.BooleanVar(value=self.state.config.get("desktop_alerts", True))
+        self.var_hide_maxed = tk.BooleanVar(value=self.state.config.get("hide_maxed_cooldown", True))
 
         cb_free = tk.Checkbutton(p2, text="🌿 Ring (0 Nat)", variable=self.var_free_alch, command=self.on_filter_changed,
                                  bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528")
@@ -795,6 +796,11 @@ class OSRSAlchDashboard(tk.Tk):
                                 bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
         cb_dsk.pack(side="left", padx=6)
         ToolTip(cb_dsk, "Show desktop popup notifications on 4h limit resets.")
+
+        cb_max = tk.Checkbutton(p2, text="⏳ Hide Maxed", variable=self.var_hide_maxed, command=self.on_hide_maxed_changed,
+                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
+        cb_max.pack(side="left", padx=6)
+        ToolTip(cb_max, "Hide Maxed (4h GE Limit):\nTemporarily removes items from the table when your 4-hour GE limit is reached (0 remaining), and mutes their alerts.\nItems automatically reappear when the 4h cooldown expires.")
 
         tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=6)
 
@@ -1240,6 +1246,12 @@ class OSRSAlchDashboard(tk.Tk):
             profit = row["profit_ea"]
             vol = row["volume"]
 
+            # Mute popup and sound alerts if item has reached its 4h GE buy limit!
+            base_limit = row.get("base_limit", row.get("limit", 0))
+            rem_limit, _, is_cd = self.state.get_remaining_limit(row["id"], base_limit)
+            if is_cd and rem_limit <= 0:
+                continue
+
             if profit >= threshold and vol >= min_vol:
                 last_profit = self.state.last_alerted_profits.get(iid)
                 # Only alert if brand new OR margin shifted by >= 2 gp
@@ -1249,7 +1261,7 @@ class OSRSAlchDashboard(tk.Tk):
                     self.state.alert_history.insert(0, f"[{time.strftime('%H:%M:%S')}] 🚨 {alert_msg}")
                     self.state.alert_history = self.state.alert_history[:60]
                     self.update_alerts_display()
-                    self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr)")
+                    self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr)", item_id=row["id"])
 
     # ------------------ GITHUB AUTO-UPDATER ------------------
 
@@ -1415,6 +1427,10 @@ class OSRSAlchDashboard(tk.Tk):
 
             base_limit = mdata.get("limit", 0) or 0
             rem_limit, secs_left, is_cd = self.state.get_remaining_limit(mdata["id"], base_limit)
+
+            # Hide Maxed (4h GE limit reached): temporarily remove from table while cooldown is active
+            if getattr(self, "var_hide_maxed", None) and self.var_hide_maxed.get() and is_cd and rem_limit <= 0:
+                continue
 
             speed_cat, speed_badge, est_mins, speed_score = self.api.get_fill_speed_info(mdata["id"], base_limit if base_limit > 0 else 70)
 
@@ -2229,7 +2245,12 @@ class OSRSAlchDashboard(tk.Tk):
             self.state.reset_session()
             self.update_session_display()
 
-    def trigger_alert_notification(self, item_name, details):
+    def trigger_alert_notification(self, item_name, details, item_id=None):
+        if item_id:
+            rem_limit, _, is_cd = self.state.get_remaining_limit(item_id, 1000)
+            if is_cd and rem_limit <= 0:
+                return
+
         if self.state.config.get("sound_enabled") and HAS_WINSOUND:
             try:
                 winsound.MessageBeep(winsound.MB_ICONASTERISK)
@@ -2255,12 +2276,17 @@ class OSRSAlchDashboard(tk.Tk):
                 self.lbl_countdown.config(text=f"(Next: {m:02d}:{s:02d})")
 
         expired = self.state.check_expired_timers()
-        for item_name in expired:
-            if self.state.config.get("sound_enabled") and HAS_WINSOUND:
-                winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
-            FloatingToast(self, "⏰ GE 4-Hour Limit Reset!", f"You can now buy {item_name} on the GE again!")
+        if expired:
+            for item_name in expired:
+                if self.state.config.get("sound_enabled") and HAS_WINSOUND:
+                    winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+                if self.state.config.get("desktop_alerts"):
+                    FloatingToast(self, "⏰ GE 4-Hour Limit Reset!", f"You can now buy {item_name} on the GE again!")
+            # Unhide expired items and refresh active watchlists
+            self.recalculate_all()
+        else:
+            self.update_timers_display()
 
-        self.update_timers_display()
         self.after(1000, self.timer_tick)
 
     def on_cash_toggle_changed(self):
@@ -2348,9 +2374,16 @@ class OSRSAlchDashboard(tk.Tk):
         self.save_preferences()
         self.recalculate_craft_table()
 
+    def on_hide_maxed_changed(self):
+        self.state.config["hide_maxed_cooldown"] = self.var_hide_maxed.get()
+        self.save_preferences()
+        self.recalculate_alch_table()
+
     def save_preferences(self):
         self.state.config["sound_enabled"] = self.var_sound.get()
         self.state.config["desktop_alerts"] = self.var_desktop.get()
+        if hasattr(self, "var_hide_maxed"):
+            self.state.config["hide_maxed_cooldown"] = self.var_hide_maxed.get()
         self.state.save_config()
 
 if __name__ == "__main__":
