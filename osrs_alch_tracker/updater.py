@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.6"
+APP_VERSION = "1.3.7"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
@@ -320,17 +320,17 @@ class WhatsNewDialog(tk.Toplevel):
         txt.pack(fill="both", expand=True)
 
         features = (
-            "✨ WHAT'S NEW IN v1.3.6 (Update System Fully Verified! 🎉):\n\n"
-            "• 🛡️ Complete PyInstaller Process Isolation:\n"
-            "  Scrubbed all _PYI_ internal environment variables (_PYI_APPLICATION_HOME_DIR, _PYI_ARCHIVE_FILE) and integrated Windows Shell relaunch (explorer.exe) for flawless in-place updates.\n\n"
+            "✨ WHAT'S NEW IN v1.3.7 (Update Test Success! 🎉):\n\n"
+            "• 🚀 In-App Self-Update Verified:\n"
+            "  The app cleanly updated from v1.3.6 to v1.3.7 in-place without any DLL or environment errors!\n\n"
+            "• 🛡️ Complete PyInstaller Process Isolation Active:\n"
+            "  _PYI_APPLICATION_HOME_DIR and parent environment variables are cleanly scrubbed on restart.\n\n"
             "• 🌟 Two-Tier Responsive Top Control Bar:\n"
             "  Filters and search are cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off!\n\n"
             "• ↔️ Dark-Themed Horizontal Table Scrollbars:\n"
             "  Smooth horizontal scrolling across both Pure High Alch and Craft & Alch tables.\n\n"
             "• ⚡ Fill Speed & Transaction Velocity Tracking:\n"
-            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n\n"
-            "• 🚀 Edition-Aware Downloads:\n"
-            "  Updater automatically matches your running edition (Portable vs Installed) for seamless upgrades.\n"
+            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")
