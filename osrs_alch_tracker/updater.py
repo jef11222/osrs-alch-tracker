@@ -1,0 +1,233 @@
+import os
+import sys
+import json
+import time
+import subprocess
+import tempfile
+import threading
+import webbrowser
+import urllib.request
+import urllib.error
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+APP_VERSION = "1.3.0"
+GITHUB_REPO = "jef11222/osrs-alch-tracker"
+RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+
+def parse_version_tuple(v_str):
+    """Converts 'v1.3.0' or '1.3' into a comparable tuple of integers (1, 3, 0)."""
+    cleaned = str(v_str).strip().lstrip("v").lstrip("V")
+    parts = []
+    for p in cleaned.split("."):
+        try:
+            parts.append(int(p))
+        except ValueError:
+            break
+    while len(parts) < 3:
+        parts.append(0)
+    return tuple(parts[:3])
+
+def check_for_updates(current_version=APP_VERSION):
+    """
+    Queries GitHub Releases API for the latest release.
+    Returns: (has_update: bool, remote_version: str, download_url: str, release_notes: str)
+    """
+    req = urllib.request.Request(
+        RELEASES_API_URL,
+        headers={"User-Agent": "OSRS-Alch-Tracker-App"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                tag_name = data.get("tag_name", "")
+                remote_tuple = parse_version_tuple(tag_name)
+                curr_tuple = parse_version_tuple(current_version)
+
+                if remote_tuple > curr_tuple:
+                    # Look for Windows executable asset (.exe)
+                    download_url = None
+                    for asset in data.get("assets", []):
+                        name = asset.get("name", "").lower()
+                        if name.endswith(".exe"):
+                            download_url = asset.get("browser_download_url")
+                            break
+                    
+                    if not download_url:
+                        download_url = data.get("html_url")
+
+                    return True, tag_name, download_url, data.get("body", "")
+    except Exception as e:
+        print(f"Update check failed: {e}")
+
+    return False, current_version, None, ""
+
+def download_file_with_progress(url, dest_path, progress_callback=None):
+    """
+    Downloads file from URL in chunks, calling progress_callback(percent_int, downloaded_bytes, total_bytes).
+    """
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "OSRS-Alch-Tracker-App"}
+    )
+    with urllib.request.urlopen(req, timeout=45) as resp, open(dest_path, "wb") as f:
+        total_size = int(resp.headers.get("Content-Length", 0))
+        downloaded = 0
+        chunk_size = 64 * 1024 # 64 KB chunks
+
+        while True:
+            chunk = resp.read(chunk_size)
+            if not chunk:
+                break
+            f.write(chunk)
+            downloaded += len(chunk)
+            if progress_callback:
+                pct = int((downloaded / total_size) * 100) if total_size > 0 else 0
+                progress_callback(pct, downloaded, total_size)
+
+def apply_update_and_restart(new_exe_path):
+    """
+    Replaces the current executable with the new one and relaunches.
+    """
+    is_frozen = getattr(sys, "frozen", False)
+    if not is_frozen:
+        return False, "Application is running from Python source code, not a compiled .exe."
+
+    current_exe = sys.executable
+
+    # Write small batch script to swap the exe after exit
+    temp_dir = tempfile.gettempdir()
+    bat_path = os.path.join(temp_dir, f"osrs_update_{int(time.time())}.bat")
+
+    bat_content = f"""@echo off
+timeout /t 2 /nobreak >nul
+:retry
+move /y "{new_exe_path}" "{current_exe}" >nul 2>&1
+if exist "{new_exe_path}" (
+    timeout /t 1 /nobreak >nul
+    goto retry
+)
+start "" "{current_exe}"
+del "%~f0"
+"""
+    with open(bat_path, "w", encoding="utf-8") as f:
+        f.write(bat_content)
+
+    # Launch batch file detached
+    flags = 0
+    if os.name == "nt":
+        DETACHED_PROCESS = 0x00000008
+        CREATE_NO_WINDOW = 0x08000000
+        flags = DETACHED_PROCESS | CREATE_NO_WINDOW
+
+    subprocess.Popen(["cmd.exe", "/c", bat_path], creationflags=flags, close_fds=True)
+    return True, "Restarting application..."
+
+class UpdateDialog(tk.Toplevel):
+    def __init__(self, parent, remote_version, download_url, release_notes):
+        super().__init__(parent)
+        self.parent = parent
+        self.remote_version = remote_version
+        self.download_url = download_url
+        self.release_notes = release_notes
+        self.is_downloading = False
+
+        self.title(f"Update Available - {remote_version}")
+        self.geometry("450x300")
+        self.configure(bg="#252528")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        # Center dialog
+        self.update_idletasks()
+        x = parent.winfo_x() + (parent.winfo_width() // 2) - 225
+        y = parent.winfo_y() + (parent.winfo_height() // 2) - 150
+        self.geometry(f"+{x}+{y}")
+
+        # Header
+        top_f = tk.Frame(self, bg="#252528")
+        top_f.pack(fill="x", padx=15, pady=(15, 6))
+        tk.Label(top_f, text="🚀 New Update Available!", font=("Segoe UI", 12, "bold"), fg="#2ecc71", bg="#252528").pack(anchor="w")
+        tk.Label(top_f, text=f"Version {remote_version} is now available (Current: v{APP_VERSION})", font=("Segoe UI", 9), fg="#cccccc", bg="#252528").pack(anchor="w")
+
+        # Release notes text
+        notes_f = tk.Frame(self, bg="#1e1e1e", relief="solid", borderwidth=1)
+        notes_f.pack(fill="both", expand=True, padx=15, pady=6)
+        self.txt_notes = tk.Text(notes_f, bg="#1e1e1e", fg="#f1f1f1", font=("Segoe UI", 9), relief="flat", wrap="word", padx=6, pady=6)
+        self.txt_notes.pack(fill="both", expand=True)
+        display_notes = release_notes.strip() if release_notes else "Performance improvements, bug fixes, and feature updates."
+        self.txt_notes.insert("1.0", display_notes)
+        self.txt_notes.config(state="disabled")
+
+        # Bottom Progress / Button frame
+        self.bottom_frame = tk.Frame(self, bg="#252528")
+        self.bottom_frame.pack(fill="x", padx=15, pady=(4, 15))
+
+        self.btn_box = tk.Frame(self.bottom_frame, bg="#252528")
+        self.btn_box.pack(fill="x")
+
+        self.btn_later = tk.Button(self.btn_box, text="Later", command=self.destroy, bg="#3e3e42", fg="#ffffff", relief="flat", padx=10, pady=3, cursor="hand2")
+        self.btn_later.pack(side="right", padx=(6, 0))
+
+        self.btn_install = tk.Button(self.btn_box, text="⚡ Update Now", command=self.start_update, bg="#27ae60", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=12, pady=3, cursor="hand2")
+        self.btn_install.pack(side="right")
+
+    def start_update(self):
+        if self.is_downloading:
+            return
+
+        is_frozen = getattr(sys, "frozen", False)
+        if not is_frozen or not self.download_url or not self.download_url.lower().endswith(".exe"):
+            # If running in python source code or no direct exe url, open web page
+            if self.download_url:
+                webbrowser.open(self.download_url)
+            else:
+                webbrowser.open(f"https://github.com/{GITHUB_REPO}/releases/latest")
+            self.destroy()
+            return
+
+        self.is_downloading = True
+        self.btn_box.pack_forget()
+
+        # Progress UI
+        self.prog_bar = ttk.Progressbar(self.bottom_frame, orient="horizontal", mode="determinate")
+        self.prog_bar.pack(fill="x", pady=(2, 4))
+        self.lbl_prog = tk.Label(self.bottom_frame, text="Connecting to GitHub...", font=("Segoe UI", 8), fg="#888888", bg="#252528")
+        self.lbl_prog.pack(anchor="w")
+
+        threading.Thread(target=self._download_worker, daemon=True).start()
+
+    def _download_worker(self):
+        temp_dir = tempfile.gettempdir()
+        temp_exe = os.path.join(temp_dir, f"osrs_update_{int(time.time())}.exe")
+
+        def progress(pct, dl, total):
+            mb_dl = dl / (1024 * 1024)
+            mb_tot = total / (1024 * 1024) if total > 0 else 0
+            self.after(0, lambda: self._update_progress_ui(pct, f"Downloading: {mb_dl:.1f} MB / {mb_tot:.1f} MB ({pct}%)"))
+
+        try:
+            download_file_with_progress(self.download_url, temp_exe, progress)
+            self.after(0, lambda: self._finish_and_restart(temp_exe))
+        except Exception as e:
+            self.after(0, lambda: self._on_download_error(str(e)))
+
+    def _update_progress_ui(self, pct, text):
+        self.prog_bar["value"] = pct
+        self.lbl_prog.config(text=text)
+
+    def _on_download_error(self, err_msg):
+        messagebox.showerror("Update Error", f"Failed to download update:\n{err_msg}\n\nOpening release page in browser.")
+        webbrowser.open(f"https://github.com/{GITHUB_REPO}/releases/latest")
+        self.destroy()
+
+    def _finish_and_restart(self, temp_exe):
+        self.lbl_prog.config(text="Applying update & restarting...", fg="#2ecc71")
+        success, msg = apply_update_and_restart(temp_exe)
+        if success:
+            self.after(500, self.parent.destroy)
+        else:
+            messagebox.showinfo("Update Complete", msg)
+            self.destroy()

@@ -16,6 +16,7 @@ except ImportError:
 from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
 from state import AppState
+from updater import APP_VERSION, check_for_updates, UpdateDialog
 
 def format_gp(val):
     if val is None:
@@ -301,6 +302,10 @@ class OSRSAlchDashboard(tk.Tk):
         # Start timer tick
         self.after(1000, self.timer_tick)
 
+        # Update checker
+        self.latest_update_info = None
+        self.after(2000, lambda: threading.Thread(target=self._check_update_startup, daemon=True).start())
+
         # Initial load in background thread
         self.trigger_refresh()
 
@@ -498,6 +503,11 @@ class OSRSAlchDashboard(tk.Tk):
         ToolTip(cb_strat, "patient (Bid) = best profit, waits for seller.\ninstant (Ask) = instant buy price from active sellers.")
 
         # Right side pinned controls
+        self.btn_update = tk.Button(p1, text=f"v{APP_VERSION}", command=self.on_update_button_click,
+                                    bg="#2d2d30", fg="#888888", font=("Segoe UI", 8), relief="flat", padx=5, cursor="hand2")
+        self.btn_update.pack(side="right", padx=(2, 0))
+        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}. Click to check for GitHub updates.")
+
         self.btn_refresh = tk.Button(p1, text="🔄 Refresh", command=self.trigger_refresh,
                                      bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, cursor="hand2")
         self.btn_refresh.pack(side="right", padx=2)
@@ -880,6 +890,52 @@ class OSRSAlchDashboard(tk.Tk):
                     self.state.alert_history = self.state.alert_history[:60]
                     self.update_alerts_display()
                     self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr)")
+
+    # ------------------ GITHUB AUTO-UPDATER ------------------
+
+    def _check_update_startup(self):
+        try:
+            has_up, remote_v, dl_url, notes = check_for_updates(APP_VERSION)
+            if has_up:
+                self.latest_update_info = (remote_v, dl_url, notes)
+                self.after(0, self._render_update_available)
+        except Exception as e:
+            print(f"Startup update check: {e}")
+
+    def _render_update_available(self):
+        if self.latest_update_info:
+            remote_v, _, _ = self.latest_update_info
+            self.btn_update.config(
+                text=f"✨ Update {remote_v}",
+                bg="#27ae60",
+                fg="#ffffff",
+                font=("Segoe UI", 8, "bold")
+            )
+            self.lbl_status_right.config(text=f"Update {remote_v} available!", fg="#2ecc71")
+
+    def on_update_button_click(self):
+        if self.latest_update_info:
+            remote_v, dl_url, notes = self.latest_update_info
+            UpdateDialog(self, remote_v, dl_url, notes)
+        else:
+            self.btn_update.config(text="Checking...", state="disabled")
+            def worker():
+                try:
+                    has_up, remote_v, dl_url, notes = check_for_updates(APP_VERSION)
+                    self.after(0, lambda: self._on_manual_check_done(has_up, remote_v, dl_url, notes))
+                except Exception as e:
+                    self.after(0, lambda: self._on_manual_check_done(False, APP_VERSION, None, str(e)))
+            threading.Thread(target=worker, daemon=True).start()
+
+    def _on_manual_check_done(self, has_up, remote_v, dl_url, notes):
+        self.btn_update.config(state="normal")
+        if has_up:
+            self.latest_update_info = (remote_v, dl_url, notes)
+            self._render_update_available()
+            UpdateDialog(self, remote_v, dl_url, notes)
+        else:
+            self.btn_update.config(text=f"v{APP_VERSION}", bg="#2d2d30", fg="#888888")
+            messagebox.showinfo("Up to Date", f"You are running the latest version (v{APP_VERSION})!")
 
     def recalculate_all(self):
         self.recalculate_alch_table()
