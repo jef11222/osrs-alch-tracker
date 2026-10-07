@@ -1,50 +1,97 @@
-# OSRS High Alchemy & Crafting Profit Dashboard
+# 🧙‍♂️ OSRS High Alchemy & Crafting Profit Tracker
 
-A standalone desktop companion application for Old School RuneScape that tracks live Grand Exchange prices, finds the best high alchemy profit margins, compares craft-then-alch recipes, tracks your profit sessions, and alerts you when 4-hour GE buy limits expire.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6.svg)](https://www.microsoft.com/windows)
 
----
-
-## 🚀 How to Launch
-* **1-Click:** Double-click [`run.bat`](file:///c:/Users/jef11/Documents/antigravity/noble-volta/osrs_alch_tracker/run.bat).
-* **Or via Terminal:** Run `python main.py` inside this folder.
+A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that monitors live Grand Exchange prices via the official OSRS Wiki Real-time Prices API. It tracks high-margin High Alchemy flips, evaluates Craft-then-Alch skilling recipes, manages 4-hour Grand Exchange buy limit timers, tracks Nature Rune bank stockpiles, and logs session profit and Magic XP.
 
 ---
 
-## ⚡ Features & Controls
+## ✨ Key Features
 
-### 1. Top Controls & Live Filters
-* **Members / F2P Toggles:** Switch between full game alchables and F2P-only items.
-* **Cash Stack:** Type in your current gold (e.g. `5M` or `5000000`). Automatically calculates how many of each item you can afford.
-* **Max Item Price:** Filter out expensive alchables (e.g. `50k`) so your cash stack doesn't get tied up in high-ticket items.
-* **Min Volume:** Filters out dead/illiquid items.
-* **Strategy:** Toggle between **Patient (Bid)** for maximum profit offers, or **Instant (Ask)** for instant fills.
-* **Auto-Refresh:** Configurable timer (`1m`, `2m`, `5m`, `10m`, `Off`) with a live countdown clock.
-* **Explorer's Ring Toggle:** Check `Explorer Ring (0 Nat)` to calculate profits assuming free daily casts.
+- **⚡ Real-Time Price Sync:** Fetches live bid/ask margins and 24-hour traded volumes directly from the OSRS Wiki API.
+- **⏱️ Dynamic 4-Hour GE Limit Tracking:**
+  - Real-time limit depletion (e.g. buying 20 out of 70 items displays `50 / 70`).
+  - Active cooldown indicators (e.g. `0 (3h 24m)`) that automatically reset when the 4-hour window expires.
+  - Desktop toast alerts and audio chimes when limits reset.
+- **🌿 Nature Rune Stockpile Tracker:**
+  - Track owned Nature Runes in your bank.
+  - Cart automatically alerts you if you need to purchase more runes before your alch session.
+  - Automatically deducts used runes on session log.
+  - Optional fixed cost override (leave empty to use live standard GE prices).
+- **💰 Smart Cash Stack Baseline (`Max Afford`):**
+  - Accurately calculates how many items you can afford based on your remaining budget and active limits without zeroing out table rows.
+  - Easily toggle budget constraints on or off for unlimited calculations.
+- **🛒 Grand Exchange Cart & Fast 1-Click Pasting:**
+  - **Click Column #1:** Copies exact buy quantity.
+  - **Click Column #2 (Name):** Copies item name for fast GE search.
+  - **Click Column #3 (Bid):** Copies patient buy offer price.
+  - **Click Column #4 (Ask):** Copies instant buy price.
+  - **Right-Click:** Set custom quantities or remove items.
+- **🔨 Craft & Alch Breakdown:**
+  - Interactive recipe tree comparing the cost of buying raw materials, crafting, and alching vs. buying finished items.
+  - Filter recipes by your in-game Crafting, Fletching, and Magic levels.
+- **📋 RuneLite Bank Tag Exporter:**
+  - 1-click export of your active cart or master profitable alch list as a RuneLite Bank Tag tab (`banktags,1,...`).
+- **🔍 Instant Live Search & Filter:**
+  - Filter items in real time as you type (`Ctrl + F`).
+  - Min Profit threshold (leave blank to display all items including break-even and XP alchs).
 
-### 2. Nature Rune Buy Tracker & Override
-* Displays live **Bid**, **Ask**, and **18,000 / 4h GE Buy Limit** for Nature Runes.
-* **Custom Nat Cost:** If you bought a stack of Nature Runes at e.g. `165 gp`, enter it into the box and press Enter. All alch and craft profit calculations instantly update to reflect your exact purchase price!
+---
 
-### 3. Shopping Cart & GE Slot Counter
-* **Slots Used (X / 8):** Keeps track of your available Grand Exchange offer slots.
-* **Double-click any item** in the High Alch tab to add it to your shopping cart with the max affordable quantity.
-* Shows **Total Invested**, **Remaining Cash Stack**, and **Expected Batch Profit**.
-* Click **"✓ Log Cart & Start Timers"** to automatically record the alchs into your session log and start their 4-hour GE limit countdowns!
+## ⌨️ Keyboard Shortcuts
 
-### 4. 🔨 Craft & Alch Tab
-* Compares buying materials, crafting the item, and alching it vs. buying pre-made finished items.
-* **Stats Filter:** Enter your Crafting, Fletching, and Magic levels.
-* Check **"Only Show Usable Recipes"** to hide recipes you don't have the stats for, or uncheck it to see all recipes with level requirements clearly displayed.
+| Shortcut | Action |
+| :--- | :--- |
+| **`F5`** | Immediately refresh live market prices |
+| **`Ctrl + F`** | Jump to search bar |
+| **`Esc`** | Clear active search |
+| **`Enter`** | Apply cash stack or filter input |
 
-### 5. ⏱️ 4-Hour GE Limit Reset Timers
-* Automatically counts down the 4-hour Grand Exchange limit for items you've bought.
-* **Persistent:** Timers are saved locally in `data/timers.json`. If you close the app or restart your PC, your timers resume accurately!
-* **Desktop Notifications & Chimes:** When a 4-hour limit resets, you receive a desktop popup alert and sound notification:
-  > *"⏰ GE 4-Hour Limit Reset! You can now buy Rune 2h swords on the GE again!"*
+---
 
-### 6. 📊 Session Profit Tracker
-* Displays **Total Casts Done**, **Realized Net Profit**, **Magic XP Gained**, and **Nature Runes Burnt**.
-* Keeps a timestamped log history of every batch you complete.
+## 🚀 Getting Started
 
-### 7. Click-to-Copy Quick Actions
-* **Single Click:** Copies the exact item name to your Windows clipboard so you can immediately `Ctrl + V` into the Grand Exchange search bar.
+### Option 1: Standalone Windows Executable (No Python Required)
+1. Download `OSRS_Alch_Tracker.exe` from the latest [GitHub Releases](https://github.com/jef11222/osrs-alch-tracker/releases).
+2. Double-click to run! All user settings, session history, and timers persist locally in a `data/` folder.
+
+### Option 2: Running from Source
+Ensure you have **Python 3.10+** installed:
+```bash
+# Clone the repository
+git clone https://github.com/jef11222/osrs-alch-tracker.git
+cd osrs-alch-tracker
+
+# Run the application
+python main.py
+```
+
+### Option 3: Building Standalone Executable with PyInstaller
+```bash
+pip install pyinstaller
+python -m PyInstaller --noconsole --onefile --name "OSRS_Alch_Tracker" main.py
+```
+
+---
+
+## 📁 Project Structure
+
+```
+osrs-alch-tracker/
+├── api.py               # OSRS Wiki Real-time Prices API client
+├── crafting.py          # Crafting & fletching recipe definitions
+├── state.py             # State persistence (config, 4h timers, session log)
+├── gui.py               # Tkinter GUI (custom dark theme, tooltips, tables)
+├── main.py              # Application entry point
+├── run.bat              # 1-click launch batch script
+├── Launch_Dashboard.vbs # Silent background launcher
+└── .gitignore           # Ignores build artifacts and local caches
+```
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
