@@ -48,14 +48,19 @@ def check_for_updates(current_version=APP_VERSION):
                 if remote_tuple > curr_tuple:
                     # Look for Windows executable asset (.exe)
                     download_url = None
+                    setup_url = None
                     for asset in data.get("assets", []):
                         name = asset.get("name", "").lower()
-                        if name.endswith(".exe"):
+                        if name == "osrs_alch_tracker.exe":
                             download_url = asset.get("browser_download_url")
                             break
-                    
+                        elif name.endswith("_setup.exe"):
+                            setup_url = asset.get("browser_download_url")
+                        elif name.endswith(".exe") and not download_url:
+                            download_url = asset.get("browser_download_url")
+
                     if not download_url:
-                        download_url = data.get("html_url")
+                        download_url = setup_url or data.get("html_url")
 
                     return True, tag_name, download_url, data.get("body", "")
     except Exception as e:
@@ -95,6 +100,7 @@ def apply_update_and_restart(new_exe_path):
         return False, "Application is running from Python source code, not a compiled .exe."
 
     current_exe = sys.executable
+    app_dir = os.path.dirname(os.path.abspath(current_exe))
 
     # Write small batch script to swap the exe after exit
     temp_dir = tempfile.gettempdir()
@@ -108,6 +114,7 @@ if exist "{new_exe_path}" (
     timeout /t 1 /nobreak >nul
     goto retry
 )
+cd /d "{app_dir}"
 start "" "{current_exe}"
 del "%~f0"
 """
@@ -230,7 +237,7 @@ class UpdateDialog(tk.Toplevel):
         self.lbl_prog.config(text="Applying update & restarting...", fg="#2ecc71")
         success, msg = apply_update_and_restart(temp_exe)
         if success:
-            self.after(500, self.parent.destroy)
+            self.after(300, lambda: os._exit(0))
         else:
             messagebox.showinfo("Update Complete", msg)
             self.destroy()
