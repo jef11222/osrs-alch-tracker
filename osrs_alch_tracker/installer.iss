@@ -52,3 +52,44 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function InitializeSetup(): Boolean;
+var
+  UninstPath: String;
+  ResultCode: Integer;
+  MsgRes: Integer;
+begin
+  Result := True;
+  UninstPath := ExpandConstant('{localappdata}\Programs\OSRS Alch Tracker\unins000.exe');
+
+  if FileExists(UninstPath) then
+  begin
+    MsgRes := MsgBox(
+      'An existing installation of OSRS Alch Tracker was detected on your PC.' + #13#10 + #13#10 +
+      'What would you like to do?' + #13#10 + #13#10 +
+      '• Click YES to REPAIR / REINSTALL (fixes files and restores shortcuts)' + #13#10 +
+      '• Click NO to UNINSTALL (removes the app from your computer)' + #13#10 +
+      '• Click CANCEL to exit',
+      mbConfirmation,
+      MB_YESNOCANCEL
+    );
+
+    if MsgRes = IDYES then
+    begin
+      // Continue installation to repair and overwrite
+      Result := True;
+    end
+    else if MsgRes = IDNO then
+    begin
+      // Launch uninstaller
+      Exec(UninstPath, '', '', SW_SHOW, ewWaitUntilTerminated, ResultCode);
+      Result := False; // Exit setup wizard after uninstalling
+    end
+    else
+    begin
+      // User clicked Cancel
+      Result := False;
+    end;
+  end;
+end;

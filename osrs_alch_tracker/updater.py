@@ -134,7 +134,7 @@ class UpdateDialog(tk.Toplevel):
         self.is_downloading = False
 
         self.title(f"Update Available - {remote_version}")
-        self.geometry("450x300")
+        self.geometry("480x320")
         self.configure(bg="#252528")
         self.resizable(False, False)
         self.transient(parent)
@@ -142,8 +142,8 @@ class UpdateDialog(tk.Toplevel):
 
         # Center dialog
         self.update_idletasks()
-        x = parent.winfo_x() + (parent.winfo_width() // 2) - 225
-        y = parent.winfo_y() + (parent.winfo_height() // 2) - 150
+        x = parent.winfo_x() + (parent.winfo_width() // 2) - 240
+        y = parent.winfo_y() + (parent.winfo_height() // 2) - 160
         self.geometry(f"+{x}+{y}")
 
         # Header
@@ -152,18 +152,9 @@ class UpdateDialog(tk.Toplevel):
         tk.Label(top_f, text="🚀 New Update Available!", font=("Segoe UI", 12, "bold"), fg="#2ecc71", bg="#252528").pack(anchor="w")
         tk.Label(top_f, text=f"Version {remote_version} is now available (Current: v{APP_VERSION})", font=("Segoe UI", 9), fg="#cccccc", bg="#252528").pack(anchor="w")
 
-        # Release notes text
-        notes_f = tk.Frame(self, bg="#1e1e1e", relief="solid", borderwidth=1)
-        notes_f.pack(fill="both", expand=True, padx=15, pady=6)
-        self.txt_notes = tk.Text(notes_f, bg="#1e1e1e", fg="#f1f1f1", font=("Segoe UI", 9), relief="flat", wrap="word", padx=6, pady=6)
-        self.txt_notes.pack(fill="both", expand=True)
-        display_notes = release_notes.strip() if release_notes else "Performance improvements, bug fixes, and feature updates."
-        self.txt_notes.insert("1.0", display_notes)
-        self.txt_notes.config(state="disabled")
-
-        # Bottom Progress / Button frame
+        # Bottom Progress / Button frame (DOCK TO BOTTOM FIRST so it is NEVER cut off!)
         self.bottom_frame = tk.Frame(self, bg="#252528")
-        self.bottom_frame.pack(fill="x", padx=15, pady=(4, 15))
+        self.bottom_frame.pack(side="bottom", fill="x", padx=15, pady=12)
 
         self.btn_box = tk.Frame(self.bottom_frame, bg="#252528")
         self.btn_box.pack(fill="x")
@@ -173,6 +164,18 @@ class UpdateDialog(tk.Toplevel):
 
         self.btn_install = tk.Button(self.btn_box, text="⚡ Update Now", command=self.start_update, bg="#27ae60", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=12, pady=3, cursor="hand2")
         self.btn_install.pack(side="right")
+
+        # Release notes text (fills remaining middle space)
+        notes_f = tk.Frame(self, bg="#1e1e1e", relief="solid", borderwidth=1)
+        notes_f.pack(side="top", fill="both", expand=True, padx=15, pady=6)
+        self.txt_notes = tk.Text(notes_f, bg="#1e1e1e", fg="#f1f1f1", font=("Segoe UI", 9), relief="flat", wrap="word", padx=6, pady=6, height=5)
+        self.txt_notes.pack(fill="both", expand=True)
+        display_notes = release_notes.strip() if release_notes else "Performance improvements, bug fixes, and feature updates."
+        self.txt_notes.insert("1.0", display_notes)
+        self.txt_notes.config(state="disabled")
+
+        self.bind("<Return>", lambda e: self.start_update())
+        self.bind("<Escape>", lambda e: self.destroy())
 
     def start_update(self):
         if self.is_downloading:
@@ -231,3 +234,57 @@ class UpdateDialog(tk.Toplevel):
         else:
             messagebox.showinfo("Update Complete", msg)
             self.destroy()
+
+class WhatsNewDialog(tk.Toplevel):
+    def __init__(self, parent, version_str):
+        super().__init__(parent)
+        self.title(f"What's New in v{version_str} 🎉")
+        self.geometry("520x400")
+        self.configure(bg="#252528")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        # Center dialog
+        self.update_idletasks()
+        x = parent.winfo_x() + (parent.winfo_width() // 2) - 260
+        y = parent.winfo_y() + (parent.winfo_height() // 2) - 200
+        self.geometry(f"+{x}+{y}")
+
+        top_f = tk.Frame(self, bg="#252528")
+        top_f.pack(fill="x", padx=16, pady=(15, 8))
+        tk.Label(top_f, text=f"🎉 Successfully Updated to v{version_str}!", font=("Segoe UI", 12, "bold"), fg="#2ecc71", bg="#252528").pack(anchor="w")
+        tk.Label(top_f, text="Here is a summary of the latest features and improvements:", font=("Segoe UI", 9), fg="#cccccc", bg="#252528").pack(anchor="w")
+
+        # Highlights box
+        box_f = tk.Frame(self, bg="#1e1e1e", relief="solid", borderwidth=1)
+        box_f.pack(side="top", fill="both", expand=True, padx=16, pady=6)
+
+        txt = tk.Text(box_f, bg="#1e1e1e", fg="#f1f1f1", font=("Segoe UI", 9), relief="flat", wrap="word", padx=8, pady=8)
+        txt.pack(fill="both", expand=True)
+
+        features = (
+            "✨ WHAT'S NEW IN THIS VERSION:\n\n"
+            "• ⚡ In-App 1-Click Auto-Updater:\n"
+            "  Checks GitHub automatically every 30 minutes. Prompts you on startup or when closing.\n\n"
+            "• ⏱️ Dynamic 4-Hour GE Limit Tracking:\n"
+            "  Tracks remaining buy limits (e.g. 50/70) and shows active cooldown timers. Automatically resets when 4 hours elapse.\n\n"
+            "• 🌿 Nature Rune Stockpile Tracker:\n"
+            "  Input your bank stockpile; the cart alerts you if you need to buy more and automatically deducts upon logging.\n\n"
+            "• 💰 Smart Cash Stack Baseline ('Max Afford'):\n"
+            "  Dynamically calculates affordable quantities from your remaining balance.\n\n"
+            "• 📋 1-Click GE Pasting:\n"
+            "  Click Column #1 to copy Quantity, #2 for Name, #3 for Bid, #4 for Ask.\n\n"
+            "• 🛠️ Windows Installer Maintenance:\n"
+            "  Setup wizard can now Repair or Cleanly Uninstall when already installed.\n"
+        )
+        txt.insert("1.0", features)
+        txt.config(state="disabled")
+
+        btn_box = tk.Frame(self, bg="#252528")
+        btn_box.pack(side="bottom", fill="x", padx=16, pady=12)
+        tk.Button(btn_box, text="Awesome, Let's Go! 🚀", command=self.destroy,
+                  bg="#27ae60", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=16, pady=5, cursor="hand2").pack(side="right")
+
+        self.bind("<Return>", lambda e: self.destroy())
+        self.bind("<Escape>", lambda e: self.destroy())

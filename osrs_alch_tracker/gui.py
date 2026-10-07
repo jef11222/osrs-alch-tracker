@@ -16,7 +16,7 @@ except ImportError:
 from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
 from state import AppState
-from updater import APP_VERSION, check_for_updates, UpdateDialog
+from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
 
 def format_gp(val):
     if val is None:
@@ -302,9 +302,15 @@ class OSRSAlchDashboard(tk.Tk):
         # Start timer tick
         self.after(1000, self.timer_tick)
 
+        # Window close protocol (prompts if update available)
+        self.protocol("WM_DELETE_WINDOW", self.on_app_close)
+
         # Update checker
         self.latest_update_info = None
         self.after(2000, lambda: threading.Thread(target=self._check_update_startup, daemon=True).start())
+
+        # Check if app was just updated to show "What's New" popup
+        self.after(800, self._check_first_run_after_update)
 
         # Initial load in background thread
         self.trigger_refresh()
@@ -939,6 +945,39 @@ class OSRSAlchDashboard(tk.Tk):
         else:
             self.btn_update.config(text=f"v{APP_VERSION}", bg="#2d2d30", fg="#888888")
             messagebox.showinfo("Up to Date", f"You are running the latest version (v{APP_VERSION})!")
+
+    def _check_first_run_after_update(self):
+        last_v = self.state.config.get("last_seen_version")
+        if last_v is None:
+            # Initial setup: mark current version
+            self.state.config["last_seen_version"] = APP_VERSION
+            self.state.save_config()
+        elif last_v != APP_VERSION:
+            # App was just updated! Show "What's New" modal
+            self.state.config["last_seen_version"] = APP_VERSION
+            self.state.save_config()
+            WhatsNewDialog(self, APP_VERSION)
+
+    def on_app_close(self):
+        if self.latest_update_info:
+            remote_v, dl_url, notes = self.latest_update_info
+            ans = messagebox.askyesnocancel(
+                "Update Available",
+                f"A new version ({remote_v}) is ready to install!\n\n"
+                f"Would you like to install the update now before exiting?\n\n"
+                f"• Click YES to update & restart into {remote_v}\n"
+                f"• Click NO to exit without updating\n"
+                f"• Click CANCEL to stay in the app"
+            )
+            if ans is True:
+                UpdateDialog(self, remote_v, dl_url, notes)
+                return
+            elif ans is False:
+                self.destroy()
+                return
+            else:
+                return # Cancelled, stay in app
+        self.destroy()
 
     def recalculate_all(self):
         self.recalculate_alch_table()
