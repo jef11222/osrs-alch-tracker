@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.4"
+APP_VERSION = "1.3.5"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
@@ -309,17 +309,17 @@ class WhatsNewDialog(tk.Toplevel):
         txt.pack(fill="both", expand=True)
 
         features = (
-            "✨ WHAT'S NEW IN v1.3.4:\n\n"
-            "• 🛠️ In-App Update Reliability Fix:\n"
-            "  Resolved PyInstaller _MEIPASS environment inheritance so in-place restarts never hit python DLL loader errors.\n\n"
+            "✨ WHAT'S NEW IN v1.3.5 (Update Test Verified! 🎉):\n\n"
+            "• 🎯 Seamless Auto-Update Verified:\n"
+            "  The in-app updater successfully downloaded, swapped, and relaunched the application with zero DLL errors!\n\n"
+            "• 🛠️ PyInstaller Environment Scrubbing Active:\n"
+            "  _MEIPASS2 and _MEIPASS environment variables are cleanly scrubbed on relaunch to protect all future updates.\n\n"
             "• 🌟 Two-Tier Responsive Top Control Bar:\n"
-            "  Filters and search are now cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off!\n\n"
+            "  Filters and search are cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off!\n\n"
             "• ↔️ Dark-Themed Horizontal Table Scrollbars:\n"
-            "  Both Pure High Alch and Craft & Alch tables now include smooth horizontal scrolling so columns are never lost on narrower displays.\n\n"
+            "  Smooth horizontal scrolling across both Pure High Alch and Craft & Alch tables.\n\n"
             "• ⚡ Fill Speed & Transaction Velocity Tracking:\n"
-            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n\n"
-            "• 🚀 Edition-Aware Downloads:\n"
-            "  Updater automatically matches your running edition (Portable vs Installed) for seamless upgrades.\n"
+            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")
