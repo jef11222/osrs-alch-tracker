@@ -34,6 +34,7 @@ class OSRSPricesAPI:
         self.latest_prices = {} # id -> {high, highTime, low, lowTime}
         self.volumes_24h = {} # id -> volume
         self.volumes_5m = {} # id -> {high, low, total}
+        self.five_min_prices = {} # id -> {avg_high, avg_low, high_vol, low_vol}
         self.nature_rune_price = 170
         self.nature_rune_bid = 168
         self.nature_rune_ask = 172
@@ -107,22 +108,31 @@ class OSRSPricesAPI:
         except Exception as e:
             print(f"Error fetching latest prices: {e}")
 
-        # Fetch 5-minute real-time transaction velocity
+        # Fetch 5-minute real-time transaction velocity & volume-weighted prices
         try:
             five_url = "https://prices.runescape.wiki/api/v1/osrs/5m"
             five_res = fetch_url_json(five_url)
             five_data = five_res.get("data", {})
             self.volumes_5m = {}
+            self.five_min_prices = {}
             for item_id_str, vinfo in five_data.items():
                 h_vol = vinfo.get("highPriceVolume", 0) or 0
                 l_vol = vinfo.get("lowPriceVolume", 0) or 0
+                avg_high = vinfo.get("avgHighPrice")
+                avg_low = vinfo.get("avgLowPrice")
                 self.volumes_5m[item_id_str] = {
                     "high": h_vol,
                     "low": l_vol,
                     "total": h_vol + l_vol
                 }
+                self.five_min_prices[item_id_str] = {
+                    "avg_high": avg_high,
+                    "avg_low": avg_low,
+                    "high_vol": h_vol,
+                    "low_vol": l_vol
+                }
         except Exception as e:
-            print(f"Error fetching 5m volumes: {e}")
+            print(f"Error fetching 5m data: {e}")
 
         # Fetch 24-hour total volumes
         try:
@@ -234,6 +244,9 @@ class OSRSPricesAPI:
         spread_pct = (spread_gp / ask * 100.0) if ask > 0 else 0.0
         is_wide_spread = (spread_pct >= 25.0 and vol_24h < 5000) if ask > 0 else False
 
+        spike_info = self.get_spike_info(item_id)
+        is_spike, spike_pct, lat_low, avg_low_p, vol_5m_l = spike_info
+
         return {
             "last_trade_time": last_trade_time,
             "age_secs": age_secs,
@@ -245,12 +258,39 @@ class OSRSPricesAPI:
             "vol_24h": vol_24h,
             "spread_gp": spread_gp,
             "spread_pct": spread_pct,
-            "is_wide_spread": is_wide_spread
+            "is_wide_spread": is_wide_spread,
+            "is_spike": is_spike,
+            "spike_pct": spike_pct,
+            "latest_low": lat_low,
+            "avg_low": avg_low_p
         }
 
-    def get_price(self, item_id, strategy="patient"):
-        """Returns price based on strategy: 'patient' (bid), 'smart' (bid+1), or 'instant' (ask)."""
-        bid, ask = self.get_bid_ask(item_id)
+    def get_spike_info(self, item_id):
+        """
+        Detects if the latest 1-trade price is an unconfirmed 1-item spike compared to 5m VWAP.
+        Returns: (is_spike: bool, spike_diff_pct: float, latest_price: int, vwap_price: int, low_vol_5m: int)
+        """
+        iid_str = str(item_id)
+        pdata = self.latest_prices.get(iid_str, {})
+        latest_low = pdata.get("low") or 0
+
+        finfo = self.five_min_prices.get(iid_str, {}) if hasattr(self, "five_min_prices") else {}
+        avg_low = finfo.get("avg_low") or 0
+        low_vol = finfo.get("low_vol", 0) or 0
+
+        if latest_low > 0 and avg_low > 0:
+            diff_pct = ((avg_low - latest_low) / avg_low) * 100.0
+            # If latest single trade is >= 4% cheaper than 5m volume average, but 5m sell volume is < 5 items:
+            if diff_pct >= 4.0 and low_vol < 5:
+                return True, diff_pct, latest_low, avg_low, low_vol
+            elif diff_pct >= 8.0:
+                return True, diff_pct, latest_low, avg_low, low_vol
+
+        return False, 0.0, latest_low, avg_low, low_vol
+
+    def get_price(self, item_id, strategy="patient", basis="5m"):
+        """Returns price based on strategy: 'patient' (bid), 'smart' (bid+1), or 'instant' (ask), using specified basis."""
+        bid, ask = self.get_bid_ask(item_id, basis=basis)
         strat_lower = str(strategy).lower()
         if "instant" in strat_lower:
             return ask or bid or 0
@@ -261,9 +301,25 @@ class OSRSPricesAPI:
         else: # patient
             return bid or ask or 0
 
-    def get_bid_ask(self, item_id):
-        """Returns (bid, ask) tuple for an item ensuring bid <= ask."""
-        pdata = self.latest_prices.get(str(item_id), {})
+    def get_bid_ask(self, item_id, basis="5m"):
+        """
+        Returns (bid, ask) tuple for an item ensuring bid <= ask.
+        If basis == '5m' (default), uses 5-minute volume-weighted averages when available,
+        falling back to /latest if 5m data is absent.
+        """
+        iid_str = str(item_id)
+        if basis == "5m" and hasattr(self, "five_min_prices"):
+            finfo = self.five_min_prices.get(iid_str, {})
+            avg_low = finfo.get("avg_low")
+            avg_high = finfo.get("avg_high")
+            if avg_low and avg_high:
+                return min(avg_low, avg_high), max(avg_low, avg_high)
+            elif avg_low:
+                return avg_low, avg_low
+            elif avg_high:
+                return avg_high, avg_high
+
+        pdata = self.latest_prices.get(iid_str, {})
         low = pdata.get("low")
         high = pdata.get("high")
         if low and high:

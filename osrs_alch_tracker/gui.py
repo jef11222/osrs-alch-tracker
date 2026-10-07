@@ -802,7 +802,18 @@ class OSRSAlchDashboard(tk.Tk):
         cb_max.pack(side="left", padx=6)
         ToolTip(cb_max, "Hide Maxed (4h GE Limit):\nTemporarily removes items from the table when your 4-hour GE limit is reached (0 remaining), and mutes their alerts.\nItems automatically reappear when the 4h cooldown expires.")
 
-        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=6)
+        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=5)
+
+        tk.Label(p2, text="Basis:", fg="#cccccc", bg="#252528").pack(side="left", padx=(2, 2))
+        curr_basis = self.state.config.get("price_basis", "5m")
+        basis_display = "5m Volume Avg" if curr_basis == "5m" else "1-Trade Tick"
+        self.var_price_basis = tk.StringVar(value=basis_display)
+        cb_basis = ttk.Combobox(p2, textvariable=self.var_price_basis, values=["5m Volume Avg", "1-Trade Tick"], width=13, state="readonly")
+        cb_basis.pack(side="left", padx=(0, 6))
+        cb_basis.bind("<<ComboboxSelected>>", self.on_price_basis_changed)
+        ToolTip(cb_basis, "Price Calculation Basis:\n- 5m Volume Avg (Recommended): Volume-weighted average across real trades over the last 5 minutes. Eliminates 1-item freak dumps and provides prices that actually fill on the GE.\n- 1-Trade Tick: Instant single-trade tick from /latest.")
+
+        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=5)
 
         tk.Label(p2, text="⏱️ Auto-Sync:", fg="#888888", bg="#252528", font=("Segoe UI", 8)).pack(side="left")
         self.var_refresh = tk.StringVar(value=f"{self.state.config.get('auto_refresh_mins', 2)} min")
@@ -1252,6 +1263,16 @@ class OSRSAlchDashboard(tk.Tk):
             if is_cd and rem_limit <= 0:
                 continue
 
+            # Proper Sell Boundary:
+            # Require at least min_alert_vol (3+) items sold in the 5m window to confirm a real selling market.
+            # Avoids spamming alerts on 1-off freak single-sell dumps!
+            min_alert_vol = self.state.config.get("min_alert_5m_vol", 3)
+            v5 = self.api.volumes_5m.get(iid, {})
+            vol_5m_low = v5.get("low", 0) or 0
+            vol_5m_total = v5.get("total", 0) or 0
+            if vol_5m_low < min_alert_vol and vol_5m_total < (min_alert_vol * 2):
+                continue
+
             if profit >= threshold and vol >= min_vol:
                 last_profit = self.state.last_alerted_profits.get(iid)
                 # Only alert if brand new OR margin shifted by >= 2 gp
@@ -1393,6 +1414,8 @@ class OSRSAlchDashboard(tk.Tk):
 
         new_rows = []
 
+        basis = "5m" if (hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get()) else self.state.config.get("price_basis", "5m")
+
         for item_id_str, mdata in self.api.mapping.items():
             high_alch = mdata.get("highalch", 0)
             if not high_alch or high_alch <= 10:
@@ -1407,8 +1430,8 @@ class OSRSAlchDashboard(tk.Tk):
             if not is_mem and not f2p_ok and mem_ok:
                 pass
 
-            bid, ask = self.api.get_bid_ask(item_id_str)
-            buy_price = self.api.get_price(item_id_str, strat)
+            bid, ask = self.api.get_bid_ask(item_id_str, basis=basis)
+            buy_price = self.api.get_price(item_id_str, strat, basis=basis)
             if not buy_price or buy_price <= 0:
                 continue
             if buy_price > max_spend:
@@ -1433,6 +1456,11 @@ class OSRSAlchDashboard(tk.Tk):
                 continue
 
             speed_cat, speed_badge, est_mins, speed_score = self.api.get_fill_speed_info(mdata["id"], base_limit if base_limit > 0 else 70)
+
+            # Detect 1-item freak spike vs 5m volume average
+            is_spike, spike_pct, lat_low, avg_low_p, vol_5m_l = self.api.get_spike_info(mdata["id"])
+            if is_spike and basis == "latest":
+                speed_badge = f"⚡ Spike (-{spike_pct:.0f}%)"
 
             # Apply Speed Filter
             if "Fast" in speed_filter and speed_cat != "fast":
@@ -1494,6 +1522,11 @@ class OSRSAlchDashboard(tk.Tk):
                 "base_limit": base_limit,
                 "effective_limit": effective_limit,
                 "is_vol_capped": is_vol_capped,
+                "is_spike": is_spike,
+                "spike_pct": spike_pct,
+                "latest_low": lat_low,
+                "avg_low": avg_low_p,
+                "vol_5m_low": vol_5m_l,
                 "limit_str": limit_str,
                 "is_cd": is_cd,
                 "batch_profit": batch_profit,
@@ -1905,12 +1938,17 @@ class OSRSAlchDashboard(tk.Tk):
                 ("Profit / Hr (1.2k):", f"{p_hr_k:+.1f}k GP/hr", "#2ecc71" if p_hr_k >= 0 else "#e74c3c"),
                 ("Fill Velocity:", speed_badge, speed_col),
                 ("24h Vol / 5m:", f"{row['volume']:,}  (5m: {metrics['vol_5m_total']:,})", "#f1f1f1"),
+                ("5m Sold into Bids:", f"{metrics['vol_5m_low']:,} items", "#3498db" if metrics['vol_5m_low'] >= 5 else "#e67e22"),
                 ("4h Buy Limit:", limit_info, "#e67e22" if row.get("is_vol_capped") else "#f1f1f1"),
                 ("4h Batch Profit:", f"{row['batch_profit']:+,} gp", "#2ecc71" if row["batch_profit"] >= 0 else "#e74c3c"),
                 ("Quote Freshness:", metrics["age_str"], "#e67e22" if metrics["is_stale"] else "#95a5a6"),
             ]
 
             warnings = []
+            if metrics.get("is_spike"):
+                warnings.append(
+                    f"1-Item Spike Detected: Latest 1-trade price ({metrics['latest_low']:,} gp) is {metrics['spike_pct']:.1f}% below 5m volume average ({metrics['avg_low']:,} gp with only {metrics['vol_5m_low']} sold). Unlikely to fill full batch."
+                )
             if metrics["is_stale"]:
                 warnings.append(f"Stale Quote: Last GE trade was {metrics['age_str']}. Check in-game GE price.")
             if row.get("is_vol_capped"):
@@ -2379,11 +2417,19 @@ class OSRSAlchDashboard(tk.Tk):
         self.save_preferences()
         self.recalculate_alch_table()
 
+    def on_price_basis_changed(self, event=None):
+        val = "5m" if "5m" in self.var_price_basis.get() else "latest"
+        self.state.config["price_basis"] = val
+        self.save_preferences()
+        self.recalculate_all()
+
     def save_preferences(self):
         self.state.config["sound_enabled"] = self.var_sound.get()
         self.state.config["desktop_alerts"] = self.var_desktop.get()
         if hasattr(self, "var_hide_maxed"):
             self.state.config["hide_maxed_cooldown"] = self.var_hide_maxed.get()
+        if hasattr(self, "var_price_basis"):
+            self.state.config["price_basis"] = "5m" if "5m" in self.var_price_basis.get() else "latest"
         self.state.save_config()
 
 if __name__ == "__main__":

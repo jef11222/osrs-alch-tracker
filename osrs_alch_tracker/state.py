@@ -39,7 +39,9 @@ DEFAULT_CONFIG = {
     "min_profit": None, # None or 0 = show everything
     "owned_nature_runes": 0,
     "speed_filter": "All",
-    "hide_maxed_cooldown": True
+    "hide_maxed_cooldown": True,
+    "price_basis": "5m", # '5m' (Volume-Weighted Avg) or 'latest' (1-Trade Tick)
+    "min_alert_5m_vol": 3 # Minimum 5m sell volume required to trigger a price change alert
 }
 
 class AppState:
