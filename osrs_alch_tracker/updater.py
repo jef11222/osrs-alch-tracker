@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.5"
+APP_VERSION = "1.3.6"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
@@ -139,10 +139,15 @@ def apply_update_and_restart(new_exe_path):
     temp_dir = tempfile.gettempdir()
     bat_path = os.path.join(temp_dir, f"osrs_update_{int(time.time())}.bat")
 
-    # Clear _MEIPASS2 and _MEIPASS so child PyInstaller process extracts cleanly
+    # Clear all PyInstaller environment variables and relaunch via Windows Shell (explorer.exe)
     bat_content = f"""@echo off
+set _PYI_APPLICATION_HOME_DIR=
+set _PYI_ARCHIVE_FILE=
+set _PYI_PARENT_PROCESS_LEVEL=
 set _MEIPASS2=
 set _MEIPASS=
+set PYINSTALLER_RESET_ENVIRONMENT=1
+
 timeout /t 2 /nobreak >nul
 :retry
 move /y "{clean_new}" "{clean_curr}" >nul 2>&1
@@ -151,7 +156,7 @@ if exist "{clean_new}" (
     goto retry
 )
 cd /d "{clean_dir}"
-start "" "{clean_curr}"
+explorer.exe "{clean_curr}"
 del "%~f0"
 """
     with open(bat_path, "w", encoding="utf-8") as f:
@@ -165,8 +170,14 @@ del "%~f0"
         flags = DETACHED_PROCESS | CREATE_NO_WINDOW
 
     clean_env = os.environ.copy()
-    clean_env.pop("_MEIPASS2", None)
-    clean_env.pop("_MEIPASS", None)
+    for k in list(clean_env.keys()):
+        if k.startswith("_PYI_") or k.startswith("_MEI") or k == "PYINSTALLER_STRICT_UNLOAD_MODE":
+            clean_env.pop(k, None)
+    clean_env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    if hasattr(sys, "_MEIPASS"):
+        meipass = os.path.abspath(sys._MEIPASS).lower()
+        paths = [p for p in clean_env.get("PATH", "").split(os.pathsep) if os.path.abspath(p).lower() != meipass]
+        clean_env["PATH"] = os.pathsep.join(paths)
 
     subprocess.Popen(["cmd.exe", "/c", bat_path], env=clean_env, creationflags=flags, close_fds=True)
     return True, "Restarting application..."
@@ -309,17 +320,17 @@ class WhatsNewDialog(tk.Toplevel):
         txt.pack(fill="both", expand=True)
 
         features = (
-            "✨ WHAT'S NEW IN v1.3.5 (Update Test Verified! 🎉):\n\n"
-            "• 🎯 Seamless Auto-Update Verified:\n"
-            "  The in-app updater successfully downloaded, swapped, and relaunched the application with zero DLL errors!\n\n"
-            "• 🛠️ PyInstaller Environment Scrubbing Active:\n"
-            "  _MEIPASS2 and _MEIPASS environment variables are cleanly scrubbed on relaunch to protect all future updates.\n\n"
+            "✨ WHAT'S NEW IN v1.3.6 (Update System Fully Verified! 🎉):\n\n"
+            "• 🛡️ Complete PyInstaller Process Isolation:\n"
+            "  Scrubbed all _PYI_ internal environment variables (_PYI_APPLICATION_HOME_DIR, _PYI_ARCHIVE_FILE) and integrated Windows Shell relaunch (explorer.exe) for flawless in-place updates.\n\n"
             "• 🌟 Two-Tier Responsive Top Control Bar:\n"
             "  Filters and search are cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off!\n\n"
             "• ↔️ Dark-Themed Horizontal Table Scrollbars:\n"
             "  Smooth horizontal scrolling across both Pure High Alch and Craft & Alch tables.\n\n"
             "• ⚡ Fill Speed & Transaction Velocity Tracking:\n"
-            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n"
+            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n\n"
+            "• 🚀 Edition-Aware Downloads:\n"
+            "  Updater automatically matches your running edition (Portable vs Installed) for seamless upgrades.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")
