@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.3.3"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
@@ -294,19 +294,17 @@ class WhatsNewDialog(tk.Toplevel):
         txt.pack(fill="both", expand=True)
 
         features = (
-            "✨ WHAT'S NEW IN THIS VERSION:\n\n"
-            "• ⚡ In-App 1-Click Auto-Updater:\n"
-            "  Checks GitHub automatically every 30 minutes. Prompts you on startup or when closing.\n\n"
-            "• ⏱️ Dynamic 4-Hour GE Limit Tracking:\n"
-            "  Tracks remaining buy limits (e.g. 50/70) and shows active cooldown timers. Automatically resets when 4 hours elapse.\n\n"
-            "• 🌿 Nature Rune Stockpile Tracker:\n"
-            "  Input your bank stockpile; the cart alerts you if you need to buy more and automatically deducts upon logging.\n\n"
-            "• 💰 Smart Cash Stack Baseline ('Max Afford'):\n"
-            "  Dynamically calculates affordable quantities from your remaining balance.\n\n"
-            "• 📋 1-Click GE Pasting:\n"
-            "  Click Column #1 to copy Quantity, #2 for Name, #3 for Bid, #4 for Ask.\n\n"
-            "• 🛠️ Windows Installer Maintenance:\n"
-            "  Setup wizard can now Repair or Cleanly Uninstall when already installed.\n"
+            "✨ WHAT'S NEW IN v1.3.3:\n\n"
+            "• 🌟 Two-Tier Responsive Top Control Bar:\n"
+            "  Filters and search are now cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off or disappear!\n\n"
+            "• ↔️ Dark-Themed Horizontal Table Scrollbars:\n"
+            "  Both Pure High Alch and Craft & Alch tables now include smooth horizontal scrolling so columns are never lost on narrower displays.\n\n"
+            "• ⚡ Fill Speed & Transaction Velocity Tracking:\n"
+            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n\n"
+            "• 🛡️ Complete Security Hardening & AppData Isolation:\n"
+            "  Trusted GitHub domain whitelisting, URL verification, and per-user isolated data storage.\n\n"
+            "• 🚀 Differentiated Portable & Installer Editions:\n"
+            "  Seamless in-app updates for both standalone portable and full Windows setup editions.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")
