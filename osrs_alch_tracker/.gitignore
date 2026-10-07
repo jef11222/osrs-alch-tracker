@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+
+# Build & packaging
+build/
+dist/
+*.exe
+
+# App runtime data & cache
+data/
+cache/
+*.log
+
+# Environments
+.env
+.venv
+env/
+venv/
