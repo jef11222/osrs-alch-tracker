@@ -363,8 +363,47 @@ public class AlchBridgePlugin extends Plugin {
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
             sendPayload(data);
+            syncActiveGeOffers();
         } catch (Exception e) {
             log.debug("Error preparing account snapshot: {}", e.getMessage());
+        }
+    }
+
+    private void syncActiveGeOffers() {
+        try {
+            GrandExchangeOffer[] offers = client.getGrandExchangeOffers();
+            if (offers == null) {
+                return;
+            }
+            for (int slot = 0; slot < offers.length; slot++) {
+                GrandExchangeOffer offer = offers[slot];
+                if (offer == null) {
+                    continue;
+                }
+                GrandExchangeOfferState state = offer.getState();
+                if (state == GrandExchangeOfferState.BUYING) {
+                    int itemId = offer.getItemId();
+                    if (itemId <= 0) {
+                        continue;
+                    }
+                    String itemName = itemManager.getItemComposition(itemId).getName();
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("event", "GE_OFFER");
+                    data.put("account", getAccountName());
+                    data.put("slot", slot);
+                    data.put("state", "BUYING");
+                    data.put("itemId", itemId);
+                    data.put("itemName", itemName);
+                    data.put("price", offer.getPrice());
+                    data.put("spent", offer.getSpent());
+                    data.put("quantitySold", offer.getQuantitySold());
+                    data.put("totalQuantity", offer.getTotalQuantity());
+                    data.put("timestamp", System.currentTimeMillis() / 1000.0);
+                    sendPayload(data);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Error syncing active GE offers: {}", e.getMessage());
         }
     }
 

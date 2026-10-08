@@ -560,6 +560,7 @@ class OSRSAlchDashboard(tk.Tk):
 
         # Bridge Server for RuneLite / Microbot live sync
         self._logged_ge_offers = set()
+        self._ge_cart_slots = {}
         self.bridge_server = BridgeServer(port=18833, event_callback=self._on_bridge_event_async)
         self.bridge_server.start()
 
@@ -2393,6 +2394,7 @@ class OSRSAlchDashboard(tk.Tk):
             self.show_status_message("Session entry deleted & 4h GE timer updated.")
 
     def clear_cart(self):
+        self._ge_cart_slots.clear()
         self.state.cart_items.clear()
         self.recalculate_alch_table()
         self.update_cart_display()
@@ -2664,6 +2666,31 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_fletch_lvl.insert(0, str(levels["Fletching"]))
                     self.state.config.setdefault("player_levels", {})["Fletching"] = levels["Fletching"]
 
+        self._sync_cart_from_ge()
+
+    def _sync_cart_from_ge(self):
+        curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+        active_ge_items = {}
+        for k, info in self._ge_cart_slots.items():
+            acc = k.split("_")[0]
+            if curr_sel == "All Accounts" or acc == curr_sel:
+                iid = info["item_id"]
+                active_ge_items[iid] = active_ge_items.get(iid, 0) + info["qty"]
+
+        all_ge_item_ids = {v["item_id"] for v in self._ge_cart_slots.values()}
+
+        # Remove GE-driven items that are no longer actively buying
+        for iid in list(self.state.cart_items.keys()):
+            if iid in all_ge_item_ids and iid not in active_ge_items:
+                del self.state.cart_items[iid]
+
+        # Add or update active GE items
+        for iid, qty in active_ge_items.items():
+            self.state.cart_items[iid] = qty
+
+        self.recalculate_alch_table()
+        self.update_cart_display()
+
     def handle_bridge_event(self, data):
         event_type = data.get("event")
         account = data.get("account", "Default")
@@ -2724,8 +2751,19 @@ class OSRSAlchDashboard(tk.Tk):
             state = data.get("state", "")
             slot = data.get("slot", 0)
 
+            slot_key = f"{account}_{slot}"
+
+            # 1. Live GE Sync into Shopping Cart
+            if state == "BUYING" and item_id > 0 and total_qty > 0:
+                self._ge_cart_slots[slot_key] = {"item_id": str(item_id), "qty": total_qty}
+                self._sync_cart_from_ge()
+            elif state in ("BOUGHT", "CANCELLED_BUY", "EMPTY"):
+                if slot_key in self._ge_cart_slots:
+                    del self._ge_cart_slots[slot_key]
+                    self._sync_cart_from_ge()
+
             if item_id > 0:
-                # Automatically log finalized GE buy (completed or cancelled partial) to both 4h Timer and Session Tracker
+                # 2. Automatically log finalized GE buy (completed or cancelled partial) to both 4h Timer and Session Tracker
                 if state in ("BOUGHT", "CANCELLED_BUY") and qty_sold > 0:
                     finalize_key = f"{account}_{slot}_{item_id}_{qty_sold}_{state}"
                     if finalize_key not in self._logged_ge_offers:
