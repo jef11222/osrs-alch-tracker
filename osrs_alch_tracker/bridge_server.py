@@ -57,6 +57,9 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+class ReusableHTTPServer(HTTPServer):
+    allow_reuse_address = True
+
 class BridgeServer:
     def __init__(self, port=18833, event_callback=None):
         self.port = port
@@ -73,7 +76,7 @@ class BridgeServer:
 
     def start(self):
         try:
-            self.httpd = HTTPServer(("127.0.0.1", self.port), BridgeRequestHandler)
+            self.httpd = ReusableHTTPServer(("127.0.0.1", self.port), BridgeRequestHandler)
             self.httpd.event_callback = self.event_callback
             self.httpd.top_items = self.top_items
             self.is_running = True

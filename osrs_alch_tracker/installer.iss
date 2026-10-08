@@ -43,6 +43,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bridge_plugin\AlchBridgePlugin.jar"; DestDir: "{app}\plugins"; Flags: ignoreversion
+Source: "bridge_plugin\AlchBridgePlugin.jar"; DestDir: "{%USERPROFILE}\.runelite\microbot-plugins"; Flags: ignoreversion; Check: DirExists(ExpandConstant('{%USERPROFILE}\.runelite\microbot-plugins'))
 Source: "README.md"; DestDir: "{app}"; Flags: isreadme
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 

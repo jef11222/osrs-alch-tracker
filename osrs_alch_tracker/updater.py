@@ -320,17 +320,19 @@ class WhatsNewDialog(tk.Toplevel):
         txt.pack(fill="both", expand=True)
 
         features = (
-            "✨ WHAT'S NEW IN v1.3.7 (Update Test Success! 🎉):\n\n"
-            "• 🚀 In-App Self-Update Verified:\n"
-            "  The app cleanly updated from v1.3.6 to v1.3.7 in-place without any DLL or environment errors!\n\n"
-            "• 🛡️ Complete PyInstaller Process Isolation Active:\n"
-            "  _PYI_APPLICATION_HOME_DIR and parent environment variables are cleanly scrubbed on restart.\n\n"
-            "• 🌟 Two-Tier Responsive Top Control Bar:\n"
-            "  Filters and search are cleanly separated from utility toggles. Sound Alerts, Popups, Ring (0 Nat), and Auto-Sync will never get cut off!\n\n"
-            "• ↔️ Dark-Themed Horizontal Table Scrollbars:\n"
-            "  Smooth horizontal scrolling across both Pure High Alch and Craft & Alch tables.\n\n"
-            "• ⚡ Fill Speed & Transaction Velocity Tracking:\n"
-            "  Real-time 5m OSRS Wiki velocity tracking with Fast (<15m), Steady (<1h), and Slow (>1h) badges and Speed filters.\n"
+            f"✨ WHAT'S NEW IN v{version_str} 🎉:\n\n"
+            "• 🔄 Authoritative GE 4-Hour Limit & Trade Synchronization:\n"
+            "  The app now syncs directly from RuneLite / Microbot's authoritative buy limits and trade history. Your cooldown timers match the in-game countdown down to the exact second!\n\n"
+            "• 📊 True Bought Quantities & Auto-Backfill:\n"
+            "  Max-limit items (e.g. 70/70 platelegs, 70/70 warhammers) are tracked with 100% precision. Any trades completed while the app was closed are automatically imported into the Session Tracker.\n\n"
+            "• ⚒️ Smithing, Magic Enchanting & Shield Recipes:\n"
+            "  Added 24+ anvil Smithing recipes (Rune, Adamant, Mithril, Steel gear), 10 Magic Jewellery Enchantments (Glory, Ring of Wealth, etc.), and Shield Fletching recipes in Craft & Alch.\n\n"
+            "• 🏷️ Dedicated Skill Category Toggles:\n"
+            "  Filter Craft & Alch by skill with 🔨 Crafting, ⚒️ Smithing, 🏹 Fletching, ✨ Magic, and quick All/None buttons.\n\n"
+            "• ⚡ Dedicated '🔄 Sync with GE' Toolbar Buttons:\n"
+            "  Instant 1-click manual GE reconciliation in both 4h Timers and Session Tracker tabs.\n\n"
+            "• 👥 Multi-Account Bridge Integration:\n"
+            "  Live multi-character support automatically syncs player names, skill levels, and inventory cash/runes from RuneLite.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")

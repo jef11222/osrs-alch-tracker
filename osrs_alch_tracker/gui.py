@@ -558,11 +558,40 @@ class OSRSAlchDashboard(tk.Tk):
         # Check if app was just updated to show "What's New" popup
         self.after(800, self._check_first_run_after_update)
 
+        # Ensure plugin is deployed to .runelite/microbot-plugins if present
+        self._ensure_plugin_deployed()
+
         # Bridge Server for RuneLite / Microbot live sync
         self._logged_ge_offers = set()
         self._ge_cart_slots = {}
         self.bridge_server = BridgeServer(port=18833, event_callback=self._on_bridge_event_async)
         self.bridge_server.start()
+
+    def _ensure_plugin_deployed(self):
+        """Ensures AlchBridgePlugin.jar is deployed into .runelite/microbot-plugins if present."""
+        try:
+            user_home = os.path.expanduser("~")
+            dest_dir = os.path.join(user_home, ".runelite", "microbot-plugins")
+            if not os.path.exists(dest_dir):
+                return
+
+            dest_jar = os.path.join(dest_dir, "AlchBridgePlugin.jar")
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            exe_dir = os.path.dirname(os.path.abspath(sys.executable)) if getattr(sys, "frozen", False) else app_dir
+
+            sources = [
+                os.path.join(app_dir, "bridge_plugin", "AlchBridgePlugin.jar"),
+                os.path.join(exe_dir, "plugins", "AlchBridgePlugin.jar"),
+                os.path.join(exe_dir, "bridge_plugin", "AlchBridgePlugin.jar")
+            ]
+
+            for src in sources:
+                if os.path.exists(src):
+                    if not os.path.exists(dest_jar) or (os.path.getmtime(src) > os.path.getmtime(dest_jar)):
+                        shutil.copy2(src, dest_jar)
+                    break
+        except Exception:
+            pass
 
         # Initial load in background thread
         self.trigger_refresh()
@@ -2904,7 +2933,7 @@ class OSRSAlchDashboard(tk.Tk):
                         mdata = self.api.mapping.get(str(item_id), {})
                         high_alch = mdata.get("highalch", 0)
                         if high_alch > 0:
-                            entry = self.state.log_alch_batch(item_id, item_name, qty_sold, unit_buy_price, nat_price, high_alch, account=account)
+                            entry = self.state.log_alch_batch(item_id, item_name, qty_sold, unit_buy_price, nat_price, high_alch, account=account, timestamp=data.get("timestamp"))
                             self.update_session_display()
                             tag = "Completed" if state == "BOUGHT" else "Cancelled (Partial)"
                             self.lbl_status_right.config(text=f"🛒 Logged GE Buy ({tag}): {qty_sold}x {item_name} [{account}]", fg="#2ecc71")

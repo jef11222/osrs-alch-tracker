@@ -413,7 +413,7 @@ class AppState:
                     eh_ts = eh.get("timestamp", 0)
                     eh_iid = eh.get("item_id")
                     eh_qty = eh.get("qty")
-                    if eh_iid == iid and eh_qty == qty and abs(eh_ts - t_ts) < 15:
+                    if eh_iid == iid and eh_qty == qty and abs(eh_ts - t_ts) < 60:
                         matched = True
                         break
 
@@ -531,8 +531,8 @@ class AppState:
                         self.notified_timers.remove(timer_key)
                     self.save_timers()
 
-    def log_alch_batch(self, item_id, item_name, qty, buy_price, nat_price, alch_val, account="Default"):
-        now = time.time()
+    def log_alch_batch(self, item_id, item_name, qty, buy_price, nat_price, alch_val, account="Default", timestamp=None):
+        now = float(timestamp) if timestamp else time.time()
         entry_id = str(int(now * 1000)) + f"_{item_id}"
         profit_ea = alch_val - (buy_price + nat_price)
         total_profit = qty * profit_ea
