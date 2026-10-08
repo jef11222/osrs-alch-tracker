@@ -332,11 +332,12 @@ public class AlchBridgePlugin extends Plugin {
             lastMagicXp = currentXp;
         }
 
-        if (skill == Skill.CRAFTING || skill == Skill.FLETCHING || skill == Skill.MAGIC) {
+        if (skill == Skill.CRAFTING || skill == Skill.FLETCHING || skill == Skill.MAGIC || skill == Skill.SMITHING) {
             Map<String, Object> data = new HashMap<>();
             data.put("event", "SKILLS_SYNC");
             data.put("account", getAccountName());
             data.put("crafting", client.getRealSkillLevel(Skill.CRAFTING));
+            data.put("smithing", client.getRealSkillLevel(Skill.SMITHING));
             data.put("fletching", client.getRealSkillLevel(Skill.FLETCHING));
             data.put("magic", client.getRealSkillLevel(Skill.MAGIC));
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
@@ -352,6 +353,7 @@ public class AlchBridgePlugin extends Plugin {
             data.put("world", client.getWorld());
             data.put("isMembers", isMembersWorld());
             data.put("crafting", client.getRealSkillLevel(Skill.CRAFTING));
+            data.put("smithing", client.getRealSkillLevel(Skill.SMITHING));
             data.put("fletching", client.getRealSkillLevel(Skill.FLETCHING));
             data.put("magic", client.getRealSkillLevel(Skill.MAGIC));
 

@@ -761,5 +761,464 @@ CRAFTING_RECIPES = [
             {"id": 2355, "name": "Silver bar", "qty": 1},
             {"id": 1609, "name": "Opal", "qty": 1}
         ]
+    },
+
+    # ------------------ SMITHING (RUNITE) ------------------
+    {
+        "name": "Rune platebody",
+        "output_id": 1127,
+        "skill": "Smithing",
+        "level": 99,
+        "xp": 375.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 5}
+        ]
+    },
+    {
+        "name": "Rune 2h sword",
+        "output_id": 1319,
+        "skill": "Smithing",
+        "level": 99,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune platelegs",
+        "output_id": 1079,
+        "skill": "Smithing",
+        "level": 99,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune plateskirt",
+        "output_id": 1093,
+        "skill": "Smithing",
+        "level": 99,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune kiteshield",
+        "output_id": 1201,
+        "skill": "Smithing",
+        "level": 97,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune chainbody",
+        "output_id": 1113,
+        "skill": "Smithing",
+        "level": 96,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune battleaxe",
+        "output_id": 1373,
+        "skill": "Smithing",
+        "level": 95,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune warhammer",
+        "output_id": 1347,
+        "skill": "Smithing",
+        "level": 94,
+        "xp": 225.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Rune sq shield",
+        "output_id": 1185,
+        "skill": "Smithing",
+        "level": 93,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Rune full helm",
+        "output_id": 1163,
+        "skill": "Smithing",
+        "level": 92,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Rune longsword",
+        "output_id": 1303,
+        "skill": "Smithing",
+        "level": 91,
+        "xp": 150.0,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Rune scimitar",
+        "output_id": 1333,
+        "skill": "Smithing",
+        "level": 90,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Rune sword",
+        "output_id": 1289,
+        "skill": "Smithing",
+        "level": 89,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 1}
+        ]
+    },
+    {
+        "name": "Rune med helm",
+        "output_id": 1147,
+        "skill": "Smithing",
+        "level": 88,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 1}
+        ]
+    },
+    {
+        "name": "Rune mace",
+        "output_id": 1432,
+        "skill": "Smithing",
+        "level": 87,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 1}
+        ]
+    },
+    {
+        "name": "Rune axe",
+        "output_id": 1359,
+        "skill": "Smithing",
+        "level": 86,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 1}
+        ]
+    },
+    {
+        "name": "Rune pickaxe",
+        "output_id": 1275,
+        "skill": "Smithing",
+        "level": 86,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 1}
+        ]
+    },
+    {
+        "name": "Rune dagger",
+        "output_id": 1213,
+        "skill": "Smithing",
+        "level": 85,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2363, "name": "Runite bar", "qty": 1}
+        ]
+    },
+
+    # ------------------ SMITHING (ADAMANTITE) ------------------
+    {
+        "name": "Adamant platebody",
+        "output_id": 1123,
+        "skill": "Smithing",
+        "level": 88,
+        "xp": 312.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 5}
+        ]
+    },
+    {
+        "name": "Adamant 2h sword",
+        "output_id": 1317,
+        "skill": "Smithing",
+        "level": 89,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Adamant platelegs",
+        "output_id": 1073,
+        "skill": "Smithing",
+        "level": 86,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Adamant plateskirt",
+        "output_id": 1091,
+        "skill": "Smithing",
+        "level": 86,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Adamant kiteshield",
+        "output_id": 1199,
+        "skill": "Smithing",
+        "level": 87,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Adamant battleaxe",
+        "output_id": 1371,
+        "skill": "Smithing",
+        "level": 85,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Adamant chainbody",
+        "output_id": 1111,
+        "skill": "Smithing",
+        "level": 81,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+
+    # ------------------ SMITHING (MITHRIL & STEEL) ------------------
+    {
+        "name": "Mithril platebody",
+        "output_id": 1121,
+        "skill": "Smithing",
+        "level": 68,
+        "xp": 250.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 5}
+        ]
+    },
+    {
+        "name": "Steel platebody",
+        "output_id": 1119,
+        "skill": "Smithing",
+        "level": 48,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 5}
+        ]
+    },
+
+    # ------------------ MAGIC (JEWELLERY ENCHANTING) ------------------
+    {
+        "name": "Amulet of glory",
+        "output_id": 1704,
+        "skill": "Magic",
+        "level": 68,
+        "xp": 78.0,
+        "members": True,
+        "materials": [
+            {"id": 1662, "name": "Dragonstone amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Amulet of power",
+        "output_id": 1731,
+        "skill": "Magic",
+        "level": 57,
+        "xp": 67.0,
+        "members": False,
+        "materials": [
+            {"id": 1660, "name": "Diamond amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Amulet of strength",
+        "output_id": 1725,
+        "skill": "Magic",
+        "level": 49,
+        "xp": 59.0,
+        "members": False,
+        "materials": [
+            {"id": 1658, "name": "Ruby amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Amulet of defence",
+        "output_id": 1729,
+        "skill": "Magic",
+        "level": 27,
+        "xp": 37.0,
+        "members": False,
+        "materials": [
+            {"id": 1656, "name": "Emerald amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Amulet of magic",
+        "output_id": 1727,
+        "skill": "Magic",
+        "level": 7,
+        "xp": 17.5,
+        "members": False,
+        "materials": [
+            {"id": 1654, "name": "Sapphire amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Ring of wealth",
+        "output_id": 2572,
+        "skill": "Magic",
+        "level": 68,
+        "xp": 78.0,
+        "members": True,
+        "materials": [
+            {"id": 1645, "name": "Dragonstone ring", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Ring of life",
+        "output_id": 2570,
+        "skill": "Magic",
+        "level": 57,
+        "xp": 67.0,
+        "members": True,
+        "materials": [
+            {"id": 1643, "name": "Diamond ring", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Ring of dueling(8)",
+        "output_id": 2552,
+        "skill": "Magic",
+        "level": 27,
+        "xp": 37.0,
+        "members": True,
+        "materials": [
+            {"id": 1639, "name": "Emerald ring", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Games necklace(8)",
+        "output_id": 3853,
+        "skill": "Magic",
+        "level": 7,
+        "xp": 17.5,
+        "members": True,
+        "materials": [
+            {"id": 1654, "name": "Sapphire necklace", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Combat bracelet",
+        "output_id": 11126,
+        "skill": "Magic",
+        "level": 68,
+        "xp": 78.0,
+        "members": True,
+        "materials": [
+            {"id": 11115, "name": "Dragonstone bracelet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+
+    # ------------------ FLETCHING (SHIELDS) ------------------
+    {
+        "name": "Magic shield",
+        "output_id": 22263,
+        "skill": "Fletching",
+        "level": 87,
+        "xp": 183.0,
+        "members": True,
+        "materials": [
+            {"id": 1513, "name": "Magic logs", "qty": 2}
+        ]
+    },
+    {
+        "name": "Yew shield",
+        "output_id": 22260,
+        "skill": "Fletching",
+        "level": 72,
+        "xp": 150.0,
+        "members": True,
+        "materials": [
+            {"id": 1515, "name": "Yew logs", "qty": 2}
+        ]
+    },
+    {
+        "name": "Maple shield",
+        "output_id": 22257,
+        "skill": "Fletching",
+        "level": 57,
+        "xp": 116.5,
+        "members": True,
+        "materials": [
+            {"id": 1517, "name": "Maple logs", "qty": 2}
+        ]
     }
 ]

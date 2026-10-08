@@ -995,7 +995,7 @@ class OSRSAlchDashboard(tk.Tk):
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
-        sub_top.pack(fill="x", padx=6, pady=6)
+        sub_top.pack(fill="x", padx=6, pady=(6, 2))
 
         tk.Label(sub_top, text="Your Stats:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=4)
 
@@ -1006,6 +1006,13 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_craft_lvl.pack(side="left", padx=(2, 6))
         self.ent_craft_lvl.bind("<FocusOut>", self.on_levels_changed)
         ToolTip(self.ent_craft_lvl, "Your in-game Crafting level. Recipes above this level are flagged or hidden.")
+
+        tk.Label(sub_top, text="Smithing:", fg="#cccccc", bg="#252528").pack(side="left")
+        self.ent_smith_lvl = tk.Entry(sub_top, width=4, bg="#1e1e1e", fg="#ffffff", relief="flat")
+        self.ent_smith_lvl.insert(0, str(levels.get("Smithing", 99)))
+        self.ent_smith_lvl.pack(side="left", padx=(2, 6))
+        self.ent_smith_lvl.bind("<FocusOut>", self.on_levels_changed)
+        ToolTip(self.ent_smith_lvl, "Your in-game Smithing level. Recipes above this level are flagged or hidden.")
 
         tk.Label(sub_top, text="Fletching:", fg="#cccccc", bg="#252528").pack(side="left")
         self.ent_fletch_lvl = tk.Entry(sub_top, width=4, bg="#1e1e1e", fg="#ffffff", relief="flat")
@@ -1025,14 +1032,50 @@ class OSRSAlchDashboard(tk.Tk):
         cb_usable = tk.Checkbutton(sub_top, text="Only Show Usable Recipes", variable=self.var_only_usable, command=self.on_levels_changed,
                                    bg="#252528", fg="#2ecc71", selectcolor="#2d2d30", activebackground="#252528")
         cb_usable.pack(side="left", padx=6)
-        ToolTip(cb_usable, "Filter out recipes that exceed your current Crafting, Fletching, or Magic levels.")
+        ToolTip(cb_usable, "Filter out recipes that exceed your current Crafting, Smithing, Fletching, or Magic levels.")
 
         # Recipe Search Box
         tk.Label(sub_top, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(12, 2))
         self.ent_craft_search = tk.Entry(sub_top, width=14, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
         self.ent_craft_search.pack(side="left", padx=(0, 6))
         self.ent_craft_search.bind("<KeyRelease>", lambda e: self.recalculate_craft_table())
-        ToolTip(self.ent_craft_search, "Filter recipes by name (e.g. 'diamond', 'ring', 'necklace', 'bow').")
+        ToolTip(self.ent_craft_search, "Filter recipes by name (e.g. 'rune', 'diamond', 'ring', 'body', 'bow').")
+
+        # Category Skill Toggle Buttons Row
+        sub_filters = tk.Frame(self.tab_craft, bg="#202023")
+        sub_filters.pack(fill="x", padx=6, pady=(0, 6))
+
+        tk.Label(sub_filters, text="Categories:", font=("Segoe UI", 9, "bold"), fg="#3498db", bg="#202023").pack(side="left", padx=(4, 6))
+
+        self.var_filter_craft = tk.BooleanVar(value=self.state.config.get("filter_craft", True))
+        self.var_filter_smith = tk.BooleanVar(value=self.state.config.get("filter_smith", True))
+        self.var_filter_fletch = tk.BooleanVar(value=self.state.config.get("filter_fletch", True))
+        self.var_filter_magic = tk.BooleanVar(value=self.state.config.get("filter_magic", True))
+
+        cb_craft = tk.Checkbutton(sub_filters, text="🔨 Crafting", variable=self.var_filter_craft, command=self.on_skill_filter_changed,
+                                  bg="#202023", fg="#e67e22", selectcolor="#2d2d30", activebackground="#202023", activeforeground="#e67e22", font=("Segoe UI", 9, "bold"))
+        cb_craft.pack(side="left", padx=4)
+        ToolTip(cb_craft, "Toggle Crafting recipes (Gold/Silver Jewellery, D'hide Armour, Battlestaves).")
+
+        cb_smith = tk.Checkbutton(sub_filters, text="⚒️ Smithing", variable=self.var_filter_smith, command=self.on_skill_filter_changed,
+                                  bg="#202023", fg="#95a5a6", selectcolor="#2d2d30", activebackground="#202023", activeforeground="#bdc3c7", font=("Segoe UI", 9, "bold"))
+        cb_smith.pack(side="left", padx=4)
+        ToolTip(cb_smith, "Toggle Smithing recipes (Rune, Adamant, Mithril weapons & armour from bars at an anvil).")
+
+        cb_fletch = tk.Checkbutton(sub_filters, text="🏹 Fletching", variable=self.var_filter_fletch, command=self.on_skill_filter_changed,
+                                   bg="#202023", fg="#2ecc71", selectcolor="#2d2d30", activebackground="#202023", activeforeground="#2ecc71", font=("Segoe UI", 9, "bold"))
+        cb_fletch.pack(side="left", padx=4)
+        ToolTip(cb_fletch, "Toggle Fletching recipes (Bows, Crossbows, and Shields from logs).")
+
+        cb_magic = tk.Checkbutton(sub_filters, text="✨ Magic", variable=self.var_filter_magic, command=self.on_skill_filter_changed,
+                                  bg="#202023", fg="#9b59b6", selectcolor="#2d2d30", activebackground="#202023", activeforeground="#9b59b6", font=("Segoe UI", 9, "bold"))
+        cb_magic.pack(side="left", padx=4)
+        ToolTip(cb_magic, "Toggle Magic Enchanting recipes (Enchanting jewellery with Cosmic runes).")
+
+        btn_all = tk.Button(sub_filters, text="All", command=self.select_all_skill_filters, bg="#2d2d30", fg="#f1f1f1", relief="flat", padx=6, font=("Segoe UI", 8))
+        btn_all.pack(side="left", padx=(10, 2))
+        btn_none = tk.Button(sub_filters, text="None", command=self.clear_all_skill_filters, bg="#2d2d30", fg="#888888", relief="flat", padx=6, font=("Segoe UI", 8))
+        btn_none.pack(side="left", padx=2)
 
         container = ttk.Frame(self.tab_craft)
         container.pack(fill="both", expand=True)
@@ -1744,6 +1787,15 @@ class OSRSAlchDashboard(tk.Tk):
                 continue
 
             req_skill = r["skill"]
+            if req_skill == "Crafting" and hasattr(self, "var_filter_craft") and not self.var_filter_craft.get():
+                continue
+            if req_skill == "Smithing" and hasattr(self, "var_filter_smith") and not self.var_filter_smith.get():
+                continue
+            if req_skill == "Fletching" and hasattr(self, "var_filter_fletch") and not self.var_filter_fletch.get():
+                continue
+            if req_skill == "Magic" and hasattr(self, "var_filter_magic") and not self.var_filter_magic.get():
+                continue
+
             req_lvl = r["level"]
             player_lvl = levels.get(req_skill, 99)
             can_make = player_lvl >= req_lvl
@@ -2569,14 +2621,37 @@ class OSRSAlchDashboard(tk.Tk):
     def on_levels_changed(self, event=None):
         try:
             c = int(self.ent_craft_lvl.get())
+            s = int(self.ent_smith_lvl.get()) if hasattr(self, "ent_smith_lvl") else 99
             f = int(self.ent_fletch_lvl.get())
             m = int(self.ent_mage_lvl.get())
-            self.state.config["player_levels"] = {"Crafting": c, "Fletching": f, "Magic": m}
+            self.state.config["player_levels"] = {"Crafting": c, "Smithing": s, "Fletching": f, "Magic": m}
         except ValueError:
             pass
         self.state.config["only_usable_recipes"] = self.var_only_usable.get()
         self.save_preferences()
         self.recalculate_craft_table()
+
+    def on_skill_filter_changed(self):
+        self.state.config["filter_craft"] = self.var_filter_craft.get()
+        self.state.config["filter_smith"] = self.var_filter_smith.get()
+        self.state.config["filter_fletch"] = self.var_filter_fletch.get()
+        self.state.config["filter_magic"] = self.var_filter_magic.get()
+        self.save_preferences()
+        self.recalculate_craft_table()
+
+    def select_all_skill_filters(self):
+        self.var_filter_craft.set(True)
+        self.var_filter_smith.set(True)
+        self.var_filter_fletch.set(True)
+        self.var_filter_magic.set(True)
+        self.on_skill_filter_changed()
+
+    def clear_all_skill_filters(self):
+        self.var_filter_craft.set(False)
+        self.var_filter_smith.set(False)
+        self.var_filter_fletch.set(False)
+        self.var_filter_magic.set(False)
+        self.on_skill_filter_changed()
 
     def on_hide_maxed_changed(self):
         self.state.config["hide_maxed_cooldown"] = self.var_hide_maxed.get()
@@ -2661,10 +2736,20 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_craft_lvl.insert(0, str(levels["Crafting"]))
                     self.state.config.setdefault("player_levels", {})["Crafting"] = levels["Crafting"]
 
+                if hasattr(self, "ent_smith_lvl") and "Smithing" in levels:
+                    self.ent_smith_lvl.delete(0, tk.END)
+                    self.ent_smith_lvl.insert(0, str(levels["Smithing"]))
+                    self.state.config.setdefault("player_levels", {})["Smithing"] = levels["Smithing"]
+
                 if hasattr(self, "ent_fletch_lvl") and "Fletching" in levels:
                     self.ent_fletch_lvl.delete(0, tk.END)
                     self.ent_fletch_lvl.insert(0, str(levels["Fletching"]))
                     self.state.config.setdefault("player_levels", {})["Fletching"] = levels["Fletching"]
+
+                if hasattr(self, "ent_mage_lvl") and "Magic" in levels:
+                    self.ent_mage_lvl.delete(0, tk.END)
+                    self.ent_mage_lvl.insert(0, str(levels["Magic"]))
+                    self.state.config.setdefault("player_levels", {})["Magic"] = levels["Magic"]
 
         self._sync_cart_from_ge()
 
@@ -2704,6 +2789,7 @@ class OSRSAlchDashboard(tk.Tk):
             is_mem = data.get("isMembers", True)
             levels = {
                 "Crafting": data.get("crafting", 99),
+                "Smithing": data.get("smithing", 99),
                 "Fletching": data.get("fletching", 99),
                 "Magic": data.get("magic", 99)
             }
@@ -2734,6 +2820,7 @@ class OSRSAlchDashboard(tk.Tk):
         elif event_type == "SKILLS_SYNC":
             levels = {
                 "Crafting": data.get("crafting"),
+                "Smithing": data.get("smithing"),
                 "Fletching": data.get("fletching"),
                 "Magic": data.get("magic")
             }
