@@ -1,17 +1,28 @@
 package net.runelite.client.plugins.microbot.alchbridge;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -32,13 +43,15 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @PluginDescriptor(
     name = "<html>[<font color=green>A</font>] Alch Dashboard Bridge",
-    description = "Pipes live GE trades, 4h timers, cash stack, nature runes, and alch XP to OSRS Alch Dashboard",
-    tags = {"alch", "ge", "tracker", "bridge", "dashboard", "microbot"},
+    description = "Pipes live GE trades, 4h timers, cash stack, nature runes, and provides in-game Top 10 Alchs side panel",
+    tags = {"alch", "ge", "tracker", "bridge", "dashboard", "microbot", "panel"},
     enabledByDefault = true
 )
 public class AlchBridgePlugin extends Plugin {
@@ -56,8 +69,15 @@ public class AlchBridgePlugin extends Plugin {
     @Inject
     private Gson gson;
 
+    @Inject
+    private ClientToolbar clientToolbar;
+
+    private AlchBridgePanel panel;
+    private NavigationButton navButton;
+
     private HttpClient httpClient;
     private ExecutorService httpExecutor;
+    private ScheduledExecutorService pollerExecutor;
 
     private final Map<Integer, String> lastOfferState = new ConcurrentHashMap<>();
     private int lastMagicXp = -1;
@@ -77,6 +97,20 @@ public class AlchBridgePlugin extends Plugin {
             .connectTimeout(Duration.ofMillis(800))
             .build();
 
+        // Create in-game sidebar panel
+        panel = new AlchBridgePanel(this);
+        navButton = NavigationButton.builder()
+            .tooltip("Alch Tracker - Top 10 Flips")
+            .icon(createIcon())
+            .priority(6)
+            .panel(panel)
+            .build();
+        clientToolbar.addNavigation(navButton);
+
+        // Start background poller to fetch Top 10 items from Python tracker every 3 seconds
+        pollerExecutor = Executors.newSingleThreadScheduledExecutor();
+        pollerExecutor.scheduleWithFixedDelay(this::fetchTop10Async, 1, 3, TimeUnit.SECONDS);
+
         log.info("Alch Dashboard Bridge plugin started (Port: {})", config.bridgePort());
 
         if (client.getGameState() == GameState.LOGGED_IN) {
@@ -86,6 +120,12 @@ public class AlchBridgePlugin extends Plugin {
 
     @Override
     protected void shutDown() {
+        if (clientToolbar != null && navButton != null) {
+            clientToolbar.removeNavigation(navButton);
+        }
+        if (pollerExecutor != null && !pollerExecutor.isShutdown()) {
+            pollerExecutor.shutdownNow();
+        }
         if (httpExecutor != null && !httpExecutor.isShutdown()) {
             httpExecutor.shutdownNow();
         }
@@ -94,6 +134,61 @@ public class AlchBridgePlugin extends Plugin {
         lastCoins = -1;
         lastNatureRunes = -1;
         log.info("Alch Dashboard Bridge plugin stopped");
+    }
+
+    public void fetchTop10Async() {
+        if (httpClient == null) return;
+        try {
+            int port = config.bridgePort();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/api/top10"))
+                .timeout(Duration.ofMillis(1200))
+                .GET()
+                .build();
+
+            httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(resp -> {
+                    if (resp.statusCode() == 200) {
+                        Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+                        List<Map<String, Object>> items = gson.fromJson(resp.body(), listType);
+                        if (panel != null) {
+                            panel.updateTop10(items, true);
+                        }
+                    } else {
+                        if (panel != null) {
+                            panel.updateTop10(null, false);
+                        }
+                    }
+                })
+                .exceptionally(ex -> {
+                    if (panel != null) {
+                        panel.updateTop10(null, false);
+                    }
+                    return null;
+                });
+        } catch (Exception e) {
+            if (panel != null) {
+                panel.updateTop10(null, false);
+            }
+        }
+    }
+
+    private BufferedImage createIcon() {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(new Color(243, 156, 18));
+        g.fillOval(1, 1, 14, 14);
+        g.setColor(new Color(211, 84, 0));
+        g.drawOval(1, 1, 14, 14);
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("SansSerif", Font.BOLD, 10));
+        FontMetrics fm = g.getFontMetrics();
+        int x = (16 - fm.stringWidth("A")) / 2;
+        int y = ((16 - fm.getHeight()) / 2) + fm.getAscent();
+        g.drawString("A", x, y);
+        g.dispose();
+        return image;
     }
 
     private String getAccountName() {
@@ -113,53 +208,46 @@ public class AlchBridgePlugin extends Plugin {
     }
 
     @Subscribe
+    public void onGameStateChanged(GameStateChanged event) {
+        if (event.getGameState() == GameState.LOGGED_IN) {
+            sendAccountSnapshot();
+        }
+    }
+
+    @Subscribe
     public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event) {
         GrandExchangeOffer offer = event.getOffer();
-        if (offer == null) {
-            return;
-        }
-
         int slot = event.getSlot();
-        int itemId = offer.getItemId();
-        int qtySold = offer.getQuantitySold();
-        int totalQty = offer.getTotalQuantity();
-        long price = offer.getPrice();
-        long spent = offer.getSpent();
-        GrandExchangeOfferState state = offer.getState();
-        String stateStr = state != null ? state.name() : "EMPTY";
 
-        // De-duplicate unchanged duplicate events
-        String offerKey = itemId + "_" + qtySold + "_" + totalQty + "_" + stateStr + "_" + spent;
-        String prev = lastOfferState.get(slot);
-        if (offerKey.equals(prev)) {
+        GrandExchangeOfferState state = offer.getState();
+        String stateName = state.name();
+        String lastState = lastOfferState.get(slot);
+
+        if (stateName.equals(lastState) && offer.getQuantitySold() == 0) {
             return;
         }
-        lastOfferState.put(slot, offerKey);
+        lastOfferState.put(slot, stateName);
 
-        String itemName = "";
-        if (itemId > 0) {
-            try {
-                itemName = itemManager.getItemComposition(itemId).getName();
-            } catch (Exception ignored) {
-            }
+        // Only track BUY offers
+        if (state == GrandExchangeOfferState.BUYING || state == GrandExchangeOfferState.BOUGHT) {
+            int itemId = offer.getItemId();
+            String itemName = itemManager.getItemComposition(itemId).getName();
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("event", "GE_OFFER");
+            data.put("account", getAccountName());
+            data.put("slot", slot);
+            data.put("state", stateName);
+            data.put("itemId", itemId);
+            data.put("itemName", itemName);
+            data.put("price", offer.getPrice());
+            data.put("spent", offer.getSpent());
+            data.put("quantitySold", offer.getQuantitySold());
+            data.put("totalQuantity", offer.getTotalQuantity());
+            data.put("timestamp", System.currentTimeMillis() / 1000.0);
+
+            sendPayload(data);
         }
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("event", "GE_OFFER");
-        data.put("account", getAccountName());
-        data.put("slot", slot);
-        data.put("itemId", itemId);
-        data.put("itemName", itemName);
-        data.put("quantitySold", qtySold);
-        data.put("totalQuantity", totalQty);
-        data.put("price", price);
-        data.put("spent", spent);
-        data.put("state", stateStr);
-        data.put("world", client.getWorld());
-        data.put("isMembers", isMembersWorld());
-        data.put("timestamp", System.currentTimeMillis() / 1000.0);
-
-        sendPayload(data);
     }
 
     @Subscribe
@@ -168,38 +256,34 @@ public class AlchBridgePlugin extends Plugin {
             return;
         }
 
-        int containerId = event.getContainerId();
-        ItemContainer container = event.getItemContainer();
-        if (container == null) {
-            return;
-        }
+        if (event.getContainerId() == InventoryID.INVENTORY.getId()) {
+            ItemContainer inv = event.getItemContainer();
+            int coins = inv.count(ItemID.COINS_995);
+            int natureRunes = inv.count(ItemID.NATURE_RUNE);
 
-        if (containerId == InventoryID.INVENTORY.getId()) {
-            int coins = container.count(ItemID.COINS_995);
-            int nats = container.count(ItemID.NATURE_RUNE);
-
-            if (coins != lastCoins || nats != lastNatureRunes) {
+            if (coins != lastCoins || natureRunes != lastNatureRunes) {
                 lastCoins = coins;
-                lastNatureRunes = nats;
+                lastNatureRunes = natureRunes;
 
                 Map<String, Object> data = new HashMap<>();
                 data.put("event", "INVENTORY_SYNC");
                 data.put("account", getAccountName());
                 data.put("coins", coins);
-                data.put("natureRunes", nats);
+                data.put("natureRunes", natureRunes);
                 data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
                 sendPayload(data);
             }
-        } else if (containerId == InventoryID.BANK.getId()) {
-            int bankCoins = container.count(ItemID.COINS_995);
-            int bankNats = container.count(ItemID.NATURE_RUNE);
+        } else if (event.getContainerId() == InventoryID.BANK.getId()) {
+            ItemContainer bank = event.getItemContainer();
+            int coins = bank.count(ItemID.COINS_995);
+            int natureRunes = bank.count(ItemID.NATURE_RUNE);
 
             Map<String, Object> data = new HashMap<>();
             data.put("event", "BANK_SYNC");
             data.put("account", getAccountName());
-            data.put("bankCoins", bankCoins);
-            data.put("bankNatureRunes", bankNats);
+            data.put("bankCoins", coins);
+            data.put("bankNatureRunes", natureRunes);
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
             sendPayload(data);
@@ -209,24 +293,23 @@ public class AlchBridgePlugin extends Plugin {
     @Subscribe
     public void onStatChanged(StatChanged event) {
         Skill skill = event.getSkill();
-        if (skill == Skill.MAGIC) {
+        if (skill == Skill.MAGIC && config.trackAlchCasts()) {
             int currentXp = event.getXp();
-            if (config.trackAlchCasts() && lastMagicXp > 0) {
-                int xpDiff = currentXp - lastMagicXp;
-                if (xpDiff == 65) { // Exactly 1 High Alchemy cast!
+            if (lastMagicXp > 0) {
+                int diff = currentXp - lastMagicXp;
+                if (diff == 65) {
                     Map<String, Object> data = new HashMap<>();
                     data.put("event", "ALCH_CAST");
                     data.put("account", getAccountName());
                     data.put("xpGained", 65);
+                    data.put("magicLevel", event.getLevel());
                     data.put("timestamp", System.currentTimeMillis() / 1000.0);
-
                     sendPayload(data);
                 }
             }
             lastMagicXp = currentXp;
         }
 
-        // Send skill level updates
         if (skill == Skill.CRAFTING || skill == Skill.FLETCHING || skill == Skill.MAGIC) {
             Map<String, Object> data = new HashMap<>();
             data.put("event", "SKILLS_SYNC");
@@ -235,22 +318,14 @@ public class AlchBridgePlugin extends Plugin {
             data.put("fletching", client.getRealSkillLevel(Skill.FLETCHING));
             data.put("magic", client.getRealSkillLevel(Skill.MAGIC));
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
-
             sendPayload(data);
-        }
-    }
-
-    @Subscribe
-    public void onGameStateChanged(GameStateChanged event) {
-        if (event.getGameState() == GameState.LOGGED_IN) {
-            sendAccountSnapshot();
         }
     }
 
     private void sendAccountSnapshot() {
         try {
             Map<String, Object> data = new HashMap<>();
-            data.put("event", "ACCOUNT_LOGIN");
+            data.put("event", "ACCOUNT_SNAPSHOT");
             data.put("account", getAccountName());
             data.put("world", client.getWorld());
             data.put("isMembers", isMembersWorld());

@@ -247,6 +247,9 @@ class OSRSPricesAPI:
         spike_info = self.get_spike_info(item_id)
         is_spike, spike_pct, lat_low, avg_low_p, vol_5m_l = spike_info
 
+        finfo = self.five_min_prices.get(iid_str, {}) if hasattr(self, "five_min_prices") else {}
+        avg_high_p = finfo.get("avg_high") or 0
+
         return {
             "last_trade_time": last_trade_time,
             "age_secs": age_secs,
@@ -262,7 +265,8 @@ class OSRSPricesAPI:
             "is_spike": is_spike,
             "spike_pct": spike_pct,
             "latest_low": lat_low,
-            "avg_low": avg_low_p
+            "avg_low": avg_low_p,
+            "avg_high": avg_high_p
         }
 
     def get_spike_info(self, item_id):

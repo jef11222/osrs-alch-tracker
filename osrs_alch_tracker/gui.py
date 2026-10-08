@@ -1644,6 +1644,29 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_alch.tag_configure("loss", foreground="#e74c3c")
         self.tree_alch.tag_configure("incart", font=("Segoe UI", 9, "bold"))
 
+        # Update BridgeServer with Top 10 recommendations for in-game plugin
+        if hasattr(self, "bridge_server") and self.bridge_server:
+            top_list = []
+            for r in self.alch_rows:
+                if r["profit_ea"] > 0 and r["limit"] > 0:
+                    metrics = self.api.get_quote_metrics(r["id"])
+                    top_list.append({
+                        "id": r["id"],
+                        "name": r["name"],
+                        "buy_price": r["buy_at"],
+                        "alch_value": r["alch_val"],
+                        "profit_ea": r["profit_ea"],
+                        "profit_hr": r["profit_hr"],
+                        "limit": r["limit"],
+                        "speed": r["speed_badge"],
+                        "vol_5m": metrics.get("vol_5m_low", 0),
+                        "vol_5m_price": metrics.get("avg_low", 0),
+                        "vol_24h": r["volume"]
+                    })
+                if len(top_list) >= 10:
+                    break
+            self.bridge_server.set_top_items(top_list)
+
     def toggle_sort_alch(self, col):
         if self.alch_sort_col == col:
             if col == "name":
@@ -2031,8 +2054,10 @@ class OSRSAlchDashboard(tk.Tk):
                 ("Net Profit / Alch:", f"{profit_ea:+,} gp ({roi_pct:+.1f}%)", "#2ecc71" if profit_ea >= 0 else "#e74c3c"),
                 ("Profit / Hr (1.2k):", f"{p_hr_k:+.1f}k GP/hr", "#2ecc71" if p_hr_k >= 0 else "#e74c3c"),
                 ("Fill Velocity:", speed_badge, speed_col),
-                ("24h Vol / 5m:", f"{row['volume']:,}  (5m: {metrics['vol_5m_total']:,})", "#f1f1f1"),
-                ("5m Sold into Bids:", f"{metrics['vol_5m_low']:,} items", "#2ecc71" if metrics['vol_5m_low'] >= 3 else ("#f1c40f" if metrics['vol_5m_low'] > 0 else "#e74c3c")),
+                ("24h Traded Volume:", f"{row['volume']:,} items", "#f1f1f1"),
+                ("5m Sells into Bids:", f"{metrics['vol_5m_low']:,} items @ ~{metrics['avg_low']:,} gp" if metrics['vol_5m_low'] > 0 else "0 items", "#2ecc71" if metrics['vol_5m_low'] >= 3 else ("#f1c40f" if metrics['vol_5m_low'] > 0 else "#e74c3c")),
+                ("5m Buys from Asks:", f"{metrics['vol_5m_high']:,} items @ ~{metrics['avg_high']:,} gp" if metrics['vol_5m_high'] > 0 else "0 items", "#3498db" if metrics['vol_5m_high'] > 0 else "#95a5a6"),
+                ("5m Total Traded:", f"{metrics['vol_5m_total']:,} items (~{metrics['vol_5m_total'] * 12:,}/hr)", "#2ecc71" if metrics['vol_5m_total'] >= 10 else "#f1f1f1"),
                 ("4h Buy Limit:", limit_info, "#e67e22" if row.get("is_vol_capped") else "#f1f1f1"),
                 ("4h Batch Profit:", f"{row['batch_profit']:+,} gp", "#2ecc71" if row["batch_profit"] >= 0 else "#e74c3c"),
                 ("Quote Freshness:", metrics["age_str"], "#e67e22" if metrics["is_stale"] else "#95a5a6"),

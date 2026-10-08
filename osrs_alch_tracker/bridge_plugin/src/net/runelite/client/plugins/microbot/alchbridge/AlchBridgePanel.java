@@ -1,0 +1,273 @@
+package net.runelite.client.plugins.microbot.alchbridge;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.PluginPanel;
+
+public class AlchBridgePanel extends PluginPanel {
+    private static final Color GOLD = new Color(243, 156, 18);
+    private static final Color PROFIT_GREEN = new Color(46, 204, 113);
+    private static final Color CARD_BG = new Color(30, 30, 34);
+    private static final Color CARD_HOVER = new Color(40, 40, 46);
+
+    private final JLabel statusLabel = new JLabel("Connecting to tracker...");
+    private final JLabel bannerLabel = new JLabel("Click item or price to copy");
+    private final JPanel listContainer = new JPanel();
+    private final NumberFormat numFmt = NumberFormat.getInstance(Locale.US);
+
+    public AlchBridgePanel(AlchBridgePlugin plugin) {
+        super(false);
+        setLayout(new BorderLayout());
+        setBackground(ColorScheme.DARK_GRAY_COLOR);
+
+        // Header
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+        headerPanel.setBorder(new EmptyBorder(10, 10, 8, 10));
+        headerPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        JLabel titleLabel = new JLabel("OSRS Alch Tracker");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        titleLabel.setForeground(GOLD);
+        titleLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+        bannerLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        bannerLabel.setForeground(new Color(180, 180, 180));
+        bannerLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+        JPanel btnRow = new JPanel(new BorderLayout());
+        btnRow.setOpaque(false);
+        btnRow.setBorder(new EmptyBorder(6, 0, 0, 0));
+
+        JButton refreshBtn = new JButton("🔄 Refresh Top 10");
+        refreshBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        refreshBtn.addActionListener(e -> plugin.fetchTop10Async());
+        btnRow.add(refreshBtn, BorderLayout.CENTER);
+
+        headerPanel.add(titleLabel);
+        headerPanel.add(Box.createVerticalStrut(3));
+        headerPanel.add(statusLabel);
+        headerPanel.add(Box.createVerticalStrut(4));
+        headerPanel.add(bannerLabel);
+        headerPanel.add(btnRow);
+
+        add(headerPanel, BorderLayout.NORTH);
+
+        // Content List Container
+        listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
+        listContainer.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        listContainer.setBorder(new EmptyBorder(6, 6, 6, 6));
+
+        showEmptyState("Waiting for Alch Tracker data...\nMake sure the Python app is open.");
+
+        JScrollPane scrollPane = new JScrollPane(listContainer);
+        scrollPane.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        add(scrollPane, BorderLayout.CENTER);
+    }
+
+    private void showEmptyState(String msg) {
+        listContainer.removeAll();
+        JLabel emptyLabel = new JLabel("<html><center>" + msg.replace("\n", "<br>") + "</center></html>");
+        emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        emptyLabel.setForeground(Color.GRAY);
+        emptyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        emptyLabel.setAlignmentX(CENTER_ALIGNMENT);
+        listContainer.add(Box.createVerticalStrut(20));
+        listContainer.add(emptyLabel);
+        listContainer.revalidate();
+        listContainer.repaint();
+    }
+
+    public void updateTop10(List<Map<String, Object>> items, boolean connected) {
+        SwingUtilities.invokeLater(() -> {
+            if (!connected) {
+                statusLabel.setText("🔴 Tracker Offline (Port 18833)");
+                statusLabel.setForeground(new Color(231, 76, 60));
+                showEmptyState("Cannot reach Alch Tracker app.\nCheck that the tracker is running.");
+                return;
+            }
+
+            statusLabel.setText("🟢 Connected to Alch Tracker");
+            statusLabel.setForeground(PROFIT_GREEN);
+
+            if (items == null || items.isEmpty()) {
+                showEmptyState("No profitable items found matching current filters.");
+                return;
+            }
+
+            listContainer.removeAll();
+            int rank = 1;
+            for (Map<String, Object> it : items) {
+                String name = String.valueOf(it.getOrDefault("name", "Unknown"));
+                long buyPrice = parseLong(it.get("buy_price"));
+                long alchVal = parseLong(it.get("alch_value"));
+                long profitEa = parseLong(it.get("profit_ea"));
+                long limit = parseLong(it.get("limit"));
+                long vol5m = parseLong(it.get("vol_5m"));
+
+                JPanel card = createItemCard(rank++, name, buyPrice, alchVal, profitEa, limit, vol5m);
+                listContainer.add(card);
+                listContainer.add(Box.createVerticalStrut(6));
+            }
+
+            listContainer.revalidate();
+            listContainer.repaint();
+        });
+    }
+
+    private JPanel createItemCard(int rank, String name, long buyPrice, long alchVal, long profitEa, long limit, long vol5m) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(CARD_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(50, 50, 56), 1),
+            new EmptyBorder(6, 8, 6, 8)
+        ));
+
+        // Line 1: Rank + Name (Click to copy name)
+        JPanel line1 = new JPanel(new BorderLayout());
+        line1.setOpaque(false);
+
+        JLabel rankLabel = new JLabel("#" + rank + " ");
+        rankLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        rankLabel.setForeground(GOLD);
+
+        JLabel nameLabel = new JLabel(name);
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        nameLabel.setForeground(Color.WHITE);
+        nameLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        nameLabel.setToolTipText("Click to copy item name to clipboard");
+        nameLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                copyText(name, "Copied name: " + name);
+            }
+        });
+
+        line1.add(rankLabel, BorderLayout.WEST);
+        line1.add(nameLabel, BorderLayout.CENTER);
+
+        // Line 2: Target Buy Price (Click to copy price) + Copy Button
+        JPanel line2 = new JPanel(new BorderLayout());
+        line2.setOpaque(false);
+        line2.setBorder(new EmptyBorder(3, 0, 2, 0));
+
+        JLabel buyLabel = new JLabel("Buy: " + numFmt.format(buyPrice) + " gp");
+        buyLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        buyLabel.setForeground(new Color(52, 152, 219));
+        buyLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        buyLabel.setToolTipText("Click to copy buy offer price to clipboard");
+        buyLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                copyText(String.valueOf(buyPrice), "Copied price: " + buyPrice);
+            }
+        });
+
+        JButton copyBtn = new JButton("Copy Price");
+        copyBtn.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        copyBtn.setFocusPainted(false);
+        copyBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        copyBtn.setPreferredSize(new Dimension(80, 20));
+        copyBtn.addActionListener(e -> copyText(String.valueOf(buyPrice), "Copied price: " + buyPrice));
+
+        line2.add(buyLabel, BorderLayout.CENTER);
+        line2.add(copyBtn, BorderLayout.EAST);
+
+        // Line 3: High Alch + Profit
+        JPanel line3 = new JPanel(new GridLayout(1, 2));
+        line3.setOpaque(false);
+
+        JLabel alchLabel = new JLabel("Alch: " + numFmt.format(alchVal) + " gp");
+        alchLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        alchLabel.setForeground(new Color(241, 196, 15));
+
+        JLabel profitLabel = new JLabel("+" + numFmt.format(profitEa) + " gp ea", SwingConstants.RIGHT);
+        profitLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        profitLabel.setForeground(PROFIT_GREEN);
+
+        line3.add(alchLabel);
+        line3.add(profitLabel);
+
+        // Line 4: Limit + 5m Volume
+        JPanel line4 = new JPanel(new BorderLayout());
+        line4.setOpaque(false);
+        line4.setBorder(new EmptyBorder(2, 0, 0, 0));
+
+        String volStr = vol5m > 0 ? (vol5m + " sold (5m)") : "0 sold (5m)";
+        JLabel metaLabel = new JLabel("Limit: " + numFmt.format(limit) + " | " + volStr);
+        metaLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        metaLabel.setForeground(new Color(150, 150, 150));
+        line4.add(metaLabel, BorderLayout.CENTER);
+
+        card.add(line1);
+        card.add(line2);
+        card.add(line3);
+        card.add(line4);
+
+        // Card hover highlight
+        card.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                card.setBackground(CARD_HOVER);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                card.setBackground(CARD_BG);
+            }
+        });
+
+        return card;
+    }
+
+    private void copyText(String text, String bannerMsg) {
+        StringSelection sel = new StringSelection(text);
+        Clipboard cb = Toolkit.getDefaultToolkit().getSystemClipboard();
+        cb.setContents(sel, sel);
+
+        bannerLabel.setText("✓ " + bannerMsg);
+        bannerLabel.setForeground(PROFIT_GREEN);
+    }
+
+    private long parseLong(Object obj) {
+        if (obj == null) return 0;
+        if (obj instanceof Number) return ((Number) obj).longValue();
+        try {
+            return Long.parseLong(String.valueOf(obj).trim());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+}

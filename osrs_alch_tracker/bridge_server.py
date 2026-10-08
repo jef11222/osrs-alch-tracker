@@ -41,8 +41,18 @@ class BridgeRequestHandler(BaseHTTPRequestHandler):
         if self.path in ("/api/ping", "/api/status"):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            self.wfile.write(b'{"status":"online","service":"OSRS Alch Tracker Bridge"}')
+            items_count = len(getattr(self.server, "top_items", []))
+            res = json.dumps({"status": "online", "service": "OSRS Alch Tracker Bridge", "top10_count": items_count})
+            self.wfile.write(res.encode("utf-8"))
+        elif self.path in ("/api/top10", "/api/recommendations"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            items = getattr(self.server, "top_items", [])
+            self.wfile.write(json.dumps(items).encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()
@@ -54,11 +64,18 @@ class BridgeServer:
         self.httpd = None
         self.thread = None
         self.is_running = False
+        self.top_items = []
+
+    def set_top_items(self, items):
+        self.top_items = list(items or [])
+        if self.httpd:
+            self.httpd.top_items = self.top_items
 
     def start(self):
         try:
             self.httpd = HTTPServer(("127.0.0.1", self.port), BridgeRequestHandler)
             self.httpd.event_callback = self.event_callback
+            self.httpd.top_items = self.top_items
             self.is_running = True
             self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
             self.thread.start()
