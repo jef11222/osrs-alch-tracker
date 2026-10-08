@@ -279,6 +279,7 @@ class AppState:
         display_names = {}
         account_buylimits = {} # acc_name -> {iid: iso_str}
         account_trades = {}    # acc_name -> list of trades
+        account_slots = {}     # acc_name -> {iid: qty_sold}
 
         if raw_sync_data and isinstance(raw_sync_data, dict):
             acc = raw_sync_data.get("account", "Default")
@@ -293,6 +294,7 @@ class AppState:
 
             acc_hash_buylimits = {}
             acc_hash_trades = {}
+            acc_hash_slots = {}
 
             for p in profile_paths:
                 try:
@@ -327,6 +329,22 @@ class AppState:
                                             acc_hash_trades[acc_hash] = t_list
                                     except Exception:
                                         pass
+                            elif "geoffer." in line:
+                                parts = line.split("=")
+                                if len(parts) == 2:
+                                    key_parts = parts[0].split(".")
+                                    if len(key_parts) >= 3:
+                                        acc_hash = key_parts[2]
+                                        raw_slot = parts[1].replace(r"\:", ":")
+                                        try:
+                                            slot_obj = json.loads(raw_slot)
+                                            s_iid = str(slot_obj.get("itemId", 0))
+                                            s_sold = int(slot_obj.get("quantitySold", 0))
+                                            if s_iid != "0" and s_sold > 0:
+                                                slots_dict = acc_hash_slots.setdefault(acc_hash, {})
+                                                slots_dict[s_iid] = max(slots_dict.get(s_iid, 0), s_sold)
+                                        except Exception:
+                                            pass
                 except Exception:
                     pass
 
@@ -336,6 +354,9 @@ class AppState:
             for acc_hash, tr in acc_hash_trades.items():
                 acc_name = display_names.get(acc_hash, acc_hash)
                 account_trades[acc_name] = tr
+            for acc_hash, sl in acc_hash_slots.items():
+                acc_name = display_names.get(acc_hash, acc_hash)
+                account_slots[acc_name] = sl
 
         if not account_buylimits and not account_trades:
             return {"timers_updated": 0, "session_imported": 0}
@@ -350,6 +371,7 @@ class AppState:
 
         for acc_name, limits in account_buylimits.items():
             trades = account_trades.get(acc_name, [])
+            slots = account_slots.get(acc_name, {})
             for iid, iso_str in limits.items():
                 try:
                     exp_dt = datetime.datetime.fromisoformat(iso_str)
@@ -362,11 +384,29 @@ class AppState:
                             t for t in trades 
                             if str(t.get("i")) == str(iid) and t.get("b") and (t.get("t")/1000.0) >= (start_ts - 30)
                         ]
-                        tot_qty = sum(t.get("q", 0) for t in item_trades)
+                        trades_qty = sum(t.get("q", 0) for t in item_trades)
+                        slot_qty = slots.get(str(iid), 0)
+
+                        # Check session.json history within this 4h window
+                        session_qty = 0
+                        for eh in self.session.get("history", []):
+                            if str(eh.get("item_id", "")) == str(iid):
+                                eh_ts = eh.get("timestamp", 0)
+                                if eh_ts >= (start_ts - 30):
+                                    session_qty += eh.get("qty", 0)
+
+                        existing_qty = self.timers.get(key, {}).get("qty", 0)
 
                         mdata = mapping.get(str(iid), {})
                         name = mdata.get("name", self.timers.get(key, {}).get("name", f"Item {iid}"))
                         base_limit = mdata.get("limit", 0)
+
+                        tot_qty = max(trades_qty, slot_qty, session_qty, existing_qty)
+                        if tot_qty == 0 and base_limit > 0 and (now_local - start_ts) < 14400:
+                            # If RuneLite has an active buylimit timestamp for an alchable item,
+                            # but tradeHistory was cleared, default to base_limit if existing timer was maxed
+                            tot_qty = existing_qty if existing_qty > 0 else base_limit
+
                         if base_limit > 0 and tot_qty > base_limit:
                             tot_qty = base_limit
 

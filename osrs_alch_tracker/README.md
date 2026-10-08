@@ -10,6 +10,16 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **⭐ Smart Picks & Top Recommendations:**
+  - **🏆 All-Time Workhorses:** Instant access to Hall-of-Fame staples that veteran players rely on (Rune platelegs, plateskirts, 2h swords, kiteshields, battleaxes, Adamant platebody, Battlestaves, D'hide) with custom strategic verdicts.
+  - **⚡ Fast Fills (<5m):** High-velocity items with verified 5-minute sales that fill in minutes.
+  - **💰 Top 4h Batch Profit:** Highest total profit achievable in a single 4-hour Grand Exchange cycle.
+  - **🌙 Overnight Sleepers:** High-margin patient items ideal for queuing low bids before logging off.
+  - **⚡ 1-Click Auto-Fill Empty GE Slots:** Intelligently allocates empty GE slots (up to 8) with the most profitable non-cooldown items, automatically sized to your cash stack budget.
+- **🕒 OSRS Market Clock & Liquidity Window:**
+  - Live Grand Exchange server clock (UTC) synchronized with global player activity curves.
+  - Real-time Activity Meter and Status Badges (`🟢 Peak Liquidity Window`, `🟡 Evening Wind-Down`, `🌙 Off-Peak Sleepers Window`, `🌅 Morning Ramp-Up`).
+  - Actionable market timing advice on whether to place fast flip bids or queue up patient overnight sleeper buy orders.
 - **🔌 Microbot / RuneLite Live Auto-Bridge (100% Passive & TOS Compliant):**
   - **Zero In-Game Automation / 100% Read-Only:** Only listens to passive game events; performs zero clicks or actions.
   - **Auto GE Limit Timers:** Starts tick-accurate 4-hour cooldown timers the moment your Grand Exchange buy fills or starts buying.
@@ -19,8 +29,8 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
   - **Live Stat Sync:** Synchronizes your Crafting, Fletching, and Magic levels as well as World membership status on login.
 - **⚡ Real-Time Price Sync:** Fetches live bid/ask margins and 24-hour traded volumes directly from the OSRS Wiki API.
 - **⏱️ Dynamic 4-Hour GE Limit Tracking:**
-  - Real-time limit depletion (e.g. buying 20 out of 70 items displays `50 / 70`).
-  - Active cooldown indicators (e.g. `0 (3h 24m)`) that automatically reset when the 4-hour window expires.
+  - Real-time limit depletion with remaining and cooldown formatting (e.g. `5 / 70 (3h 52m)` or `0 / 70 (1h 44m)`).
+  - Active cooldown indicators that automatically reset when the 4-hour window expires.
   - Desktop toast alerts and audio chimes when limits reset.
 - **🌿 Nature Rune Stockpile Tracker:**
   - Track owned Nature Runes in your bank.

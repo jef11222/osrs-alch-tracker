@@ -18,6 +18,178 @@ from crafting import CRAFTING_RECIPES
 from state import AppState
 from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
 from bridge_server import BridgeServer
+import datetime
+import webbrowser
+
+# Hall-of-Fame All-Time Workhorses (The gold standards of OSRS High Alchemy)
+WORKHORSE_ITEMS = [
+    {
+        "id": 1079,
+        "name": "Rune platelegs",
+        "limit": 70,
+        "members": False,
+        "verdict": "👑 All-Time King: Highest alch floor (38.4k), zero price risk, instant liquidity."
+    },
+    {
+        "id": 1093,
+        "name": "Rune plateskirt",
+        "limit": 70,
+        "members": False,
+        "verdict": "👑 Platelegs Twin: Identical 38.4k alch value, massive supply from smithers."
+    },
+    {
+        "id": 1319,
+        "name": "Rune 2h sword",
+        "limit": 70,
+        "members": False,
+        "verdict": "⚔️ Top Volume Weapon: Constant supply from smithing & clue scrolls, fills fast."
+    },
+    {
+        "id": 1201,
+        "name": "Rune kiteshield",
+        "limit": 70,
+        "members": False,
+        "verdict": "🛡️ High Alch Staple: Very steady 32.6k value, rock-solid profit margins."
+    },
+    {
+        "id": 1113,
+        "name": "Rune chainbody",
+        "limit": 70,
+        "members": False,
+        "verdict": "🛡️ Solid 30k Floor: Reliable slayer drop supply, high profit spreads."
+    },
+    {
+        "id": 1373,
+        "name": "Rune battleaxe",
+        "limit": 70,
+        "members": False,
+        "verdict": "🪓 Slayer Classic: Consistently traded at 24.9k floor with rapid turnover."
+    },
+    {
+        "id": 1347,
+        "name": "Rune warhammer",
+        "limit": 70,
+        "members": False,
+        "verdict": "🔨 High Turnover: Frequent undercut sellers create wide profit spreads."
+    },
+    {
+        "id": 1185,
+        "name": "Rune sq shield",
+        "limit": 70,
+        "members": False,
+        "verdict": "🛡️ Steady Earner: Reliable 23k floor with steady patient fills."
+    },
+    {
+        "id": 1123,
+        "name": "Adamant platebody",
+        "limit": 125,
+        "members": False,
+        "verdict": "📦 High 125 Limit: Low capital (~1M batch), great F2P/P2P staple."
+    },
+    {
+        "id": 1163,
+        "name": "Rune full helm",
+        "limit": 70,
+        "members": False,
+        "verdict": "🪖 Steady Volume: Reliable 21.1k alch value, quick fill cycles."
+    },
+    {
+        "id": 1333,
+        "name": "Rune scimitar",
+        "limit": 70,
+        "members": False,
+        "verdict": "🗡️ High Liquidity: F2P/P2P staple, fast trading velocity."
+    },
+    {
+        "id": 1213,
+        "name": "Rune dagger",
+        "limit": 70,
+        "members": False,
+        "verdict": "🗡️ Low Capital: Low buy price (~4.3k), high volume from monster drops."
+    },
+    {
+        "id": 1397,
+        "name": "Air battlestaff",
+        "limit": 18000,
+        "members": True,
+        "verdict": "⚡ Massive 18k Limit: Premier crafting & bulk alch item with huge daily turnover."
+    },
+    {
+        "id": 1135,
+        "name": "Green d'hide body",
+        "limit": 125,
+        "members": False,
+        "verdict": "🏹 Bulk Crafting Staple: Low buy price, high 125 limit, safe margins."
+    },
+    {
+        "id": 1215,
+        "name": "Dragon dagger",
+        "limit": 70,
+        "members": True,
+        "verdict": "🗡️ Slayer Favorite: 18k alch value with deep undercut sell volume."
+    }
+]
+
+def get_market_timing_info():
+    """
+    Analyzes global OSRS market liquidity based on UTC time and concurrent player activity curves.
+    Peak player activity occurs between 14:00 and 22:00 UTC (~120k-165k players).
+    Off-peak / sleepers window occurs between 02:00 and 10:00 UTC (~45k-75k players).
+    """
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    hour = now_utc.hour + now_utc.minute / 60.0
+    time_str = now_utc.strftime("%H:%M UTC")
+
+    if 14.0 <= hour < 22.0:
+        pct = int(75 + 25 * (1.0 - abs(hour - 18.0) / 4.0))
+        pct = max(75, min(100, pct))
+        est_players = f"~{int(115000 + (pct - 75) * 1800):,} online"
+        bar_n = int(round(pct / 10))
+        bar = "█" * bar_n + "░" * (10 - bar_n)
+        return {
+            "time_str": time_str,
+            "badge": "🟢 Peak Liquidity Window (Fast Fills & High Volume)",
+            "badge_color": "#2ecc71",
+            "activity": f"Activity: [{bar}] {pct}% ({est_players})",
+            "advice": "💡 Market Tip: Prime EU/US trading hours! Buy orders fill in 2-5m. Best time for Fast Fills & Workhorses.",
+            "rec_cat": "fast"
+        }
+    elif 22.0 <= hour or hour < 2.0:
+        pct = 65
+        est_players = "~95,000 online"
+        bar = "██████░░░░"
+        return {
+            "time_str": time_str,
+            "badge": "🟡 Evening Wind-Down (Good for Setting Overnight Orders)",
+            "badge_color": "#f1c40f",
+            "activity": f"Activity: [{bar}] 65% ({est_players})",
+            "advice": "💡 Market Tip: US late evening. Volume tapering off. Queue up high-profit overnight bids.",
+            "rec_cat": "overnight"
+        }
+    elif 2.0 <= hour < 10.0:
+        pct = 40
+        est_players = "~55,000 online"
+        bar = "████░░░░░░"
+        return {
+            "time_str": time_str,
+            "badge": "🌙 Off-Peak / Sleepers Window (Wide Overnight Margins)",
+            "badge_color": "#9b59b6",
+            "activity": f"Activity: [{bar}] 40% ({est_players})",
+            "advice": "💡 Market Tip: Lowest global player count. Patient low bids fill with zero competition from undercut sellers.",
+            "rec_cat": "overnight"
+        }
+    else: # 10.0 <= hour < 14.0
+        pct = 60
+        est_players = "~85,000 online"
+        bar = "██████░░░░"
+        return {
+            "time_str": time_str,
+            "badge": "🌅 Morning Ramp-Up (Volume Building)",
+            "badge_color": "#3498db",
+            "activity": f"Activity: [{bar}] 60% ({est_players})",
+            "advice": "💡 Market Tip: European morning. Market liquidity is steadily accelerating towards afternoon peak.",
+            "rec_cat": "workhorse"
+        }
 
 def format_gp(val):
     if val is None:
@@ -525,6 +697,7 @@ class OSRSAlchDashboard(tk.Tk):
         # Runtime data
         self.alch_rows = []
         self.craft_rows = []
+        self.rec_rows = []
         self.is_fetching = False
         self.seconds_until_refresh = self.state.config.get("auto_refresh_mins", 2) * 60
 
@@ -534,6 +707,9 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.craft_sort_col = "profit_ea"
         self.craft_sort_desc = True
+
+        self.rec_sort_col = "profit_ea"
+        self.rec_sort_desc = True
 
         # Clipboard copy feedback
         self.clipboard_clear_timer = None
@@ -564,6 +740,7 @@ class OSRSAlchDashboard(tk.Tk):
         # Bridge Server for RuneLite / Microbot live sync
         self._logged_ge_offers = set()
         self._ge_cart_slots = {}
+        self._ge_tracked_items = set()
         self.bridge_server = BridgeServer(port=18833, event_callback=self._on_bridge_event_async)
         self.bridge_server.start()
 
@@ -688,7 +865,12 @@ class OSRSAlchDashboard(tk.Tk):
         self.notebook.add(self.tab_alch, text="🔮 Pure High Alch")
         self.build_alch_tab()
 
-        # Tab 2: Craft & Alch
+        # Tab 2: Smart Picks (Recommendations)
+        self.tab_rec = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_rec, text="⭐ Smart Picks")
+        self.build_rec_tab()
+
+        # Tab 3: Craft & Alch
         self.tab_craft = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_craft, text="🔨 Craft & Alch")
         self.build_craft_tab()
@@ -1021,6 +1203,127 @@ class OSRSAlchDashboard(tk.Tk):
         }
         HeadingToolTip(self.tree_alch, alch_col_tooltips)
         RowToolTip(self.tree_alch, self.get_alch_row_tooltip)
+
+    def build_rec_tab(self):
+        container = ttk.Frame(self.tab_rec)
+        container.pack(fill="both", expand=True, padx=6, pady=4)
+
+        # 1. Market Clock & Timing Banner Card
+        self.market_clock_card = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=10, pady=6)
+        self.market_clock_card.pack(fill="x", pady=(2, 6))
+
+        clock_top = tk.Frame(self.market_clock_card, bg="#202023")
+        clock_top.pack(fill="x")
+
+        self.lbl_market_time = tk.Label(clock_top, text="🕒 --:-- UTC", font=("Segoe UI", 11, "bold"), fg="#f1c40f", bg="#202023")
+        self.lbl_market_time.pack(side="left", padx=(0, 10))
+        ToolTip(self.lbl_market_time, "Current Grand Exchange server time (UTC).\nOSRS market activity cycles strictly follow UTC time zones.")
+
+        self.lbl_market_badge = tk.Label(clock_top, text="🟢 Peak Trading Hours", font=("Segoe UI", 10, "bold"), fg="#2ecc71", bg="#202023")
+        self.lbl_market_badge.pack(side="left", padx=(0, 12))
+
+        self.lbl_market_activity = tk.Label(clock_top, text="Activity: [████████░░] 80%", font=("Segoe UI", 9), fg="#3498db", bg="#202023")
+        self.lbl_market_activity.pack(side="left")
+
+        self.lbl_market_advice = tk.Label(self.market_clock_card, text="💡 Tip: Market is active. Place smart bids on high-volume staples.",
+                                          font=("Segoe UI", 9, "italic"), fg="#e0e0e0", bg="#202023")
+        self.lbl_market_advice.pack(anchor="w", pady=(4, 0))
+
+        # 2. Controls & Categories Row
+        rec_ctrl = tk.Frame(container, bg="#252528", relief="solid", borderwidth=1, padx=8, pady=5)
+        rec_ctrl.pack(fill="x", pady=(0, 6))
+
+        tk.Label(rec_ctrl, text="Category:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 8))
+
+        self.var_rec_cat = tk.StringVar(value="workhorse")
+        cat_options = [
+            ("🏆 All-Time Workhorses", "workhorse", "Proven high-volume alch staples that rarely fail (Rune armor, weapons, battlestaves)."),
+            ("⚡ Fast Fills (<5m)", "fast", "Items with rapid transaction velocity and live 5m sales activity that fill in under 5 minutes."),
+            ("💰 Top 4h Batch Profit", "batch", "Items ranked by total profit achievable in a single 4-hour GE limit cycle."),
+            ("🌙 Overnight Sleepers", "overnight", "High-margin items ideal for leaving patient bids overnight during off-peak hours.")
+        ]
+        for label, val, tip in cat_options:
+            rb = tk.Radiobutton(rec_ctrl, text=label, variable=self.var_rec_cat, value=val,
+                                command=self.recalculate_rec_table,
+                                bg="#252528", fg="#f1f1f1", selectcolor="#2d2d30",
+                                activebackground="#252528", activeforeground="#f39c12",
+                                font=("Segoe UI", 9))
+            rb.pack(side="left", padx=4)
+            ToolTip(rb, f"{label}:\n{tip}")
+
+        # Action Buttons on right
+        btn_auto_fill = tk.Button(rec_ctrl, text="⚡ Auto-Fill Empty GE Slots", command=self.auto_fill_ge_slots,
+                                  bg="#27ae60", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        btn_auto_fill.pack(side="right", padx=3)
+        ToolTip(btn_auto_fill, "⚡ Auto-Fill Empty GE Slots:\nInspects your remaining empty GE slots (up to 8) and automatically allocates\nthe top recommended items into your shopping cart, fitted to your cash stack budget!")
+
+        btn_copy_all = tk.Button(rec_ctrl, text="📋 Copy All", command=self.copy_all_recs,
+                                 bg="#2980b9", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
+        btn_copy_all.pack(side="right", padx=3)
+        ToolTip(btn_copy_all, "Copy All:\nCopy formatted text list of all displayed recommendations to clipboard.")
+
+        btn_refresh = tk.Button(rec_ctrl, text="🔄 Refresh", command=self.recalculate_rec_table,
+                                bg="#3e3e42", fg="#f1f1f1", font=("Segoe UI", 8), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_refresh.pack(side="right", padx=3)
+        ToolTip(btn_refresh, "Refresh recommendations using latest live GE prices.")
+
+        # 3. Recommendations Table Container
+        tree_frame = ttk.Frame(container)
+        tree_frame.pack(fill="both", expand=True)
+
+        cols = ("badge", "name", "category", "offer_bid", "alch_val", "profit_ea", "limit", "batch_profit", "speed", "batch_cost", "verdict")
+        self.tree_rec = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
+
+        self.tree_rec.heading("badge", text="Rank", command=lambda: self.toggle_sort_rec("badge"))
+        self.tree_rec.heading("name", text="Item Name", command=lambda: self.toggle_sort_rec("name"))
+        self.tree_rec.heading("category", text="Category", command=lambda: self.toggle_sort_rec("category"))
+        self.tree_rec.heading("offer_bid", text="Target Bid", command=lambda: self.toggle_sort_rec("offer_bid"))
+        self.tree_rec.heading("alch_val", text="Alch Value", command=lambda: self.toggle_sort_rec("alch_val"))
+        self.tree_rec.heading("profit_ea", text="Profit / Alch ▼", command=lambda: self.toggle_sort_rec("profit_ea"))
+        self.tree_rec.heading("limit", text="4h Limit", command=lambda: self.toggle_sort_rec("limit"))
+        self.tree_rec.heading("batch_profit", text="4h Batch Profit", command=lambda: self.toggle_sort_rec("batch_profit"))
+        self.tree_rec.heading("speed", text="Fill Speed", command=lambda: self.toggle_sort_rec("speed"))
+        self.tree_rec.heading("batch_cost", text="Batch Spend", command=lambda: self.toggle_sort_rec("batch_cost"))
+        self.tree_rec.heading("verdict", text="Why Buy? / Verdict", command=lambda: self.toggle_sort_rec("verdict"))
+
+        self.tree_rec.column("badge", width=55, anchor="center")
+        self.tree_rec.column("name", width=165, anchor="w")
+        self.tree_rec.column("category", width=130, anchor="center")
+        self.tree_rec.column("offer_bid", width=95, anchor="e")
+        self.tree_rec.column("alch_val", width=85, anchor="e")
+        self.tree_rec.column("profit_ea", width=95, anchor="e")
+        self.tree_rec.column("limit", width=95, anchor="center")
+        self.tree_rec.column("batch_profit", width=105, anchor="e")
+        self.tree_rec.column("speed", width=120, anchor="center")
+        self.tree_rec.column("batch_cost", width=100, anchor="e")
+        self.tree_rec.column("verdict", width=290, anchor="w")
+
+        v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree_rec.yview)
+        h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree_rec.xview)
+        self.tree_rec.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+
+        v_scroll.pack(side="right", fill="y")
+        h_scroll.pack(side="bottom", fill="x")
+        self.tree_rec.pack(side="left", fill="both", expand=True)
+
+        self.tree_rec.bind("<Button-1>", self.on_rec_click)
+        self.tree_rec.bind("<Double-1>", self.on_rec_double_click)
+        self.tree_rec.bind("<Button-3>", self.on_rec_right_click)
+
+        rec_col_tooltips = {
+            "#1": "Rank & Badge:\nRank position within this recommendation list.",
+            "#2": "Item Name:\nGrand Exchange item name. Click to copy name to clipboard.",
+            "#3": "Category:\nStrategy category: All-Time Workhorse, Fast Fill, Batch Profit, or Overnight Sleeper.",
+            "#4": "Target Bid:\nBest buy offer price. Click to copy.",
+            "#5": "Alch Value:\nHigh Alchemy gold value.",
+            "#6": "Profit / Alch:\nNet gold profit per High Alch cast (Alch Value - Buy Price - Nature Rune Cost).",
+            "#7": "4h GE Buy Limit:\nMaximum Grand Exchange units purchasable every 4 hours.",
+            "#8": "4h Batch Profit:\nTotal profit earned for a full 4h limit batch (Profit ea * Available limit).",
+            "#9": "Fill Speed:\nLive transaction velocity badge (⚡ Fast, ⏱️ Steady, 🐢 Slow).",
+            "#10": "Batch Spend:\nTotal gold required to purchase a full batch of this item.",
+            "#11": "Why Buy? / Verdict:\nStrategic summary explaining why this item is recommended."
+        }
+        HeadingToolTip(self.tree_rec, rec_col_tooltips)
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
@@ -1385,6 +1688,7 @@ class OSRSAlchDashboard(tk.Tk):
         threshold = self.state.config.get("alert_threshold_alch", 200)
         min_vol = self.state.config.get("min_volume", 5000)
 
+        alerts_fired = 0
         for row in self.alch_rows:
             iid = str(row["id"])
             profit = row["profit_ea"]
@@ -1415,7 +1719,9 @@ class OSRSAlchDashboard(tk.Tk):
                     self.state.alert_history.insert(0, f"[{time.strftime('%H:%M:%S')}] 🚨 {alert_msg}")
                     self.state.alert_history = self.state.alert_history[:60]
                     self.update_alerts_display()
-                    self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr) | 5m: {vol_5m_low} sold", item_id=row["id"])
+                    if alerts_fired < 2:
+                        self.trigger_alert_notification(row['name'], f"+{profit:,} gp/ea (+{row['profit_hr']/1000:.0f}k/hr) | 5m: {vol_5m_low} sold", item_id=row["id"])
+                        alerts_fired += 1
 
     # ------------------ GITHUB AUTO-UPDATER ------------------
 
@@ -1512,6 +1818,7 @@ class OSRSAlchDashboard(tk.Tk):
 
     def recalculate_all(self):
         self.recalculate_alch_table()
+        self.recalculate_rec_table()
         self.recalculate_craft_table()
         self.update_cart_display()
         self.update_session_display()
@@ -1567,8 +1874,8 @@ class OSRSAlchDashboard(tk.Tk):
             is_mem = mdata.get("members", False)
             if is_mem and not mem_ok:
                 continue
-            if not is_mem and not f2p_ok and mem_ok:
-                pass
+            if not is_mem and not f2p_ok:
+                continue
 
             bid, ask = self.api.get_bid_ask(item_id_str, basis=basis)
             buy_price = self.api.get_price(item_id_str, strat, basis=basis)
@@ -1630,12 +1937,13 @@ class OSRSAlchDashboard(tk.Tk):
                     is_vol_capped = True
 
             if is_cd:
+                hours = int(secs_left // 3600)
+                mins = int((secs_left % 3600) // 60)
+                time_tag = f" ({hours}h {mins:02d}m)"
                 if rem_limit > 0:
-                    limit_str = f"{effective_limit}/{base_limit} ⚠️" if is_vol_capped else f"{rem_limit}/{base_limit}"
+                    limit_str = f"{effective_limit}/{base_limit} ⚠️" if is_vol_capped else f"{rem_limit}/{base_limit}{time_tag}"
                 else:
-                    hours = int(secs_left // 3600)
-                    mins = int((secs_left % 3600) // 60)
-                    limit_str = f"0 ({hours}h {mins:02d}m)"
+                    limit_str = f"0/{base_limit}{time_tag}"
             else:
                 if base_limit > 0:
                     limit_str = f"{effective_limit}/{base_limit} ⚠️" if is_vol_capped else f"{base_limit}"
@@ -1817,6 +2125,232 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.recalculate_alch_table()
 
+    def recalculate_rec_table(self):
+        if not hasattr(self, "tree_rec"):
+            return
+
+        timing = get_market_timing_info()
+        self.lbl_market_time.config(text=f"🕒 {timing['time_str']}")
+        self.lbl_market_badge.config(text=timing['badge'], fg=timing['badge_color'])
+        self.lbl_market_activity.config(text=timing['activity'])
+        self.lbl_market_advice.config(text=timing['advice'])
+
+        cat = self.var_rec_cat.get() if hasattr(self, "var_rec_cat") else "workhorse"
+        nat_cost = self.get_effective_nature_price()
+        strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+        cash_stack = self.state.config.get("cash_stack", 5000000)
+        max_spend = self.state.config.get("max_item_cost", 500000)
+        mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
+        f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
+
+        basis = "5m" if hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get() else self.state.config.get("price_basis", "5m")
+
+        rows = []
+
+        if cat == "workhorse":
+            for spec in WORKHORSE_ITEMS:
+                iid_str = str(spec["id"])
+                mdata = self.api.mapping.get(iid_str, {})
+                high_alch = mdata.get("highalch", 0)
+                if not high_alch or high_alch <= 10:
+                    continue
+
+                is_mem = mdata.get("members", spec.get("members", False))
+                if is_mem and not mem_ok:
+                    continue
+                if not is_mem and not f2p_ok:
+                    continue
+
+                bid, ask = self.api.get_bid_ask(iid_str, basis=basis)
+                buy_price = self.api.get_price(iid_str, strat, basis=basis)
+                if not buy_price or buy_price <= 0:
+                    continue
+                if buy_price > max_spend:
+                    continue
+
+                profit = high_alch - buy_price - nat_cost
+                base_limit = spec.get("limit", mdata.get("limit", 70))
+                rem_limit, secs_left, is_cd = self.state.get_remaining_limit(spec["id"], base_limit)
+
+                vol = self.api.volumes_24h.get(iid_str, 0)
+                speed_cat, speed_badge, est_mins, speed_score = self.api.get_fill_speed_info(spec["id"], base_limit)
+
+                avail_limit = rem_limit if is_cd else base_limit
+                eff_limit = avail_limit if (vol <= 0 or vol >= avail_limit) else vol
+                batch_profit = profit * eff_limit if eff_limit > 0 else 0
+                batch_cost = buy_price * eff_limit
+
+                if is_cd:
+                    hours = int(secs_left // 3600)
+                    mins = int((secs_left % 3600) // 60)
+                    time_tag = f" ({hours}h {mins:02d}m)"
+                    limit_str = f"{rem_limit}/{base_limit}{time_tag}" if rem_limit > 0 else f"0/{base_limit}{time_tag}"
+                else:
+                    limit_str = f"{base_limit}"
+
+                rows.append({
+                    "id": spec["id"],
+                    "name": mdata.get("name", spec["name"]),
+                    "category": "🏆 Workhorse",
+                    "bid": bid or buy_price,
+                    "ask": ask or buy_price,
+                    "buy_at": buy_price,
+                    "alch_val": high_alch,
+                    "profit_ea": profit,
+                    "profit_hr": profit * 1200,
+                    "limit": base_limit,
+                    "rem_limit": rem_limit,
+                    "eff_limit": eff_limit,
+                    "limit_str": limit_str,
+                    "batch_profit": batch_profit,
+                    "batch_cost": batch_cost,
+                    "speed_cat": speed_cat,
+                    "speed_badge": speed_badge,
+                    "verdict": spec["verdict"]
+                })
+
+        else:
+            for iid_str, mdata in self.api.mapping.items():
+                high_alch = mdata.get("highalch", 0)
+                if not high_alch or high_alch <= 10:
+                    continue
+
+                is_mem = mdata.get("members", False)
+                if is_mem and not mem_ok:
+                    continue
+                if not is_mem and not f2p_ok:
+                    continue
+
+                bid, ask = self.api.get_bid_ask(iid_str, basis=basis)
+                buy_price = self.api.get_price(iid_str, strat, basis=basis)
+                if not buy_price or buy_price <= 0 or buy_price > max_spend:
+                    continue
+
+                profit = high_alch - buy_price - nat_cost
+                if profit <= 0:
+                    continue
+
+                base_limit = mdata.get("limit", 0) or 0
+                if base_limit <= 0:
+                    continue
+
+                vol = self.api.volumes_24h.get(iid_str, 0)
+                rem_limit, secs_left, is_cd = self.state.get_remaining_limit(mdata["id"], base_limit)
+                avail_limit = rem_limit if is_cd else base_limit
+                eff_limit = avail_limit if (vol <= 0 or vol >= avail_limit) else vol
+                if eff_limit <= 0:
+                    continue
+
+                batch_profit = profit * eff_limit
+                batch_cost = buy_price * eff_limit
+                speed_cat, speed_badge, est_mins, speed_score = self.api.get_fill_speed_info(mdata["id"], base_limit)
+
+                if is_cd:
+                    hours = int(secs_left // 3600)
+                    mins = int((secs_left % 3600) // 60)
+                    time_tag = f" ({hours}h {mins:02d}m)"
+                    limit_str = f"{rem_limit}/{base_limit}{time_tag}" if rem_limit > 0 else f"0/{base_limit}{time_tag}"
+                else:
+                    limit_str = f"{base_limit}"
+
+                v5 = self.api.volumes_5m.get(iid_str, {})
+                sold_5m = v5.get("low", 0) or 0
+
+                if cat == "fast":
+                    if speed_cat != "fast" and sold_5m < 8:
+                        continue
+                    cat_label = "⚡ Fast Fill"
+                    verdict = f"⚡ Instant velocity: {sold_5m} sold in 5m into bids. Fills in ~{est_mins}m."
+                elif cat == "batch":
+                    if eff_limit < 10 or batch_profit < 10000:
+                        continue
+                    cat_label = "💰 Batch Profit"
+                    verdict = f"💰 Top Batch Yield: Earns +{batch_profit:,} gp for full {base_limit} batch."
+                elif cat == "overnight":
+                    if profit < 250 or eff_limit < 15:
+                        continue
+                    cat_label = "🌙 Overnight"
+                    verdict = f"🌙 Patient sleeper: +{profit:,} gp/ea. Queue low bid overnight during off-peak hours."
+                else:
+                    cat_label = "Smart Pick"
+                    verdict = "Solid alch margin."
+
+                rows.append({
+                    "id": mdata["id"],
+                    "name": mdata["name"],
+                    "category": cat_label,
+                    "bid": bid or buy_price,
+                    "ask": ask or buy_price,
+                    "buy_at": buy_price,
+                    "alch_val": high_alch,
+                    "profit_ea": profit,
+                    "profit_hr": profit * 1200,
+                    "limit": base_limit,
+                    "rem_limit": rem_limit,
+                    "eff_limit": eff_limit,
+                    "limit_str": limit_str,
+                    "batch_profit": batch_profit,
+                    "batch_cost": batch_cost,
+                    "speed_cat": speed_cat,
+                    "speed_badge": speed_badge,
+                    "verdict": verdict
+                })
+
+        sort_col = getattr(self, "rec_sort_col", "profit_ea")
+        sort_desc = getattr(self, "rec_sort_desc", True)
+        if cat == "batch" and sort_col == "profit_ea" and sort_desc:
+            sort_col = "batch_profit"
+        elif cat == "fast" and sort_col == "profit_ea" and sort_desc:
+            sort_col = "profit_hr"
+
+        if sort_col == "name":
+            rows.sort(key=lambda x: str(x.get("name", "")).lower(), reverse=sort_desc)
+        elif sort_col == "badge":
+            pass
+        else:
+            rows.sort(key=lambda x: x.get(sort_col, 0), reverse=sort_desc)
+
+        self.rec_rows = rows[:25]
+
+        self.tree_rec.delete(*self.tree_rec.get_children())
+        medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+
+        for idx, r in enumerate(self.rec_rows):
+            badge = medals[idx] if idx < len(medals) else f"#{idx+1}"
+            r["badge"] = badge
+
+            p_ea_str = f"+{r['profit_ea']:,} gp" if r['profit_ea'] >= 0 else f"{r['profit_ea']:,} gp"
+            b_p_str = f"+{r['batch_profit']:,} gp" if r['batch_profit'] >= 0 else f"{r['batch_profit']:,} gp"
+            b_cost_str = format_gp(r['batch_cost'])
+
+            in_cart = str(r["id"]) in self.state.cart_items
+            tags = ("incart",) if in_cart else ("profit",)
+
+            self.tree_rec.insert("", "end", iid=str(r["id"]), values=(
+                badge,
+                r["name"],
+                r["category"],
+                f"{r['bid']:,} gp",
+                f"{r['alch_val']:,} gp",
+                p_ea_str,
+                r["limit_str"],
+                b_p_str,
+                r["speed_badge"],
+                b_cost_str,
+                r["verdict"]
+            ), tags=tags)
+
+        self.tree_rec.tag_configure("profit", foreground="#2ecc71")
+        self.tree_rec.tag_configure("incart", font=("Segoe UI", 9, "bold"), foreground="#f39c12")
+
+    def toggle_sort_rec(self, col):
+        if getattr(self, "rec_sort_col", "") == col:
+            self.rec_sort_desc = not self.rec_sort_desc
+        else:
+            self.rec_sort_col = col
+            self.rec_sort_desc = False if col in ("name", "category", "badge") else True
+        self.recalculate_rec_table()
+
     def recalculate_craft_table(self):
         nat_cost = self.get_effective_nature_price()
         strat = self.var_strat.get().split()[0]
@@ -1835,6 +2369,8 @@ class OSRSAlchDashboard(tk.Tk):
 
             is_mem = r.get("members", True)
             if is_mem and not mem_ok:
+                continue
+            if not is_mem and not f2p_ok:
                 continue
 
             req_skill = r["skill"]
@@ -2055,8 +2591,14 @@ class OSRSAlchDashboard(tk.Tk):
                 shortage = total_alchs - owned_nats
                 nat_part = f"  |  ⚠️ Buy {shortage:,} Nats"
 
+        if slots_used == 0:
+            cart_text = f"🛒 0/{max_slots} Slots  |  Budget: {format_gp(cash_stack) if use_cash else 'Unlimited'}"
+        else:
+            p_sign = "+" if total_exp_profit >= 0 else "-"
+            cart_text = f"🛒 {slots_used}/{max_slots}  |  Cost: {format_gp(total_cost)}  |  {budget_str}  |  {p_sign}{format_gp(abs(total_exp_profit))}{time_part}{nat_part}"
+
         self.lbl_cart_status.config(
-            text=f"🛒 Slots: {slots_used}/{max_slots}  |  Allocated: {format_gp(total_cost)}  |  {budget_str}  |  Profit: +{format_gp(total_exp_profit)}{time_part}{nat_part}",
+            text=cart_text,
             fg=slot_color
         )
 
@@ -2082,6 +2624,8 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.tree_session.delete(*self.tree_session.get_children())
         for h in filtered:
+            prof = h.get('profit', 0)
+            prof_str = f"+{format_gp(prof)}" if prof >= 0 else f"-{format_gp(abs(prof))}"
             self.tree_session.insert("", "end", iid=h.get("id"), values=(
                 h.get("time"),
                 h.get("account", "Default"),
@@ -2090,7 +2634,7 @@ class OSRSAlchDashboard(tk.Tk):
                 f"{h.get('buy_price', 0):,} gp",
                 f"{h.get('nat_price', 0):,} gp",
                 f"{h.get('alch_val', 0):,} gp",
-                f"+{format_gp(h.get('profit', 0))}"
+                prof_str
             ))
 
     def update_timers_display(self):
@@ -2394,6 +2938,244 @@ class OSRSAlchDashboard(tk.Tk):
 
         SetQuantityDialog(self, row["name"], current_qty, max_allowed, save_qty)
 
+    def auto_fill_ge_slots(self):
+        curr_cart_count = len(self.state.cart_items)
+        empty_slots = 8 - curr_cart_count
+        if empty_slots <= 0:
+            messagebox.showinfo(
+                "GE Slots Full",
+                f"All 8 Grand Exchange slots are already filled in your Shopping Cart ({curr_cart_count}/8)!\n\n"
+                "Clear or remove items from your cart before auto-filling."
+            )
+            return
+
+        strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+        cash_stack = self.state.config.get("cash_stack", 5000000)
+        use_cash = self.var_use_cash.get() if hasattr(self, "var_use_cash") else True
+
+        allocated_so_far = sum(
+            self.api.get_price(iid, strat) * q
+            for iid, q in self.state.cart_items.items()
+        )
+        remaining_budget = max(0, cash_stack - allocated_so_far) if use_cash else 999_999_999
+
+        if use_cash and remaining_budget < 5000:
+            messagebox.showwarning(
+                "Budget Fully Allocated",
+                f"Your Cash Stack budget ({format_gp(cash_stack)}) is already fully allocated across existing cart items ({format_gp(allocated_so_far)}).\n\n"
+                "Increase your Cash Stack or remove cart items to allocate more slots."
+            )
+            return
+
+        if not self.rec_rows:
+            self.recalculate_rec_table()
+
+        candidates = []
+        for r in self.rec_rows:
+            iid_str = str(r["id"])
+            if iid_str in self.state.cart_items:
+                continue
+            if r["profit_ea"] <= 0:
+                continue
+
+            base_limit = r.get("limit", 70)
+            rem_limit, _, is_cd = self.state.get_remaining_limit(r["id"], base_limit)
+            if rem_limit <= 0:
+                continue
+
+            buy_price = max(1, r["buy_at"])
+            if use_cash and buy_price > remaining_budget:
+                continue
+
+            candidates.append(r)
+
+        if not candidates:
+            messagebox.showinfo(
+                "No Available Recommendations",
+                "No eligible items found to auto-fill.\n\n"
+                "Items may already be in your cart, on 4-hour cooldown, or exceed your remaining budget."
+            )
+            return
+
+        added_count = 0
+        total_spent = 0
+        total_profit = 0
+        budget_left = remaining_budget
+
+        for r in candidates:
+            if added_count >= empty_slots:
+                break
+
+            iid_str = str(r["id"])
+            buy_price = max(1, r["buy_at"])
+            rem_limit = r["rem_limit"]
+
+            if use_cash:
+                max_units = budget_left // buy_price
+                qty = min(rem_limit, max_units)
+            else:
+                qty = rem_limit
+
+            if qty <= 0:
+                continue
+
+            self.state.cart_items[iid_str] = qty
+            cost = qty * buy_price
+            budget_left -= cost
+            total_spent += cost
+            total_profit += qty * r["profit_ea"]
+            added_count += 1
+
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        self.recalculate_rec_table()
+
+        msg = f"Auto-filled {added_count} empty GE slots! Allocated {format_gp(total_spent)} (Est. Profit: +{format_gp(total_profit)})"
+        self.lbl_status_right.config(text=f"⚡ {msg}", fg="#2ecc71")
+        if self.state.config.get("desktop_alerts"):
+            FloatingToast(self, "⚡ GE Slots Auto-Filled", msg)
+        else:
+            messagebox.showinfo("Auto-Fill Completed", f"Successfully added {added_count} items to your shopping cart!\n\n• Gold Allocated: {format_gp(total_spent)}\n• Projected Profit: +{format_gp(total_profit)}\n• Slots Used: {len(self.state.cart_items)}/8")
+
+    def copy_all_recs(self):
+        if not self.rec_rows:
+            return
+        cat = self.var_rec_cat.get() if hasattr(self, "var_rec_cat") else "workhorse"
+        timing = get_market_timing_info()
+        lines = [
+            f"=== OSRS Smart Picks ({cat.title()}) [{timing['time_str']}] ===",
+            f"Status: {timing['badge']}",
+            ""
+        ]
+        for r in self.rec_rows[:15]:
+            lines.append(f"{r['badge']} {r['name']} | Bid: {r['bid']:,} gp | Alch: {r['alch_val']:,} gp | Profit: +{r['profit_ea']:,} gp | Limit: {r['limit']} (Batch: +{r['batch_profit']:,} gp) | {r['speed_badge']}")
+        text = "\n".join(lines)
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        self.lbl_status_right.config(text=f"📋 Copied {len(self.rec_rows[:15])} recommendations to clipboard!", fg="#3498db")
+
+    def on_rec_click(self, event):
+        item_id = self.tree_rec.identify_row(event.y)
+        if not item_id:
+            return
+        row = next((r for r in self.rec_rows if str(r["id"]) == item_id), None)
+        if not row:
+            return
+        col_id = self.tree_rec.identify_column(event.x)
+        if col_id == "#4":
+            self.copy_to_clipboard(str(row["bid"]), f"Copied Bid Price: {row['bid']:,} gp ({row['name']})")
+        else:
+            self.copy_to_clipboard(row["name"], f"Copied '{row['name']}' to clipboard!")
+
+    def on_rec_double_click(self, event):
+        item_id = self.tree_rec.identify_row(event.y)
+        if not item_id:
+            return
+        if item_id in self.state.cart_items:
+            del self.state.cart_items[item_id]
+            self.lbl_status_right.config(text="Removed item from cart", fg="#888888")
+        else:
+            row = next((r for r in self.rec_rows if str(r["id"]) == item_id), None)
+            if row:
+                base_limit = row.get("limit", 70)
+                rem_limit, secs_left, is_cd = self.state.get_remaining_limit(row["id"], base_limit)
+                if is_cd and rem_limit <= 0:
+                    hours = int(secs_left // 3600)
+                    mins = int((secs_left % 3600) // 60)
+                    self.lbl_status_right.config(
+                        text=f"Cannot add {row['name']}: 4h GE cooldown active for {hours}h {mins:02d}m!",
+                        fg="#e74c3c"
+                    )
+                    return
+                limit_cap = rem_limit if is_cd else base_limit
+                use_cash = self.var_use_cash.get() if hasattr(self, "var_use_cash") else True
+                if use_cash:
+                    cash_stack = self.state.config.get("cash_stack", 5000000)
+                    strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+                    allocated_so_far = sum(
+                        self.api.get_price(iid, strat) * q
+                        for iid, q in self.state.cart_items.items()
+                    )
+                    remaining_budget = max(0, cash_stack - allocated_so_far)
+                    buy_price = max(1, row["buy_at"])
+                    afford = remaining_budget // buy_price
+                    qty = min(limit_cap, afford)
+                    if qty <= 0:
+                        qty = 1 if remaining_budget >= buy_price else 0
+                        if qty == 0:
+                            self.lbl_status_right.config(
+                                text=f"Cannot add {row['name']}: remaining budget ({format_gp(remaining_budget)}) < item price ({format_gp(buy_price)})!",
+                                fg="#e74c3c"
+                            )
+                            return
+                else:
+                    qty = limit_cap
+                self.state.cart_items[item_id] = qty
+                self.lbl_status_right.config(
+                    text=f"Added {qty:,}x {row['name']} to cart ({format_gp(qty * row['buy_at'])})",
+                    fg="#2ecc71"
+                )
+
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        self.recalculate_rec_table()
+
+    def on_rec_right_click(self, event):
+        item_id = self.tree_rec.identify_row(event.y)
+        if not item_id:
+            return
+        row = next((r for r in self.rec_rows if str(r["id"]) == item_id), None)
+        if not row:
+            return
+
+        menu = tk.Menu(self, tearoff=0, bg="#2d2d30", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
+        menu.add_command(label=f"🛒 Add Full Limit ({row['limit']}x) to Cart", command=lambda: self._rec_add_full(row))
+        menu.add_command(label="✏️ Set Custom Quantity in Cart...", command=lambda: self._rec_set_custom_qty(row))
+        menu.add_separator()
+        menu.add_command(label=f"📋 Copy Item Name ('{row['name']}')", command=lambda: self.copy_to_clipboard(row["name"], f"Copied '{row['name']}'!"))
+        menu.add_command(label=f"💰 Copy Target Bid ({row['bid']:,} gp)", command=lambda: self.copy_to_clipboard(str(row["bid"]), f"Copied {row['bid']:,} gp!"))
+        menu.add_separator()
+        menu.add_command(label="🌐 Open in OSRS Wiki Prices", command=lambda: self.open_wiki_url(row["id"]))
+        menu.post(event.x_root, event.y_root)
+
+    def _rec_add_full(self, row):
+        item_id = str(row["id"])
+        base_limit = row.get("limit", 70)
+        rem_limit, _, is_cd = self.state.get_remaining_limit(row["id"], base_limit)
+        qty = rem_limit if (is_cd and rem_limit > 0) else base_limit
+        self.state.cart_items[item_id] = qty
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        self.recalculate_rec_table()
+        self.lbl_status_right.config(text=f"Added {qty}x {row['name']} to cart", fg="#2ecc71")
+
+    def _rec_set_custom_qty(self, row):
+        item_id = str(row["id"])
+        curr_qty = self.state.cart_items.get(item_id, 0)
+        base_limit = row.get("limit", 70)
+        rem_limit, _, is_cd = self.state.get_remaining_limit(row["id"], base_limit)
+        max_allowed = rem_limit if is_cd else base_limit
+        if max_allowed <= 0:
+            max_allowed = 1000
+
+        def save_qty(new_qty):
+            if new_qty <= 0:
+                if item_id in self.state.cart_items:
+                    del self.state.cart_items[item_id]
+                self.lbl_status_right.config(text=f"Removed {row['name']} from cart", fg="#888888")
+            else:
+                self.state.cart_items[item_id] = new_qty
+                self.lbl_status_right.config(text=f"Set {new_qty:,}x {row['name']} in cart", fg="#2ecc71")
+            self.recalculate_alch_table()
+            self.update_cart_display()
+            self.recalculate_rec_table()
+
+        SetQuantityDialog(self, row["name"], curr_qty if curr_qty > 0 else (rem_limit if rem_limit > 0 else base_limit), max_allowed, save_qty)
+
+    def open_wiki_url(self, item_id):
+        url = f"https://prices.runescape.wiki/osrs/item/{item_id}"
+        webbrowser.open(url)
+
     def on_craft_click(self, event):
         item = self.tree_craft.identify_row(event.y)
         if not item:
@@ -2453,6 +3235,10 @@ class OSRSAlchDashboard(tk.Tk):
         count = len(self.state.cart_items)
         nat_cost = self.get_effective_nature_price()
 
+        active_acc = getattr(self.state, "active_account", "Default")
+        if not active_acc or active_acc in ("All", "All Accounts"):
+            active_acc = self.var_account.get() if getattr(self, "var_account", None) and self.var_account.get() != "All Accounts" else "Default"
+
         for iid_str, qty in list(self.state.cart_items.items()):
             row = next((r for r in self.alch_rows if str(r["id"]) == iid_str), None)
             if row:
@@ -2462,9 +3248,10 @@ class OSRSAlchDashboard(tk.Tk):
                     qty=qty,
                     buy_price=row["buy_at"],
                     nat_price=nat_cost,
-                    alch_val=row["alch_val"]
+                    alch_val=row["alch_val"],
+                    account=active_acc
                 )
-                self.state.add_timer(row["id"], row["name"], qty)
+                self.state.add_timer(row["id"], row["name"], qty, account=active_acc)
 
         self.state.cart_items.clear()
         self.recalculate_all()
@@ -2498,6 +3285,8 @@ class OSRSAlchDashboard(tk.Tk):
 
     def clear_cart(self):
         self._ge_cart_slots.clear()
+        if hasattr(self, "_ge_tracked_items"):
+            self._ge_tracked_items.clear()
         self.state.cart_items.clear()
         self.recalculate_alch_table()
         self.update_cart_display()
@@ -2828,16 +3617,20 @@ class OSRSAlchDashboard(tk.Tk):
                 iid = info["item_id"]
                 active_ge_items[iid] = active_ge_items.get(iid, 0) + info["qty"]
 
-        all_ge_item_ids = {v["item_id"] for v in self._ge_cart_slots.values()}
+        # Cleanly remove previous GE-driven items that are no longer actively buying
+        if not hasattr(self, "_ge_tracked_items"):
+            self._ge_tracked_items = set()
 
-        # Remove GE-driven items that are no longer actively buying
-        for iid in list(self.state.cart_items.keys()):
-            if iid in all_ge_item_ids and iid not in active_ge_items:
-                del self.state.cart_items[iid]
+        for iid in list(self._ge_tracked_items):
+            if iid not in active_ge_items:
+                if iid in self.state.cart_items:
+                    del self.state.cart_items[iid]
+                self._ge_tracked_items.discard(iid)
 
-        # Add or update active GE items
+        # Add or update currently active GE items
         for iid, qty in active_ge_items.items():
             self.state.cart_items[iid] = qty
+            self._ge_tracked_items.add(iid)
 
         self.recalculate_alch_table()
         self.update_cart_display()
