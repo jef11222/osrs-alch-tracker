@@ -1025,6 +1025,13 @@ class OSRSAlchDashboard(tk.Tk):
         cb_usable.pack(side="left", padx=6)
         ToolTip(cb_usable, "Filter out recipes that exceed your current Crafting, Fletching, or Magic levels.")
 
+        # Recipe Search Box
+        tk.Label(sub_top, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(12, 2))
+        self.ent_craft_search = tk.Entry(sub_top, width=14, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
+        self.ent_craft_search.pack(side="left", padx=(0, 6))
+        self.ent_craft_search.bind("<KeyRelease>", lambda e: self.recalculate_craft_table())
+        ToolTip(self.ent_craft_search, "Filter recipes by name (e.g. 'diamond', 'ring', 'necklace', 'bow').")
+
         container = ttk.Frame(self.tab_craft)
         container.pack(fill="both", expand=True)
 
@@ -1691,11 +1698,21 @@ class OSRSAlchDashboard(tk.Tk):
         strat = self.var_strat.get().split()[0]
         levels = self.state.config.get("player_levels", {})
         only_usable = self.var_only_usable.get()
+        craft_query = self.ent_craft_search.get().strip().lower() if hasattr(self, "ent_craft_search") else ""
+        mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
+        f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
 
         self.tree_craft.delete(*self.tree_craft.get_children())
         rows = []
 
         for r in CRAFTING_RECIPES:
+            if craft_query and craft_query not in r["name"].lower():
+                continue
+
+            is_mem = r.get("members", True)
+            if is_mem and not mem_ok:
+                continue
+
             req_skill = r["skill"]
             req_lvl = r["level"]
             player_lvl = levels.get(req_skill, 99)

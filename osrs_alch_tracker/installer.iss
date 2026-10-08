@@ -2,7 +2,7 @@
 ; Download Inno Setup from: https://jrsoftware.org/isdl.php
 
 #define MyAppName "OSRS High Alchemy & Crafting Tracker"
-#define MyAppVersion "1.3.15"
+#define MyAppVersion "1.3.16"
 #define MyAppPublisher "jef11222"
 #define MyAppURL "https://github.com/jef11222/osrs-alch-tracker"
 #define MyAppExeName "OSRS_Alch_Tracker.exe"
