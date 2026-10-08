@@ -559,6 +559,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.after(800, self._check_first_run_after_update)
 
         # Bridge Server for RuneLite / Microbot live sync
+        self._logged_ge_offers = set()
+        self._ge_slot_timer_qty = {}
         self.bridge_server = BridgeServer(port=18833, event_callback=self._on_bridge_event_async)
         self.bridge_server.start()
 
@@ -2721,26 +2723,42 @@ class OSRSAlchDashboard(tk.Tk):
             spent = data.get("spent", 0)
             price = data.get("price", 0)
             state = data.get("state", "")
+            slot = data.get("slot", 0)
+
+            if state == "EMPTY":
+                prefix = f"{account}_{slot}_"
+                for k in list(self._ge_slot_timer_qty.keys()):
+                    if k.startswith(prefix):
+                        self._ge_slot_timer_qty.pop(k, None)
+                return
 
             if item_id > 0:
-                # Progressive 4-hour timer update
-                if qty_sold > 0:
-                    self.state.add_timer(item_id, item_name, qty_sold, account=account)
+                # Progressive 4-hour timer update (tracks delta per offer to avoid double counting)
+                slot_key = f"{account}_{slot}_{item_id}"
+                prev_timer_qty = self._ge_slot_timer_qty.get(slot_key, 0)
+                if qty_sold > prev_timer_qty:
+                    delta_qty = qty_sold - prev_timer_qty
+                    self.state.add_timer(item_id, item_name, delta_qty, account=account)
+                    self._ge_slot_timer_qty[slot_key] = qty_sold
                     self.update_timers_display()
                     self.recalculate_alch_table()
 
-                # Automatically log completed GE buy to Session Tracker!
-                if state == "BOUGHT" and qty_sold > 0:
-                    unit_buy_price = int(spent // qty_sold) if spent > 0 else int(price)
-                    nat_price = self.get_effective_nature_price()
-                    mdata = self.api.mapping.get(str(item_id), {})
-                    high_alch = mdata.get("highalch", 0)
-                    if high_alch > 0:
-                        entry = self.state.log_alch_batch(item_id, item_name, qty_sold, unit_buy_price, nat_price, high_alch, account=account)
-                        self.update_session_display()
-                        self.lbl_status_right.config(text=f"✓ Logged GE Buy: {qty_sold}x {item_name} [{account}]", fg="#2ecc71")
-                        if self.state.config.get("desktop_alerts"):
-                            FloatingToast(self, f"🛒 GE Buy Filled [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp (Profit: +{format_gp(entry['profit'])})")
+                # Automatically log completed or cancelled partial GE buy to Session Tracker!
+                if state in ("BOUGHT", "CANCELLED_BUY") and qty_sold > 0:
+                    finalize_key = f"{account}_{slot}_{item_id}_{qty_sold}_{state}"
+                    if finalize_key not in self._logged_ge_offers:
+                        self._logged_ge_offers.add(finalize_key)
+                        unit_buy_price = int(spent // qty_sold) if spent > 0 else int(price)
+                        nat_price = self.get_effective_nature_price()
+                        mdata = self.api.mapping.get(str(item_id), {})
+                        high_alch = mdata.get("highalch", 0)
+                        if high_alch > 0:
+                            entry = self.state.log_alch_batch(item_id, item_name, qty_sold, unit_buy_price, nat_price, high_alch, account=account)
+                            self.update_session_display()
+                            tag = "Completed" if state == "BOUGHT" else "Cancelled (Partial)"
+                            self.lbl_status_right.config(text=f"🛒 Logged GE Buy ({tag}): {qty_sold}x {item_name} [{account}]", fg="#2ecc71")
+                            if self.state.config.get("desktop_alerts"):
+                                FloatingToast(self, f"🛒 GE Buy {tag} [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp (Profit: +{format_gp(entry['profit'])})")
 
         elif event_type == "ALCH_CAST":
             self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")

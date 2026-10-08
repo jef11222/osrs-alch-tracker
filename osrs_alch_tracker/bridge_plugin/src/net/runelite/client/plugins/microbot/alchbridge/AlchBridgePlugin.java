@@ -80,6 +80,7 @@ public class AlchBridgePlugin extends Plugin {
     private ScheduledExecutorService pollerExecutor;
 
     private final Map<Integer, String> lastOfferState = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> lastOfferQty = new ConcurrentHashMap<>();
     private int lastMagicXp = -1;
     private int lastCoins = -1;
     private int lastNatureRunes = -1;
@@ -130,6 +131,7 @@ public class AlchBridgePlugin extends Plugin {
             httpExecutor.shutdownNow();
         }
         lastOfferState.clear();
+        lastOfferQty.clear();
         lastMagicXp = -1;
         lastCoins = -1;
         lastNatureRunes = -1;
@@ -220,17 +222,37 @@ public class AlchBridgePlugin extends Plugin {
         int slot = event.getSlot();
 
         GrandExchangeOfferState state = offer.getState();
+        if (state == GrandExchangeOfferState.EMPTY) {
+            lastOfferState.remove(slot);
+            lastOfferQty.remove(slot);
+            Map<String, Object> data = new HashMap<>();
+            data.put("event", "GE_OFFER");
+            data.put("account", getAccountName());
+            data.put("slot", slot);
+            data.put("state", "EMPTY");
+            sendPayload(data);
+            return;
+        }
+
         String stateName = state.name();
         String lastState = lastOfferState.get(slot);
+        int qtySold = offer.getQuantitySold();
+        int lastQty = lastOfferQty.getOrDefault(slot, -1);
 
-        if (stateName.equals(lastState) && offer.getQuantitySold() == 0) {
+        if (stateName.equals(lastState) && qtySold == lastQty) {
             return;
         }
         lastOfferState.put(slot, stateName);
+        lastOfferQty.put(slot, qtySold);
 
-        // Only track BUY offers
-        if (state == GrandExchangeOfferState.BUYING || state == GrandExchangeOfferState.BOUGHT) {
+        // Track BUY offers (active BUYING, completed BOUGHT, or cancelled partial CANCELLED_BUY)
+        if (state == GrandExchangeOfferState.BUYING 
+            || state == GrandExchangeOfferState.BOUGHT 
+            || state == GrandExchangeOfferState.CANCELLED_BUY) {
             int itemId = offer.getItemId();
+            if (itemId <= 0) {
+                return;
+            }
             String itemName = itemManager.getItemComposition(itemId).getName();
 
             Map<String, Object> data = new HashMap<>();
@@ -242,7 +264,7 @@ public class AlchBridgePlugin extends Plugin {
             data.put("itemName", itemName);
             data.put("price", offer.getPrice());
             data.put("spent", offer.getSpent());
-            data.put("quantitySold", offer.getQuantitySold());
+            data.put("quantitySold", qtySold);
             data.put("totalQuantity", offer.getTotalQuantity());
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
