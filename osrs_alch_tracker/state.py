@@ -235,15 +235,34 @@ class AppState:
         expired = []
         for key, tinfo in list(self.timers.items()):
             elapsed = now - tinfo.get("bought_time", 0)
-            if elapsed >= 14400: # 4 hours
-                if key not in self.notified_timers:
-                    expired.append({
-                        "name": tinfo.get("name", "Item"),
-                        "account": tinfo.get("account", "Default"),
-                        "key": key
-                    })
-                    self.notified_timers.add(key)
+            if elapsed >= 14400: # 4 hours elapsed (timer hits 0)
+                expired.append({
+                    "name": tinfo.get("name", "Item"),
+                    "account": tinfo.get("account", "Default"),
+                    "key": key
+                })
+                # Auto-remove timer once 4 hours have elapsed
+                if key in self.timers:
+                    del self.timers[key]
+                if key in self.notified_timers:
+                    self.notified_timers.remove(key)
+
+        if expired:
+            self.save_timers()
         return expired
+
+    def reset_all_timers(self, account=None):
+        """1-click reset to wipe active timers (for a specific account or all)."""
+        if not account or account in ("All", "All Accounts"):
+            self.timers.clear()
+            self.notified_timers.clear()
+        else:
+            keys_to_del = [k for k, t in list(self.timers.items()) if t.get("account") == account]
+            for k in keys_to_del:
+                del self.timers[k]
+                if k in self.notified_timers:
+                    self.notified_timers.remove(k)
+        self.save_timers()
 
     def _adjust_timer_qty(self, item_id, item_name, diff_qty, entry=None):
         """Adjusts the 4-hour Grand Exchange cooldown timer when a session batch quantity changes."""

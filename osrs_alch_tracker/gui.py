@@ -1122,6 +1122,11 @@ class OSRSAlchDashboard(tk.Tk):
         btn_edit_timer.pack(side="left")
         ToolTip(btn_edit_timer, "Edit Quantity Bought:\nAdjust the purchased amount for this 4h cooldown timer.")
 
+        btn_reset_all = tk.Button(btn_bar, text="⚡ Reset All Timers", command=self.reset_all_timers,
+                                  bg="#d35400", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=4, cursor="hand2")
+        btn_reset_all.pack(side="left", padx=6)
+        ToolTip(btn_reset_all, "Reset All Timers:\n1-click reset to clear active 4h GE cooldown timers.")
+
         btn_del = tk.Button(btn_bar, text="🗑️ Remove Selected Timer", command=self.remove_selected_timer,
                             bg="#c0392b", fg="#ffffff", relief="flat", padx=8, pady=4, cursor="hand2")
         btn_del.pack(side="right")
@@ -1988,25 +1993,37 @@ class OSRSAlchDashboard(tk.Tk):
         now = time.time()
         curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
 
-        for iid, tinfo in self.state.timers.items():
+        expired_keys = []
+        for iid, tinfo in list(self.state.timers.items()):
+            elapsed = now - tinfo.get("bought_time", 0)
+            if elapsed >= 14400: # Has hit 0 / expired
+                expired_keys.append(iid)
+                continue
+
             acc = tinfo.get("account", "Default")
             if curr_sel != "All Accounts" and acc != curr_sel:
                 continue
-            elapsed = now - tinfo.get("bought_time", 0)
+
             left = max(0, 14400 - elapsed)
             hours = int(left // 3600)
             mins = int((left % 3600) // 60)
             secs = int(left % 60)
             time_left_str = f"{hours:02d}h {mins:02d}m {secs:02d}s"
-            status = "Ready to buy! 🎉" if left == 0 else "Cooldown Active"
 
             self.tree_timers.insert("", "end", iid=iid, values=(
                 acc,
                 tinfo.get("name", "Item"),
                 f"{tinfo.get('qty', 0):,}",
                 time_left_str,
-                status
+                "Cooldown Active"
             ))
+
+        if expired_keys:
+            for k in expired_keys:
+                if k in self.state.timers:
+                    del self.state.timers[k]
+                self.state.notified_timers.discard(k)
+            self.state.save_timers()
 
     def update_alerts_display(self):
         self.lst_alerts.delete(0, tk.END)
@@ -2412,6 +2429,14 @@ class OSRSAlchDashboard(tk.Tk):
                 self.state.remove_timer(item_id)
             self.recalculate_all()
             self.show_status_message("Selected cooldown timer(s) removed.")
+
+    def reset_all_timers(self):
+        curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+        prompt_txt = f"Reset all active 4-hour GE cooldown timers for {curr_sel}?" if curr_sel != "All Accounts" else "Reset all active 4-hour GE cooldown timers across all accounts?"
+        if messagebox.askyesno("Reset Timers", prompt_txt):
+            self.state.reset_all_timers(account=curr_sel)
+            self.recalculate_all()
+            self.show_status_message(f"All 4h GE timers reset for {curr_sel}.")
 
     def reset_session(self):
         if messagebox.askyesno("Reset Session", "Are you sure you want to reset all session statistics?"):
