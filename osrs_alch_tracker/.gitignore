@@ -8,6 +8,8 @@ __pycache__/
 build/
 dist/
 *.exe
+bridge_plugin/bin/
+*.class
 
 # App runtime data & cache
 data/

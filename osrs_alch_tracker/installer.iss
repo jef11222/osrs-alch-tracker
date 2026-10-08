@@ -2,7 +2,7 @@
 ; Download Inno Setup from: https://jrsoftware.org/isdl.php
 
 #define MyAppName "OSRS High Alchemy & Crafting Tracker"
-#define MyAppVersion "1.3.14"
+#define MyAppVersion "1.3.15"
 #define MyAppPublisher "jef11222"
 #define MyAppURL "https://github.com/jef11222/osrs-alch-tracker"
 #define MyAppExeName "OSRS_Alch_Tracker.exe"
@@ -42,6 +42,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bridge_plugin\AlchBridgePlugin.jar"; DestDir: "{app}\plugins"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: isreadme
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 

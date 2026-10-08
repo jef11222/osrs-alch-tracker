@@ -14,6 +14,7 @@ STATE_DIR = get_app_data_dir()
 CONFIG_FILE = os.path.join(STATE_DIR, "config.json")
 TIMERS_FILE = os.path.join(STATE_DIR, "timers.json")
 SESSION_FILE = os.path.join(STATE_DIR, "session.json")
+ACCOUNTS_FILE = os.path.join(STATE_DIR, "accounts.json")
 
 DEFAULT_CONFIG = {
     "members": True,
@@ -50,7 +51,7 @@ class AppState:
         # Migrate existing state if transitioning to user AppData
         old_local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         if STATE_DIR != old_local_dir and os.path.exists(old_local_dir):
-            for fname in ("config.json", "timers.json", "session.json"):
+            for fname in ("config.json", "timers.json", "session.json", "accounts.json"):
                 old_f = os.path.join(old_local_dir, fname)
                 new_f = os.path.join(STATE_DIR, fname)
                 if os.path.exists(old_f) and not os.path.exists(new_f):
@@ -59,13 +60,15 @@ class AppState:
                     except Exception:
                         pass
         self.config = dict(DEFAULT_CONFIG)
-        self.timers = {} # item_id -> {"name": ..., "bought_time": ..., "qty": ...}
+        self.timers = {} # item_id -> {"name": ..., "bought_time": ..., "qty": ..., "account": ...}
         self.session = {
             "total_alchs": 0,
             "total_profit": 0,
             "total_xp": 0,
             "history": []
         }
+        self.accounts = {} # account_name -> {"coins": ..., "nature_runes": ..., "world": ..., "is_members": ..., "levels": {...}, "last_seen": ...}
+        self.active_account = "All"
         self.cart_items = {} # item_id -> qty
         self.alert_history = [] # list of recent alert strings
         self.notified_timers = set() # track timers already notified
@@ -95,6 +98,13 @@ class AppState:
             except Exception:
                 pass
 
+        if os.path.exists(ACCOUNTS_FILE):
+            try:
+                with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+                    self.accounts = json.load(f)
+            except Exception:
+                pass
+
     def save_config(self):
         try:
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
@@ -116,35 +126,92 @@ class AppState:
         except Exception as e:
             print(f"Error saving session: {e}")
 
-    def add_timer(self, item_id, item_name, qty):
+    def save_accounts(self):
+        try:
+            with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.accounts, f, indent=2)
+        except Exception as e:
+            print(f"Error saving accounts: {e}")
+
+    def update_account(self, name, coins=None, nature_runes=None, world=None, is_members=None, levels=None):
+        if not name or name == "Unknown":
+            return
+        if name not in self.accounts:
+            self.accounts[name] = {
+                "name": name,
+                "coins": 0,
+                "nature_runes": 0,
+                "world": 301,
+                "is_members": True,
+                "levels": {"Crafting": 99, "Fletching": 99, "Magic": 99},
+                "last_seen": time.time()
+            }
+        acc = self.accounts[name]
+        acc["last_seen"] = time.time()
+        if coins is not None:
+            acc["coins"] = max(0, int(coins))
+        if nature_runes is not None:
+            acc["nature_runes"] = max(0, int(nature_runes))
+        if world is not None:
+            acc["world"] = int(world)
+        if is_members is not None:
+            acc["is_members"] = bool(is_members)
+        if levels:
+            acc["levels"].update(levels)
+        self.save_accounts()
+
+    def add_timer(self, item_id, item_name, qty, account="Default"):
         now = time.time()
         iid_str = str(item_id)
-        existing = self.timers.get(iid_str)
+        acc_tag = account if account and account != "Unknown" else "Default"
+        key = f"{acc_tag}_{iid_str}" if acc_tag != "Default" else iid_str
+
+        existing = self.timers.get(key)
+        if not existing and key != iid_str and iid_str in self.timers:
+            existing = self.timers[iid_str]
+            key = iid_str
+
         if existing and (now - existing.get("bought_time", 0)) < 14400:
             # Active timer already running within 4 hours: keep original anchor time, add qty!
             existing["qty"] = existing.get("qty", 0) + qty
             existing["name"] = item_name
+            existing["account"] = acc_tag
+            existing["item_id"] = int(item_id) if str(item_id).isdigit() else 0
         else:
-            self.timers[iid_str] = {
+            self.timers[key] = {
+                "account": acc_tag,
+                "item_id": int(item_id) if str(item_id).isdigit() else 0,
                 "name": item_name,
                 "bought_time": now,
                 "qty": qty
             }
-        if iid_str in self.notified_timers:
-            self.notified_timers.remove(iid_str)
+        if key in self.notified_timers:
+            self.notified_timers.remove(key)
         self.save_timers()
 
-    def get_remaining_limit(self, item_id, base_limit):
+    def get_remaining_limit(self, item_id, base_limit, account=None):
         """Returns (remaining_qty, seconds_left, is_on_cooldown)"""
         if not base_limit or base_limit <= 0:
             return 1000, 0, False
 
         iid_str = str(item_id)
-        tinfo = self.timers.get(iid_str)
+        now = time.time()
+
+        tinfo = None
+        target_account = account or getattr(self, "active_account", "All")
+
+        if target_account and target_account != "All":
+            tinfo = self.timers.get(f"{target_account}_{iid_str}") or self.timers.get(iid_str)
+        else:
+            for k, t in self.timers.items():
+                if str(t.get("item_id", "")) == iid_str or k.endswith(f"_{iid_str}") or k == iid_str:
+                    if (now - t.get("bought_time", 0)) < 14400:
+                        tinfo = t
+                        break
+
         if not tinfo:
             return base_limit, 0, False
 
-        now = time.time()
         elapsed = now - tinfo.get("bought_time", 0)
         if elapsed >= 14400: # Expired
             return base_limit, 0, False
@@ -156,21 +223,26 @@ class AppState:
 
     def remove_timer(self, item_id):
         iid_str = str(item_id)
-        if iid_str in self.timers:
-            del self.timers[iid_str]
-        if iid_str in self.notified_timers:
-            self.notified_timers.remove(iid_str)
+        keys_to_del = [k for k in self.timers if k == iid_str or k.endswith(f"_{iid_str}")]
+        for k in keys_to_del:
+            del self.timers[k]
+            if k in self.notified_timers:
+                self.notified_timers.remove(k)
         self.save_timers()
 
     def check_expired_timers(self):
         now = time.time()
         expired = []
-        for iid, tinfo in list(self.timers.items()):
-            elapsed = now - tinfo["bought_time"]
+        for key, tinfo in list(self.timers.items()):
+            elapsed = now - tinfo.get("bought_time", 0)
             if elapsed >= 14400: # 4 hours
-                if iid not in self.notified_timers:
-                    expired.append(tinfo["name"])
-                    self.notified_timers.add(iid)
+                if key not in self.notified_timers:
+                    expired.append({
+                        "name": tinfo.get("name", "Item"),
+                        "account": tinfo.get("account", "Default"),
+                        "key": key
+                    })
+                    self.notified_timers.add(key)
         return expired
 
     def _adjust_timer_qty(self, item_id, item_name, diff_qty, entry=None):
@@ -180,15 +252,20 @@ class AppState:
 
         iid_str = str(item_id) if item_id is not None else None
         found_iid = None
+        acc_tag = entry.get("account", "Default") if entry else "Default"
+        key_acc = f"{acc_tag}_{iid_str}" if acc_tag != "Default" else iid_str
 
-        if iid_str and iid_str in self.timers:
+        if key_acc and key_acc in self.timers:
+            found_iid = key_acc
+        elif iid_str and iid_str in self.timers:
             found_iid = iid_str
         elif item_name:
             name_clean = str(item_name).strip().lower()
             for tid, tinfo in self.timers.items():
                 if tinfo.get("name", "").strip().lower() == name_clean:
-                    found_iid = tid
-                    break
+                    if acc_tag == "Default" or tinfo.get("account") == acc_tag:
+                        found_iid = tid
+                        break
 
         now = time.time()
 
@@ -233,16 +310,19 @@ class AppState:
                     if not target_id:
                         target_id = str(int(now))
 
-                    self.timers[target_id] = {
+                    timer_key = f"{acc_tag}_{target_id}" if acc_tag != "Default" else target_id
+                    self.timers[timer_key] = {
+                        "account": acc_tag,
+                        "item_id": int(target_id) if str(target_id).isdigit() else 0,
                         "name": item_name or "Unknown Item",
                         "bought_time": entry_time,
                         "qty": entry_qty
                     }
-                    if target_id in self.notified_timers:
-                        self.notified_timers.remove(target_id)
+                    if timer_key in self.notified_timers:
+                        self.notified_timers.remove(timer_key)
                     self.save_timers()
 
-    def log_alch_batch(self, item_id, item_name, qty, buy_price, nat_price, alch_val):
+    def log_alch_batch(self, item_id, item_name, qty, buy_price, nat_price, alch_val, account="Default"):
         now = time.time()
         entry_id = str(int(now * 1000)) + f"_{item_id}"
         profit_ea = alch_val - (buy_price + nat_price)
@@ -250,6 +330,7 @@ class AppState:
 
         entry = {
             "id": entry_id,
+            "account": account or "Default",
             "item_id": item_id,
             "timestamp": now,
             "time": time.strftime("%H:%M:%S", time.localtime(now)),

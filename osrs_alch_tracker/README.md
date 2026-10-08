@@ -10,6 +10,13 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🔌 Microbot / RuneLite Live Auto-Bridge (100% Passive & TOS Compliant):**
+  - **Zero In-Game Automation / 100% Read-Only:** Only listens to passive game events; performs zero clicks or actions.
+  - **Auto GE Limit Timers:** Starts tick-accurate 4-hour cooldown timers the moment your Grand Exchange buy fills or starts buying.
+  - **Auto Session Profit Logging:** Automatically records filled GE buy orders to your Session Tracker with exact prices paid and profit calculated.
+  - **Live Inventory & Bank Sync:** Automatically keeps your active Cash Stack and Nature Rune stockpiles updated in real time.
+  - **Multi-Instance / Multi-Account Tracking:** Run multiple client instances simultaneously; separate timers, cash stacks, and session profits per character with an instant Account dropdown selector.
+  - **Live Stat Sync:** Synchronizes your Crafting, Fletching, and Magic levels as well as World membership status on login.
 - **⚡ Real-Time Price Sync:** Fetches live bid/ask margins and 24-hour traded volumes directly from the OSRS Wiki API.
 - **⏱️ Dynamic 4-Hour GE Limit Tracking:**
   - Real-time limit depletion (e.g. buying 20 out of 70 items displays `50 / 70`).

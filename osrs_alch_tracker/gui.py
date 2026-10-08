@@ -17,6 +17,7 @@ from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
 from state import AppState
 from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
+from bridge_server import BridgeServer
 
 def format_gp(val):
     if val is None:
@@ -557,6 +558,10 @@ class OSRSAlchDashboard(tk.Tk):
         # Check if app was just updated to show "What's New" popup
         self.after(800, self._check_first_run_after_update)
 
+        # Bridge Server for RuneLite / Microbot live sync
+        self.bridge_server = BridgeServer(port=18833, event_callback=self._on_bridge_event_async)
+        self.bridge_server.start()
+
         # Initial load in background thread
         self.trigger_refresh()
 
@@ -822,6 +827,20 @@ class OSRSAlchDashboard(tk.Tk):
         cb_ref.bind("<<ComboboxSelected>>", self.on_refresh_rate_changed)
         ToolTip(cb_ref, "Configure how often market prices automatically refresh.")
 
+        # Multi-Account Selector & Live Bridge Indicator
+        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
+        tk.Label(p2, text="Account:", fg="#cccccc", bg="#252528").pack(side="left", padx=(2, 2))
+        self.var_account = tk.StringVar(value="All Accounts")
+        init_accs = ["All Accounts"] + sorted(list(self.state.accounts.keys()))
+        self.cb_account = ttk.Combobox(p2, textvariable=self.var_account, values=init_accs, width=12, state="readonly")
+        self.cb_account.pack(side="left", padx=(0, 4))
+        self.cb_account.bind("<<ComboboxSelected>>", self.on_account_selected)
+        ToolTip(self.cb_account, "Multi-Account Selector:\nSwitch between individual accounts or 'All Accounts' combined overview.\nAccounts automatically register when logged in via RuneLite/Microbot.")
+
+        self.lbl_bridge_status = tk.Label(p2, text="🟢 Bridge", fg="#2ecc71", bg="#252528", font=("Segoe UI", 8, "bold"))
+        self.lbl_bridge_status.pack(side="left", padx=(2, 6))
+        ToolTip(self.lbl_bridge_status, "Microbot / RuneLite Bridge:\nListening on 127.0.0.1:18833 for live GE trades, 4h cooldown timers, coins, and nature runes.")
+
         # Action Buttons on Right
         self.btn_update = tk.Button(p2, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
                                     bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
@@ -1062,26 +1081,29 @@ class OSRSAlchDashboard(tk.Tk):
                             fg="#cccccc", bg="#1e1e1e", font=("Segoe UI", 9, "italic"))
         top_info.pack(anchor="w", pady=(0, 6))
 
-        cols = ("item", "qty", "time_left", "status")
+        cols = ("account", "item", "qty", "time_left", "status")
         self.tree_timers = ttk.Treeview(container, columns=cols, show="headings", height=12)
 
+        self.tree_timers.heading("account", text="Account")
         self.tree_timers.heading("item", text="Item Name")
         self.tree_timers.heading("qty", text="Quantity Bought")
         self.tree_timers.heading("time_left", text="Time Remaining")
         self.tree_timers.heading("status", text="Status")
 
-        self.tree_timers.column("item", width=260, anchor="w")
-        self.tree_timers.column("qty", width=140, anchor="center")
-        self.tree_timers.column("time_left", width=160, anchor="center")
-        self.tree_timers.column("status", width=180, anchor="center")
+        self.tree_timers.column("account", width=120, anchor="center")
+        self.tree_timers.column("item", width=220, anchor="w")
+        self.tree_timers.column("qty", width=120, anchor="center")
+        self.tree_timers.column("time_left", width=140, anchor="center")
+        self.tree_timers.column("status", width=160, anchor="center")
 
         self.tree_timers.pack(fill="both", expand=True)
 
         timers_col_tooltips = {
-            "#1": "Item Name:\nItem currently on 4-hour Grand Exchange buy limit cooldown.",
-            "#2": "Quantity Bought:\nNumber of units purchased in this 4-hour limit window.",
-            "#3": "Time Remaining:\nCount down until the 4-hour Grand Exchange limit completely resets.",
-            "#4": "Status:\nShows whether cooldown is actively ticking or ready to purchase again."
+            "#1": "Account:\nIn-game character name for this 4-hour cooldown timer.",
+            "#2": "Item Name:\nItem currently on 4-hour Grand Exchange buy limit cooldown.",
+            "#3": "Quantity Bought:\nNumber of units purchased in this 4-hour limit window.",
+            "#4": "Time Remaining:\nCount down until the 4-hour Grand Exchange limit completely resets.",
+            "#5": "Status:\nShows whether cooldown is actively ticking or ready to purchase again."
         }
         HeadingToolTip(self.tree_timers, timers_col_tooltips)
 
@@ -1129,9 +1151,10 @@ class OSRSAlchDashboard(tk.Tk):
         btn_del.pack(side="right", padx=4)
         ToolTip(btn_del, "Delete Entry:\nRemove the selected transaction from your session history log.")
 
-        cols = ("time", "item", "qty", "buy_price", "nat_price", "alch_val", "profit")
+        cols = ("time", "account", "item", "qty", "buy_price", "nat_price", "alch_val", "profit")
         self.tree_session = ttk.Treeview(container, columns=cols, show="headings", height=10)
         self.tree_session.heading("time", text="Time")
+        self.tree_session.heading("account", text="Account")
         self.tree_session.heading("item", text="Item Name")
         self.tree_session.heading("qty", text="Quantity")
         self.tree_session.heading("buy_price", text="Bought At (ea)")
@@ -1139,25 +1162,27 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_session.heading("alch_val", text="Alch Value (Fixed)")
         self.tree_session.heading("profit", text="Realized Profit")
 
-        self.tree_session.column("time", width=80, anchor="center")
-        self.tree_session.column("item", width=220, anchor="w")
-        self.tree_session.column("qty", width=90, anchor="center")
-        self.tree_session.column("buy_price", width=110, anchor="e")
-        self.tree_session.column("nat_price", width=100, anchor="e")
-        self.tree_session.column("alch_val", width=110, anchor="e")
-        self.tree_session.column("profit", width=140, anchor="e")
+        self.tree_session.column("time", width=75, anchor="center")
+        self.tree_session.column("account", width=95, anchor="center")
+        self.tree_session.column("item", width=190, anchor="w")
+        self.tree_session.column("qty", width=85, anchor="center")
+        self.tree_session.column("buy_price", width=105, anchor="e")
+        self.tree_session.column("nat_price", width=95, anchor="e")
+        self.tree_session.column("alch_val", width=105, anchor="e")
+        self.tree_session.column("profit", width=130, anchor="e")
 
         self.tree_session.pack(fill="both", expand=True)
         self.tree_session.bind("<Double-1>", lambda e: self.open_edit_session_dialog())
 
         session_col_tooltips = {
             "#1": "Time:\nTimestamp when this alch batch was recorded.",
-            "#2": "Item Name:\nName of the alched item.",
-            "#3": "Quantity:\nNumber of items alched in this batch.",
-            "#4": "Bought At (ea):\nGold price paid per item on the Grand Exchange.",
-            "#5": "Nat Cost (ea):\nPrice paid per Nature Rune.",
-            "#6": "Alch Value (Fixed):\nFixed High Alchemy gold payout per item.",
-            "#7": "Realized Profit:\nNet profit earned = (Alch Value - Buy Price - Nat Cost) * Quantity."
+            "#2": "Account:\nIn-game character name that bought/alched this batch.",
+            "#3": "Item Name:\nName of the alched item.",
+            "#4": "Quantity:\nNumber of items alched in this batch.",
+            "#5": "Bought At (ea):\nGold price paid per item on the Grand Exchange.",
+            "#6": "Nat Cost (ea):\nPrice paid per Nature Rune.",
+            "#7": "Alch Value (Fixed):\nFixed High Alchemy gold payout per item.",
+            "#8": "Realized Profit:\nNet profit earned = (Alch Value - Buy Price - Nat Cost) * Quantity."
         }
         HeadingToolTip(self.tree_session, session_col_tooltips)
 
@@ -1360,10 +1385,14 @@ class OSRSAlchDashboard(tk.Tk):
                 UpdateDialog(self, remote_v, dl_url, notes)
                 return
             elif ans is False:
+                if hasattr(self, "bridge_server") and self.bridge_server:
+                    self.bridge_server.stop()
                 self.destroy()
                 return
             else:
                 return # Cancelled, stay in app
+        if hasattr(self, "bridge_server") and self.bridge_server:
+            self.bridge_server.stop()
         self.destroy()
 
     def update_owned_nat_display(self):
@@ -1882,16 +1911,30 @@ class OSRSAlchDashboard(tk.Tk):
         )
 
     def update_session_display(self):
-        sess = self.state.session
-        self.card_alchs.config(text=f"{sess.get('total_alchs', 0):,}")
-        self.card_profit.config(text=format_gp(sess.get('total_profit', 0)))
-        self.card_xp.config(text=f"{sess.get('total_xp', 0):,.0f} XP")
-        self.card_nats.config(text=f"{sess.get('total_alchs', 0):,}")
+        history = self.state.session.get("history", [])
+        curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+
+        if curr_sel != "All Accounts":
+            filtered = [h for h in history if h.get("account", "Default") == curr_sel]
+            total_alchs = sum(h.get("qty", 0) for h in filtered)
+            total_profit = sum(h.get("profit", 0) for h in filtered)
+            total_xp = total_alchs * 65.0
+        else:
+            filtered = history
+            total_alchs = self.state.session.get("total_alchs", 0)
+            total_profit = self.state.session.get("total_profit", 0)
+            total_xp = self.state.session.get("total_xp", 0)
+
+        self.card_alchs.config(text=f"{total_alchs:,}")
+        self.card_profit.config(text=format_gp(total_profit))
+        self.card_xp.config(text=f"{total_xp:,.0f} XP")
+        self.card_nats.config(text=f"{total_alchs:,}")
 
         self.tree_session.delete(*self.tree_session.get_children())
-        for h in sess.get("history", []):
+        for h in filtered:
             self.tree_session.insert("", "end", iid=h.get("id"), values=(
                 h.get("time"),
+                h.get("account", "Default"),
                 h.get("item"),
                 f"{h.get('qty', 0):,}",
                 f"{h.get('buy_price', 0):,} gp",
@@ -1903,8 +1946,13 @@ class OSRSAlchDashboard(tk.Tk):
     def update_timers_display(self):
         self.tree_timers.delete(*self.tree_timers.get_children())
         now = time.time()
+        curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+
         for iid, tinfo in self.state.timers.items():
-            elapsed = now - tinfo["bought_time"]
+            acc = tinfo.get("account", "Default")
+            if curr_sel != "All Accounts" and acc != curr_sel:
+                continue
+            elapsed = now - tinfo.get("bought_time", 0)
             left = max(0, 14400 - elapsed)
             hours = int(left // 3600)
             mins = int((left % 3600) // 60)
@@ -1913,8 +1961,9 @@ class OSRSAlchDashboard(tk.Tk):
             status = "Ready to buy! 🎉" if left == 0 else "Cooldown Active"
 
             self.tree_timers.insert("", "end", iid=iid, values=(
-                tinfo["name"],
-                f"{tinfo['qty']:,}",
+                acc,
+                tinfo.get("name", "Item"),
+                f"{tinfo.get('qty', 0):,}",
                 time_left_str,
                 status
             ))
@@ -2359,11 +2408,14 @@ class OSRSAlchDashboard(tk.Tk):
 
         expired = self.state.check_expired_timers()
         if expired:
-            for item_name in expired:
+            for exp in expired:
+                item_name = exp.get("name") if isinstance(exp, dict) else exp
+                acc = exp.get("account", "Default") if isinstance(exp, dict) else "Default"
+                acc_tag = f"[{acc}] " if acc != "Default" else ""
                 if self.state.config.get("sound_enabled") and HAS_WINSOUND:
                     winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
                 if self.state.config.get("desktop_alerts"):
-                    FloatingToast(self, "⏰ GE 4-Hour Limit Reset!", f"You can now buy {item_name} on the GE again!")
+                    FloatingToast(self, f"⏰ {acc_tag}GE 4-Hour Limit Reset!", f"You can now buy {item_name} on the GE again!")
             # Unhide expired items and refresh active watchlists
             self.recalculate_all()
         else:
@@ -2475,6 +2527,156 @@ class OSRSAlchDashboard(tk.Tk):
         if hasattr(self, "var_price_basis"):
             self.state.config["price_basis"] = "5m" if "5m" in self.var_price_basis.get() else "latest"
         self.state.save_config()
+
+    # ------------------ MICROBOT / RUNELITE BRIDGE HANDLERS ------------------
+
+    def _on_bridge_event_async(self, data):
+        try:
+            self.after(0, lambda: self.handle_bridge_event(data))
+        except Exception:
+            pass
+
+    def _register_account(self, account):
+        if not account or account == "Unknown":
+            return
+        if hasattr(self, "cb_account"):
+            curr_vals = list(self.cb_account["values"])
+            if account not in curr_vals:
+                curr_vals.append(account)
+                self.cb_account["values"] = curr_vals
+
+    def on_account_selected(self, event=None):
+        sel = self.var_account.get()
+        self.state.active_account = "All" if sel == "All Accounts" else sel
+        self._apply_active_account_data()
+        self.recalculate_all()
+
+    def _apply_active_account_data(self):
+        sel = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
+        if sel == "All Accounts":
+            if self.state.accounts:
+                total_coins = sum(acc.get("coins", 0) for acc in self.state.accounts.values())
+                total_nats = sum(acc.get("nature_runes", 0) for acc in self.state.accounts.values())
+                if total_coins > 0 and self.var_use_cash.get():
+                    self.ent_cash.delete(0, tk.END)
+                    self.ent_cash.insert(0, format_gp(total_coins))
+                    self.state.config["cash_stack"] = total_coins
+                if total_nats > 0:
+                    self.ent_owned_nat.delete(0, tk.END)
+                    self.ent_owned_nat.insert(0, str(total_nats))
+                    self.state.config["owned_nature_runes"] = total_nats
+        else:
+            acc = self.state.accounts.get(sel)
+            if acc:
+                coins = acc.get("coins", 0)
+                nats = acc.get("nature_runes", 0)
+                is_mem = acc.get("is_members", True)
+                levels = acc.get("levels", {})
+
+                if coins > 0 and self.var_use_cash.get():
+                    self.ent_cash.delete(0, tk.END)
+                    self.ent_cash.insert(0, format_gp(coins))
+                    self.state.config["cash_stack"] = coins
+
+                if nats > 0:
+                    self.ent_owned_nat.delete(0, tk.END)
+                    self.ent_owned_nat.insert(0, str(nats))
+                    self.state.config["owned_nature_runes"] = nats
+
+                self.var_members.set(is_mem)
+                self.var_f2p.set(not is_mem)
+
+                if hasattr(self, "ent_craft_lvl") and "Crafting" in levels:
+                    self.ent_craft_lvl.delete(0, tk.END)
+                    self.ent_craft_lvl.insert(0, str(levels["Crafting"]))
+                    self.state.config.setdefault("player_levels", {})["Crafting"] = levels["Crafting"]
+
+                if hasattr(self, "ent_fletch_lvl") and "Fletching" in levels:
+                    self.ent_fletch_lvl.delete(0, tk.END)
+                    self.ent_fletch_lvl.insert(0, str(levels["Fletching"]))
+                    self.state.config.setdefault("player_levels", {})["Fletching"] = levels["Fletching"]
+
+    def handle_bridge_event(self, data):
+        event_type = data.get("event")
+        account = data.get("account", "Default")
+        if not account or account == "Unknown":
+            account = "Default"
+
+        self._register_account(account)
+
+        if event_type in ("ACCOUNT_LOGIN", "ACCOUNT_SNAPSHOT"):
+            world = data.get("world")
+            is_mem = data.get("isMembers", True)
+            levels = {
+                "Crafting": data.get("crafting", 99),
+                "Fletching": data.get("fletching", 99),
+                "Magic": data.get("magic", 99)
+            }
+            coins = data.get("coins")
+            nats = data.get("natureRunes")
+            self.state.update_account(account, coins=coins, nature_runes=nats, world=world, is_members=is_mem, levels=levels)
+            self._apply_active_account_data()
+            if hasattr(self, "lbl_bridge_status"):
+                self.lbl_bridge_status.config(text=f"🟢 {account}", fg="#2ecc71")
+            self.recalculate_all()
+
+        elif event_type == "INVENTORY_SYNC":
+            coins = data.get("coins")
+            nats = data.get("natureRunes")
+            self.state.update_account(account, coins=coins, nature_runes=nats)
+            self._apply_active_account_data()
+
+        elif event_type == "BANK_SYNC":
+            bank_coins = data.get("bankCoins")
+            bank_nats = data.get("bankNatureRunes")
+            acc = self.state.accounts.get(account, {})
+            if bank_coins is not None:
+                acc["bank_coins"] = bank_coins
+            if bank_nats is not None:
+                acc["bank_nats"] = bank_nats
+            self._apply_active_account_data()
+
+        elif event_type == "SKILLS_SYNC":
+            levels = {
+                "Crafting": data.get("crafting"),
+                "Fletching": data.get("fletching"),
+                "Magic": data.get("magic")
+            }
+            self.state.update_account(account, levels={k: v for k, v in levels.items() if v is not None})
+            self._apply_active_account_data()
+            self.recalculate_craft_table()
+
+        elif event_type == "GE_OFFER":
+            item_id = data.get("itemId", 0)
+            item_name = data.get("itemName", "")
+            qty_sold = data.get("quantitySold", 0)
+            total_qty = data.get("totalQuantity", 0)
+            spent = data.get("spent", 0)
+            price = data.get("price", 0)
+            state = data.get("state", "")
+
+            if item_id > 0:
+                # Progressive 4-hour timer update
+                if qty_sold > 0:
+                    self.state.add_timer(item_id, item_name, qty_sold, account=account)
+                    self.update_timers_display()
+                    self.recalculate_alch_table()
+
+                # Automatically log completed GE buy to Session Tracker!
+                if state == "BOUGHT" and qty_sold > 0:
+                    unit_buy_price = int(spent // qty_sold) if spent > 0 else int(price)
+                    nat_price = self.get_effective_nature_price()
+                    mdata = self.api.mapping.get(str(item_id), {})
+                    high_alch = mdata.get("highalch", 0)
+                    if high_alch > 0:
+                        entry = self.state.log_alch_batch(item_id, item_name, qty_sold, unit_buy_price, nat_price, high_alch, account=account)
+                        self.update_session_display()
+                        self.lbl_status_right.config(text=f"✓ Logged GE Buy: {qty_sold}x {item_name} [{account}]", fg="#2ecc71")
+                        if self.state.config.get("desktop_alerts"):
+                            FloatingToast(self, f"🛒 GE Buy Filled [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp (Profit: +{format_gp(entry['profit'])})")
+
+        elif event_type == "ALCH_CAST":
+            self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")
 
 if __name__ == "__main__":
     app = OSRSAlchDashboard()
