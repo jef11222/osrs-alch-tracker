@@ -1172,6 +1172,11 @@ class OSRSAlchDashboard(tk.Tk):
         btn_reset_all.pack(side="left", padx=6)
         ToolTip(btn_reset_all, "Reset All Timers:\n1-click reset to clear active 4h GE cooldown timers.")
 
+        btn_ge_sync_timers = tk.Button(btn_bar, text="🔄 Sync with GE", command=self.manual_ge_sync,
+                                       bg="#2980b9", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=4, cursor="hand2")
+        btn_ge_sync_timers.pack(side="left", padx=6)
+        ToolTip(btn_ge_sync_timers, "Sync with GE:\nAuthoritatively fetch live 4-hour buy limits and trades directly from RuneLite / Microbot.")
+
         btn_del = tk.Button(btn_bar, text="🗑️ Remove Selected Timer", command=self.remove_selected_timer,
                             bg="#c0392b", fg="#ffffff", relief="flat", padx=8, pady=4, cursor="hand2")
         btn_del.pack(side="right")
@@ -1243,9 +1248,17 @@ class OSRSAlchDashboard(tk.Tk):
         }
         HeadingToolTip(self.tree_session, session_col_tooltips)
 
-        btn_reset = tk.Button(container, text="Reset Session", command=self.reset_session,
+        session_btn_bar = tk.Frame(container, bg="#1e1e1e")
+        session_btn_bar.pack(fill="x", pady=8)
+
+        btn_ge_sync_sess = tk.Button(session_btn_bar, text="🔄 Sync with GE", command=self.manual_ge_sync,
+                                     bg="#2980b9", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=10, pady=4, cursor="hand2")
+        btn_ge_sync_sess.pack(side="left")
+        ToolTip(btn_ge_sync_sess, "Sync with GE:\nImport any completed GE trades from RuneLite / Microbot history into this session.")
+
+        btn_reset = tk.Button(session_btn_bar, text="Reset Session", command=self.reset_session,
                               bg="#7f8c8d", fg="#ffffff", relief="flat", padx=10, pady=4, cursor="hand2")
-        btn_reset.pack(anchor="e", pady=8)
+        btn_reset.pack(side="right")
         ToolTip(btn_reset, "Reset Session:\nClears all session stats and history log back to zero.")
 
     def create_stat_card(self, parent, title, initial_val, val_color, tooltip=""):
@@ -1322,6 +1335,15 @@ class OSRSAlchDashboard(tk.Tk):
 
         # Recalculate tables
         self.recalculate_all()
+
+        # Authoritatively reconcile 4h timers and past trades from RuneLite profiles
+        try:
+            ge_res = self.state.sync_from_runelite_ge(self.api.mapping, self.get_effective_nature_price())
+            if ge_res.get("timers_updated", 0) > 0 or ge_res.get("session_imported", 0) > 0:
+                self.update_timers_display()
+                self.update_session_display()
+        except Exception:
+            pass
 
         # Check for alerts ONLY on fresh fetch!
         self._check_alerts_on_sync()
@@ -2498,6 +2520,21 @@ class OSRSAlchDashboard(tk.Tk):
             self.state.reset_session()
             self.update_session_display()
 
+    def manual_ge_sync(self):
+        """Authoritatively syncs 4-hour buy limits and past trades directly from RuneLite / Microbot."""
+        try:
+            res = self.state.sync_from_runelite_ge(self.api.mapping, self.get_effective_nature_price())
+            self.update_timers_display()
+            self.update_session_display()
+            self.recalculate_all()
+            t_up = res.get("timers_updated", 0)
+            s_up = res.get("session_imported", 0)
+            msg = f"GE Sync Complete: {t_up} active timer(s) synced, {s_up} missing trade(s) imported."
+            self.show_status_message(msg)
+            FloatingToast(self, "🔄 GE Synced", msg)
+        except Exception as e:
+            self.show_status_message(f"GE Sync Error: {e}")
+
     def trigger_alert_notification(self, item_name, details, item_id=None):
         if item_id:
             rem_limit, _, is_cd = self.state.get_remaining_limit(item_id, 1000)
@@ -2873,6 +2910,26 @@ class OSRSAlchDashboard(tk.Tk):
                             self.lbl_status_right.config(text=f"🛒 Logged GE Buy ({tag}): {qty_sold}x {item_name} [{account}]", fg="#2ecc71")
                             if self.state.config.get("desktop_alerts"):
                                 FloatingToast(self, f"🛒 GE Buy {tag} [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp (Profit: +{format_gp(entry['profit'])})")
+
+                        # Immediately reconcile authoritative 4h buy limits and trades from RuneLite
+                        try:
+                            self.state.sync_from_runelite_ge(self.api.mapping, self.get_effective_nature_price())
+                            self.update_timers_display()
+                        except Exception:
+                            pass
+
+        elif event_type == "GE_SYNC":
+            try:
+                res = self.state.sync_from_runelite_ge(self.api.mapping, self.get_effective_nature_price(), raw_sync_data=data)
+                self.update_timers_display()
+                self.update_session_display()
+                self.recalculate_alch_table()
+                self.lbl_status_right.config(
+                    text=f"🔄 GE Synced [{account}]: {res.get('timers_updated', 0)} timers, {res.get('session_imported', 0)} trades",
+                    fg="#3498db"
+                )
+            except Exception as e:
+                print(f"Error handling GE_SYNC: {e}")
 
         elif event_type == "ALCH_CAST":
             self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")

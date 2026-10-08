@@ -3,6 +3,8 @@ import sys
 import json
 import time
 import shutil
+import glob
+import datetime
 
 def get_app_data_dir():
     if getattr(sys, "frozen", False):
@@ -263,6 +265,194 @@ class AppState:
                 if k in self.notified_timers:
                     self.notified_timers.remove(k)
         self.save_timers()
+
+    def sync_from_runelite_ge(self, api_mapping=None, default_nat_price=140, raw_sync_data=None):
+        """Authoritatively synchronizes active 4-hour buy limits and past trades directly
+        from RuneLite / Microbot profile configurations or live GE_SYNC bridge events.
+        Guarantees exact reset timestamps, true bought quantities, and backfills any trades
+        missed in the session tracker without double-counting.
+        """
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_local = time.time()
+        mapping = api_mapping or {}
+
+        display_names = {}
+        account_buylimits = {} # acc_name -> {iid: iso_str}
+        account_trades = {}    # acc_name -> list of trades
+
+        if raw_sync_data and isinstance(raw_sync_data, dict):
+            acc = raw_sync_data.get("account", "Default")
+            if "buylimits" in raw_sync_data and isinstance(raw_sync_data["buylimits"], dict):
+                account_buylimits[acc] = raw_sync_data["buylimits"]
+            if "tradeHistory" in raw_sync_data and isinstance(raw_sync_data["tradeHistory"], list):
+                account_trades[acc] = raw_sync_data["tradeHistory"]
+        else:
+            raw_paths = glob.glob(os.path.expanduser(r"~\.runelite\microbot-profiles\*rsprofile*.properties")) + \
+                        glob.glob(os.path.expanduser(r"~\.runelite\profiles2\*rsprofile*.properties"))
+            profile_paths = sorted([p for p in raw_paths if os.path.exists(p)], key=os.path.getmtime, reverse=True)
+
+            acc_hash_buylimits = {}
+            acc_hash_trades = {}
+
+            for p in profile_paths:
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if ".displayName=" in line:
+                                parts = line.split("=")
+                                if len(parts) == 2:
+                                    acc_hash = parts[0].split(".")[2]
+                                    if acc_hash not in display_names:
+                                        display_names[acc_hash] = parts[1]
+                            elif "buylimit." in line:
+                                parts = line.split("=")
+                                if len(parts) == 2:
+                                    key_parts = parts[0].split(".")
+                                    if len(key_parts) >= 4:
+                                        acc_hash = key_parts[2]
+                                        iid = key_parts[-1]
+                                        iso_val = parts[1].replace(r"\:", ":")
+                                        if iid not in acc_hash_buylimits.setdefault(acc_hash, {}):
+                                            acc_hash_buylimits[acc_hash][iid] = iso_val
+                            elif "tradeHistory=" in line:
+                                parts = line.split("tradeHistory=")
+                                if len(parts) == 2:
+                                    key_parts = parts[0].rstrip(".").split(".")
+                                    acc_hash = key_parts[2] if len(key_parts) >= 3 else "default"
+                                    raw_json = parts[1].replace(r"\:", ":")
+                                    try:
+                                        t_list = json.loads(raw_json)
+                                        if acc_hash not in acc_hash_trades:
+                                            acc_hash_trades[acc_hash] = t_list
+                                    except Exception:
+                                        pass
+                except Exception:
+                    pass
+
+            for acc_hash, bl in acc_hash_buylimits.items():
+                acc_name = display_names.get(acc_hash, acc_hash)
+                account_buylimits[acc_name] = bl
+            for acc_hash, tr in acc_hash_trades.items():
+                acc_name = display_names.get(acc_hash, acc_hash)
+                account_trades[acc_name] = tr
+
+        if not account_buylimits and not account_trades:
+            return {"timers_updated": 0, "session_imported": 0}
+
+        # 1. Update active 4h timers
+        timers_updated = 0
+        EXCLUDED_NON_ALCH_IDS = {
+            554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566,
+            882, 884, 886, 888, 890, 892,
+            995
+        }
+
+        for acc_name, limits in account_buylimits.items():
+            trades = account_trades.get(acc_name, [])
+            for iid, iso_str in limits.items():
+                try:
+                    exp_dt = datetime.datetime.fromisoformat(iso_str)
+                    key = f"{acc_name}_{iid}" if acc_name != "Default" else str(iid)
+                    if exp_dt > now_utc:
+                        start_dt = exp_dt - datetime.timedelta(hours=4)
+                        start_ts = start_dt.timestamp()
+
+                        item_trades = [
+                            t for t in trades 
+                            if str(t.get("i")) == str(iid) and t.get("b") and (t.get("t")/1000.0) >= (start_ts - 30)
+                        ]
+                        tot_qty = sum(t.get("q", 0) for t in item_trades)
+
+                        mdata = mapping.get(str(iid), {})
+                        name = mdata.get("name", self.timers.get(key, {}).get("name", f"Item {iid}"))
+                        base_limit = mdata.get("limit", 0)
+                        if base_limit > 0 and tot_qty > base_limit:
+                            tot_qty = base_limit
+
+                        self.timers[key] = {
+                            "account": acc_name,
+                            "item_id": int(iid) if str(iid).isdigit() else 0,
+                            "name": name,
+                            "bought_time": start_ts,
+                            "qty": tot_qty
+                        }
+                        timers_updated += 1
+                    else:
+                        # Expired in RuneLite, remove from timers
+                        if key in self.timers:
+                            del self.timers[key]
+                        if str(iid) in self.timers:
+                            del self.timers[str(iid)]
+                except Exception:
+                    pass
+
+        self.save_timers()
+
+        # 2. Backfill missing trades into Session History (last 12h)
+        session_imported = 0
+        existing_history = self.session.get("history", [])
+
+        for acc_name, trades in account_trades.items():
+            for t in trades:
+                if not t.get("b"):
+                    continue
+                iid = t.get("i")
+                if iid in EXCLUDED_NON_ALCH_IDS:
+                    continue
+                t_ts = t.get("t", 0) / 1000.0
+                if (now_local - t_ts) > 43200: # Only last 12 hours
+                    continue
+                qty = t.get("q", 0)
+                price = t.get("p", 0)
+                if qty <= 0:
+                    continue
+
+                matched = False
+                for eh in existing_history:
+                    eh_ts = eh.get("timestamp", 0)
+                    eh_iid = eh.get("item_id")
+                    eh_qty = eh.get("qty")
+                    if eh_iid == iid and eh_qty == qty and abs(eh_ts - t_ts) < 15:
+                        matched = True
+                        break
+
+                if not matched:
+                    mdata = mapping.get(str(iid), {})
+                    name = mdata.get("name", f"Item {iid}")
+                    highalch = mdata.get("highalch", 0)
+                    nat_price = default_nat_price
+                    profit = (highalch - (price + nat_price)) * qty if highalch > 0 else 0
+
+                    # Skip if not an alchable item
+                    if highalch <= 0 or profit < -5000:
+                        continue
+
+                    entry_id = f"ge_{int(t.get('t', 0))}_{iid}_{qty}"
+                    entry = {
+                        "id": entry_id,
+                        "account": acc_name,
+                        "item_id": iid,
+                        "timestamp": t_ts,
+                        "time": time.strftime("%H:%M:%S", time.localtime(t_ts)),
+                        "item": name,
+                        "qty": qty,
+                        "buy_price": price,
+                        "nat_price": nat_price,
+                        "alch_val": highalch,
+                        "profit": profit
+                    }
+                    self.session["history"].append(entry)
+                    session_imported += 1
+
+        if session_imported > 0:
+            # Sort history newest first by timestamp
+            self.session["history"].sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+            self.session["history"] = self.session["history"][:200]
+            self._recalc_session_totals()
+            self.save_session()
+
+        return {"timers_updated": timers_updated, "session_imported": session_imported}
 
     def _adjust_timer_qty(self, item_id, item_name, diff_qty, entry=None):
         """Adjusts the 4-hour Grand Exchange cooldown timer when a session batch quantity changes."""

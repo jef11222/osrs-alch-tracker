@@ -72,6 +72,9 @@ public class AlchBridgePlugin extends Plugin {
     @Inject
     private ClientToolbar clientToolbar;
 
+    @Inject
+    private ConfigManager configManager;
+
     private AlchBridgePanel panel;
     private NavigationButton navButton;
 
@@ -269,6 +272,10 @@ public class AlchBridgePlugin extends Plugin {
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
             sendPayload(data);
+
+            if (state == GrandExchangeOfferState.BOUGHT || state == GrandExchangeOfferState.CANCELLED_BUY) {
+                syncGrandExchangeLimitsAndTrades();
+            }
         }
     }
 
@@ -366,8 +373,48 @@ public class AlchBridgePlugin extends Plugin {
 
             sendPayload(data);
             syncActiveGeOffers();
+            syncGrandExchangeLimitsAndTrades();
         } catch (Exception e) {
             log.debug("Error preparing account snapshot: {}", e.getMessage());
+        }
+    }
+
+    private void syncGrandExchangeLimitsAndTrades() {
+        if (configManager == null) {
+            return;
+        }
+        try {
+            String profileKey = configManager.getRSProfileKey();
+            if (profileKey == null) {
+                return;
+            }
+
+            String tradeHistoryJson = configManager.getRSProfileConfiguration("grandexchange", "tradeHistory");
+            List<String> buylimitKeys = configManager.getRSProfileConfigurationKeys("grandexchange", profileKey, "buylimit");
+            Map<String, String> limits = new HashMap<>();
+            if (buylimitKeys != null) {
+                for (String k : buylimitKeys) {
+                    String val = configManager.getConfiguration("grandexchange", profileKey, k);
+                    if (val != null) {
+                        String iid = k.substring(k.lastIndexOf('.') + 1);
+                        limits.put(iid, val);
+                    }
+                }
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("event", "GE_SYNC");
+            data.put("account", getAccountName());
+            data.put("buylimits", limits);
+            if (tradeHistoryJson != null && !tradeHistoryJson.isEmpty()) {
+                Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
+                List<Map<String, Object>> trades = gson.fromJson(tradeHistoryJson, listType);
+                data.put("tradeHistory", trades);
+            }
+            data.put("timestamp", System.currentTimeMillis() / 1000.0);
+            sendPayload(data);
+        } catch (Exception e) {
+            log.debug("Error syncing GE limits and trades: {}", e.getMessage());
         }
     }
 
