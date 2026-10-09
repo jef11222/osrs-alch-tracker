@@ -8,6 +8,11 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🛒 GE Cart Live Sync & Offer Cancellation Bugfix (v1.3.38):**
+  - **Fixed GE Buy Offer Cancellation Cascade:** Resolved a critical bug where cancelling a single buy offer on the Grand Exchange caused the entire shopping cart to be wiped out.
+  - **Account Name Sanitization & Delimiter Safety:** Fixed parsing for account usernames containing underscores (e.g. `iron_alt_42`) or Unicode non-breaking spaces from RuneLite, ensuring active monitored characters always match incoming bridge events accurately.
+  - **Manual Cart Item Preservation:** Fully protects manually added and auto-filled shopping cart items during in-game GE slot cancellations and updates.
+
 - **🔒 Tree Open/Closed State Persistence Bugfix (v1.3.37):**
   - **Fixed Auto-Refresh Tree Expansion Bug:** Resolved an issue where background periodic price updates (or the 2-minute auto-refresh timer) would inadvertently re-expand collapsed tiers in the Skilling Guide Material Family Tree. The application now uses recursive open-node tracking and persistent initialization flags, ensuring user-defined open/collapsed node states remain 100% stable and untouched across refreshes.
 

@@ -5621,6 +5621,8 @@ class OSRSAlchDashboard(tk.Tk):
                 self.state.add_timer(row["id"], row["name"], qty, account=active_acc)
 
         self.state.cart_items.clear()
+        if hasattr(self, "_ge_tracked_items"):
+            self._ge_tracked_items.clear()
         self.recalculate_all()
 
         messagebox.showinfo("Logged Successfully", f"Logged {count} items into your session tracker and started their 4-hour GE limit timers!\n\nYou can click 'Edit Selected Entry' in the Session Tracker anytime if your actual buy price was different.")
@@ -5941,10 +5943,11 @@ class OSRSAlchDashboard(tk.Tk):
     def _register_account(self, account):
         if not account or account == "Unknown":
             return
+        clean_acc = account.replace('\u00a0', ' ').strip()
         if hasattr(self, "cb_account"):
             curr_vals = list(self.cb_account["values"])
-            if account not in curr_vals:
-                curr_vals.append(account)
+            if clean_acc not in curr_vals:
+                curr_vals.append(clean_acc)
                 self.cb_account["values"] = sorted(curr_vals, key=lambda x: (x != "All Accounts", x))
 
     def on_account_selected(self, event=None):
@@ -6020,11 +6023,17 @@ class OSRSAlchDashboard(tk.Tk):
 
     def _sync_cart_from_ge(self):
         curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+        if curr_sel:
+            curr_sel = curr_sel.replace('\u00a0', ' ').strip()
         active_ge_items = {}
         for k, info in self._ge_cart_slots.items():
-            acc = k.split("_")[0]
+            acc = info.get("account")
+            if not acc:
+                acc = k.rsplit("_", 1)[0]
+            if acc:
+                acc = acc.replace('\u00a0', ' ').strip()
             if curr_sel == "All Accounts" or acc == curr_sel:
-                iid = info["item_id"]
+                iid = str(info["item_id"])
                 active_ge_items[iid] = active_ge_items.get(iid, 0) + info["qty"]
 
         # Cleanly remove previous GE-driven items that are no longer actively buying
@@ -6047,9 +6056,11 @@ class OSRSAlchDashboard(tk.Tk):
 
     def handle_bridge_event(self, data):
         event_type = data.get("event")
-        account = data.get("account", "Default")
-        if not account or account == "Unknown":
+        raw_account = data.get("account", "Default")
+        if not raw_account or raw_account == "Unknown":
             account = "Default"
+        else:
+            account = raw_account.replace('\u00a0', ' ').strip()
 
         self._register_account(account)
         active_monitored = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
@@ -6122,7 +6133,12 @@ class OSRSAlchDashboard(tk.Tk):
 
             # 1. Live GE Sync into Shopping Cart
             if state == "BUYING" and item_id > 0 and total_qty > 0:
-                self._ge_cart_slots[slot_key] = {"item_id": str(item_id), "qty": total_qty}
+                self._ge_cart_slots[slot_key] = {
+                    "account": account,
+                    "slot": slot,
+                    "item_id": str(item_id),
+                    "qty": total_qty
+                }
                 self._sync_cart_from_ge()
             elif state in ("BOUGHT", "CANCELLED_BUY", "EMPTY"):
                 if slot_key in self._ge_cart_slots:
