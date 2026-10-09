@@ -910,15 +910,15 @@ class OSRSAlchDashboard(tk.Tk):
         self.var_members = tk.BooleanVar(value=self.state.config.get("members", True))
         self.var_f2p = tk.BooleanVar(value=self.state.config.get("f2p", False))
 
-        cb_mem = tk.Checkbutton(p1, text="Members", variable=self.var_members, command=self.on_filter_changed,
+        cb_mem = tk.Checkbutton(p1, text="Members", variable=self.var_members, command=self.on_members_clicked,
                                 bg="#252528", fg="#f1f1f1", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#f39c12")
         cb_mem.pack(side="left", padx=2)
-        ToolTip(cb_mem, "Include Members items. Uncheck if you only want Free-to-play.")
+        ToolTip(cb_mem, "Members Mode (P2P):\nShows all tradeable items and skilling methods (both P2P items and F2P staples).")
 
-        cb_f2p = tk.Checkbutton(p1, text="F2P", variable=self.var_f2p, command=self.on_filter_changed,
-                                bg="#252528", fg="#f1f1f1", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#f39c12")
+        cb_f2p = tk.Checkbutton(p1, text="F2P Only", variable=self.var_f2p, command=self.on_f2p_clicked,
+                                bg="#252528", fg="#f1f1f1", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#2ecc71")
         cb_f2p.pack(side="left", padx=2)
-        ToolTip(cb_f2p, "Include Free-to-play items. When only F2P is active, GE slots cap at 3.")
+        ToolTip(cb_f2p, "Free-to-Play Mode (F2P Only):\nStrictly filters to F2P items, recipes, quests, and brackets only.\nAll Members items and quests are completely hidden across all tabs.\nGE slots cap at 3.")
 
         # Cash Stack (Toggleable on/off)
         self.var_use_cash = tk.BooleanVar(value=self.state.config.get("use_cash_stack", True))
@@ -1533,11 +1533,12 @@ class OSRSAlchDashboard(tk.Tk):
             r.pack(side="left", padx=3)
             ToolTip(r, stip)
 
-        self.var_guide_members = tk.BooleanVar(value=self.state.config.get("guide_members", True))
-        cb_mem = tk.Checkbutton(guide_ctrl, text="P2P", variable=self.var_guide_members, command=self.recalculate_guide_table,
-                                bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528", font=("Segoe UI", 8))
-        cb_mem.pack(side="left", padx=3)
-        ToolTip(cb_mem, "Include Members-only (P2P) training methods.")
+        init_guide_p2p = (not self.var_f2p.get()) if hasattr(self, "var_f2p") else self.state.config.get("guide_members", True)
+        self.var_guide_members = tk.BooleanVar(value=init_guide_p2p)
+        self.cb_guide_mem = tk.Checkbutton(guide_ctrl, text="P2P Methods", variable=self.var_guide_members, command=self.on_guide_p2p_toggled,
+                                           bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528", font=("Segoe UI", 8))
+        self.cb_guide_mem.pack(side="left", padx=3)
+        ToolTip(self.cb_guide_mem, "Include Members-only (P2P) skilling brackets and quests.\nUncheck if training on Free-to-play (F2P).")
 
         # Right Action Buttons
         btn_guide_batch = tk.Button(guide_ctrl, text="🛒 Add Batch to Cart", command=self.add_guide_batch_to_cart,
@@ -1670,24 +1671,50 @@ class OSRSAlchDashboard(tk.Tk):
         self.update_guide_quests_card(skill_name)
         self.recalculate_guide_table()
 
+    def is_guide_p2p_allowed(self):
+        # Strict F2P mode: if top bar F2P is checked and Members is not checked, or guide P2P is unchecked
+        if hasattr(self, "var_f2p") and self.var_f2p.get() and hasattr(self, "var_members") and not self.var_members.get():
+            return False
+        if hasattr(self, "var_guide_members"):
+            return self.var_guide_members.get()
+        return True
+
+    def on_guide_p2p_toggled(self):
+        p2p_on = self.var_guide_members.get()
+        if hasattr(self, "var_members") and hasattr(self, "var_f2p"):
+            self.var_members.set(p2p_on)
+            self.var_f2p.set(not p2p_on)
+            self.state.config["members"] = p2p_on
+            self.state.config["f2p"] = not p2p_on
+        self.state.config["guide_members"] = p2p_on
+        self.save_preferences()
+        self.update_guide_quests_card(self.var_guide_skill.get())
+        self.recalculate_all()
+
     def update_guide_quests_card(self, skill_name):
         for w in self.frame_quest_inner.winfo_children():
             w.destroy()
 
         sdata = SKILLING_GUIDES.get(skill_name, {})
         quests = sdata.get("quests", [])
-        if not quests:
-            tk.Label(self.frame_quest_inner, text="No early quest skips registered for this skill.", fg="#888888", bg="#202023", font=("Segoe UI", 8)).pack(side="left")
+        p2p_allowed = self.is_guide_p2p_allowed()
+
+        filtered_quests = [q for q in quests if p2p_allowed or not q.get("members", True)]
+
+        if not filtered_quests:
+            msg = "ℹ️ No F2P quest skips for this skill (All quest skips require Members)." if not p2p_allowed else "No early quest skips registered for this skill."
+            tk.Label(self.frame_quest_inner, text=msg, fg="#888888", bg="#202023", font=("Segoe UI", 8)).pack(side="left")
             return
 
-        for q in quests:
+        for q in filtered_quests:
             q_btn = tk.Button(self.frame_quest_inner, text=f"📜 {q['name']} ({q['skip'].split('!')[0]}) 🌐",
                               command=lambda slug=q['wiki_slug']: webbrowser.open(f"https://oldschool.runescape.wiki/w/{slug}"),
                               bg="#2d2d30", fg="#3498db", activebackground="#3498db", activeforeground="#ffffff",
                               relief="flat", padx=6, pady=1, font=("Segoe UI", 8, "bold"), cursor="hand2")
             q_btn.pack(side="left", padx=3)
+            mem_tag = " (Members)" if q.get("members", True) else " (F2P)"
             q_tip = (
-                f"Quest: {q['name']}\n"
+                f"Quest: {q['name']}{mem_tag}\n"
                 f"XP Reward: {q['xp']:,} XP\n"
                 f"Benefit: {q['skip']}\n"
                 f"Requirements: {q['reqs']}\n\n"
@@ -1750,7 +1777,33 @@ class OSRSAlchDashboard(tk.Tk):
         sdata = SKILLING_GUIDES.get(active_skill, {})
         brackets = sdata.get("brackets", [])
         style_filter = self.var_guide_style.get()
-        mem_ok = self.var_guide_members.get()
+        mem_ok = self.is_guide_p2p_allowed()
+
+        # Update local checkbutton visual state if needed
+        if hasattr(self, "cb_guide_mem") and hasattr(self, "var_guide_members"):
+            if self.var_guide_members.get() != mem_ok:
+                self.var_guide_members.set(mem_ok)
+
+        # If skill is strictly members-only (like Fletching) and mem_ok is False:
+        if active_skill == "Fletching" and not mem_ok:
+            if hasattr(self, "lbl_guide_xp_summary"):
+                self.lbl_guide_xp_summary.config(text="⚠️ Fletching is a Members-only skill in Old School RuneScape. Enable P2P Methods to view recipes.")
+            self.tree_guide.insert("", "end", iid="fletch_p2p_warn", values=(
+                "🔒 P2P Only",
+                "1 - 99",
+                "Fletching is Members-only",
+                "None (P2P)",
+                "0",
+                "0",
+                "--",
+                "--",
+                "Enable P2P",
+                "--",
+                "--",
+                "⚠️ Fletching cannot be trained on Free-to-play worlds."
+            ), tags=("locked",))
+            return
+
         strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
         nat_price = self.get_effective_nature_price()
 
@@ -1758,7 +1811,7 @@ class OSRSAlchDashboard(tk.Tk):
 
         for b in brackets:
             b_mem = b.get("members", True)
-            if b_mem and not mem_ok:
+            if not mem_ok and b_mem:
                 continue
 
             b_style = b.get("style", "standard")
@@ -2504,6 +2557,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.recalculate_rec_table()
         self.recalculate_craft_table()
         if hasattr(self, "recalculate_guide_table"):
+            if hasattr(self, "var_guide_skill"):
+                self.update_guide_quests_card(self.var_guide_skill.get())
             self.recalculate_guide_table()
         self.update_cart_display()
         self.update_session_display()
@@ -2557,9 +2612,9 @@ class OSRSAlchDashboard(tk.Tk):
                 continue
 
             is_mem = mdata.get("members", False)
-            if is_mem and not mem_ok:
+            if f2p_ok and not mem_ok and is_mem:
                 continue
-            if not is_mem and not f2p_ok:
+            if not f2p_ok and not mem_ok:
                 continue
 
             bid, ask = self.api.get_bid_ask(item_id_str, basis=basis)
@@ -2841,9 +2896,9 @@ class OSRSAlchDashboard(tk.Tk):
                     continue
 
                 is_mem = mdata.get("members", spec.get("members", False))
-                if is_mem and not mem_ok:
+                if f2p_ok and not mem_ok and is_mem:
                     continue
-                if not is_mem and not f2p_ok:
+                if not f2p_ok and not mem_ok:
                     continue
 
                 bid, ask = self.api.get_bid_ask(iid_str, basis=basis)
@@ -2901,9 +2956,9 @@ class OSRSAlchDashboard(tk.Tk):
                     continue
 
                 is_mem = mdata.get("members", False)
-                if is_mem and not mem_ok:
+                if f2p_ok and not mem_ok and is_mem:
                     continue
-                if not is_mem and not f2p_ok:
+                if not f2p_ok and not mem_ok:
                     continue
 
                 bid, ask = self.api.get_bid_ask(iid_str, basis=basis)
@@ -3053,9 +3108,9 @@ class OSRSAlchDashboard(tk.Tk):
                 continue
 
             is_mem = r.get("members", True)
-            if is_mem and not mem_ok:
+            if f2p_ok and not mem_ok and is_mem:
                 continue
-            if not is_mem and not f2p_ok:
+            if not f2p_ok and not mem_ok:
                 continue
 
             req_skill = r["skill"]
@@ -4115,9 +4170,33 @@ class OSRSAlchDashboard(tk.Tk):
         except ValueError:
             pass
 
+    def on_members_clicked(self):
+        if self.var_members.get():
+            self.var_f2p.set(False)
+            if hasattr(self, "var_guide_members"):
+                self.var_guide_members.set(True)
+        else:
+            self.var_f2p.set(True)
+            if hasattr(self, "var_guide_members"):
+                self.var_guide_members.set(False)
+        self.on_filter_changed()
+
+    def on_f2p_clicked(self):
+        if self.var_f2p.get():
+            self.var_members.set(False)
+            if hasattr(self, "var_guide_members"):
+                self.var_guide_members.set(False)
+        else:
+            self.var_members.set(True)
+            if hasattr(self, "var_guide_members"):
+                self.var_guide_members.set(True)
+        self.on_filter_changed()
+
     def on_filter_changed(self, event=None):
         self.state.config["members"] = self.var_members.get()
         self.state.config["f2p"] = self.var_f2p.get()
+        if hasattr(self, "var_guide_members"):
+            self.state.config["guide_members"] = self.var_guide_members.get()
         self.state.config["free_alchs_mode"] = self.var_free_alch.get()
 
         max_s = parse_cash_input(self.ent_max_spend.get())
@@ -4281,6 +4360,8 @@ class OSRSAlchDashboard(tk.Tk):
 
                 self.var_members.set(is_mem)
                 self.var_f2p.set(not is_mem)
+                if hasattr(self, "var_guide_members"):
+                    self.var_guide_members.set(is_mem)
 
                 if hasattr(self, "ent_craft_lvl") and "Crafting" in levels:
                     self.ent_craft_lvl.delete(0, tk.END)

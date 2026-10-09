@@ -10,14 +10,18 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
-- **🎓 Skilling & Level Training Guide (v1.3.24 New):**
+- **🛡️ Strict F2P vs Members Isolation (v1.3.25 New):**
+  - **F2P Only Mode:** Toggling `F2P Only` strictly hides 100% of Members items, recipes, quests, and brackets across all tabs (Smithing hides Cannonballs and P2P quests; Crafting hides Dragonhide bodies, Battlestaves, and Unpowered orbs).
+  - **Fletching P2P Warning:** When Free-to-Play is selected, Fletching cleanly indicates that it is a 100% Members-only skill in Old School RuneScape.
+  - **Mutual Sync:** Checking `F2P Only` or `Members` seamlessly syncs across the global top bar and the Skilling Guide tab.
+- **🎓 Skilling & Level Training Guide (v1.3.24+):**
   - **Progression Database:** Comprehensive, mathematically exact leveling brackets for **Smithing, Fletching, Crafting, and Magic**.
   - **📍 "You Are Here" Tracking:** Automatically highlights your current training bracket based on your live in-game stats.
-  - **📜 Early Game Quest Skips:** Instant 1-click browser access to OSRS Wiki quest guides for critical XP skips (*The Knight's Sword* 1➔29, *The Tourist Trap* 1➔26, *Sleeping Giants*, etc.).
+  - **📜 Early Game Quest Skips:** Instant 1-click browser access to OSRS Wiki quest guides for critical XP skips (*The Knight's Sword* 1➔29, *The Tourist Trap* 1➔26, *Misthalin Mystery*, etc.).
   - **Live Market GP/XP Rates:** Live Grand Exchange price evaluation computing exact GP/XP cost or net gold profit for each training step.
   - **🪄 Alch vs. 🏪 GE Disposal:** Intelligent recommendations on whether to High Alch your crafted products or sell them on the Grand Exchange.
   - **🛒 1-Click Skilling Shopping Cart & Bank Tags:** Instantly add materials to your cart, copy formatted skilling shopping lists, or export RuneLite Bank Tag tabs (`banktags,1,...`).
-- **🔒 Dedicated Multi-Instance / Monitored Character Lock (v1.3.24 New):**
+- **🔒 Dedicated Multi-Instance / Monitored Character Lock:**
   - **Focus Lock:** Dropdown selector in the top bar to lock 100% of dashboard monitoring (Cash, Nats, Levels, GE Cart, Session, Timers) to a specific character (e.g. `jef112`).
   - **Silent Background Processing:** Secondary clients / alts update silently in the background without stealing focus or overwriting active data.
 - **⭐ Smart Picks & Top Recommendations:**

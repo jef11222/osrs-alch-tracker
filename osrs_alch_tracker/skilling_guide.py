@@ -533,7 +533,7 @@ SKILLING_GUIDES = {
                 "name": "Green d'hide body (Craft + Alch)",
                 "item_name": "Green d'hide body",
                 "output_id": 1135,
-                "members": False,
+                "members": True,
                 "xp_per_action": 186.0,
                 "materials": [{"id": 1745, "name": "Green dragon leather", "qty": 3}],
                 "nature_cost": 1,
