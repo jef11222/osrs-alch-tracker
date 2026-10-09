@@ -34,8 +34,11 @@ DEFAULT_CONFIG = {
     "alch_speed": 1200,
     "player_levels": {
         "Crafting": 99,
+        "Smithing": 99,
         "Fletching": 99,
-        "Magic": 99
+        "Magic": 99,
+        "Herblore": 99,
+        "Cooking": 99
     },
     "only_usable_recipes": False,
     "use_cash_stack": True,
@@ -145,7 +148,7 @@ class AppState:
                 "nature_runes": 0,
                 "world": 301,
                 "is_members": True,
-                "levels": {"Crafting": 99, "Fletching": 99, "Magic": 99},
+                "levels": {"Crafting": 99, "Smithing": 99, "Fletching": 99, "Magic": 99, "Herblore": 99, "Cooking": 99},
                 "last_seen": time.time()
             }
         acc = self.accounts[name]

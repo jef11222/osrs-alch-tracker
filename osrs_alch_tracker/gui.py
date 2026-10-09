@@ -1341,6 +1341,7 @@ class OSRSAlchDashboard(tk.Tk):
             "#11": "Why Buy? / Verdict:\nStrategic summary explaining why this item is recommended."
         }
         HeadingToolTip(self.tree_rec, rec_col_tooltips)
+        RowToolTip(self.tree_rec, self.get_alch_row_tooltip)
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
@@ -1388,6 +1389,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_craft_search = tk.Entry(sub_top, width=14, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
         self.ent_craft_search.pack(side="left", padx=(0, 6))
         self.ent_craft_search.bind("<KeyRelease>", self.on_craft_search_changed)
+        self.ent_craft_search.bind("<Escape>", lambda e: self.clear_search())
         ToolTip(self.ent_craft_search, "Filter recipes by name or ingredients (e.g. 'rune', 'diamond', 'ring', 'body', 'bow', 'cosmic').")
 
         # Category Skill Toggle Buttons Row
@@ -1524,6 +1526,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_ge_search = tk.Entry(sub_top, width=12, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
         self.ent_ge_search.pack(side="left", padx=(1, 8))
         self.ent_ge_search.bind("<KeyRelease>", self.on_ge_search_changed)
+        self.ent_ge_search.bind("<Escape>", lambda e: self.clear_search())
         ToolTip(self.ent_ge_search, "Filter recipes or ingredients (e.g. 'pickaxe', 'ranarr', 'dart', 'molten glass').")
 
         # Expand / Collapse All Buttons
@@ -1638,7 +1641,7 @@ class OSRSAlchDashboard(tk.Tk):
         # Current Level & Target Level Inputs
         tk.Label(guide_ctrl, text="Current Lvl:", fg="#cccccc", bg="#252528", font=("Segoe UI", 8)).pack(side="left", padx=(2, 2))
         self.ent_guide_cur_lvl = tk.Entry(guide_ctrl, width=4, bg="#1e1e1e", fg="#ffffff", relief="flat", justify="center")
-        init_smith = self.state.config.get("player_levels", {}).get("Smithing", 1)
+        init_smith = self.state.config.get("player_levels", {}).get("Smithing", 99)
         self.ent_guide_cur_lvl.insert(0, str(init_smith))
         self.ent_guide_cur_lvl.pack(side="left", padx=(0, 6))
         self.ent_guide_cur_lvl.bind("<FocusOut>", lambda e: self.on_guide_levels_changed())
@@ -3663,20 +3666,17 @@ class OSRSAlchDashboard(tk.Tk):
 
         arrow = " ▼" if self.craft_sort_desc else " ▲"
         headers = {
-            "recipe": "Recipe / Ingredient Breakdown",
-            "skill_req": "Skill & Req",
-            "mat_cost": "Materials Cost",
-            "alch_val": "Alch Value",
-            "profit_ea": "Profit (Craft + Alch)",
-            "bonus": "Bonus vs Buying Finished",
-            "xp": "XP / Item",
-            "hr_profit": "Est Craft+Alch GP/Hr"
+            "recipe": ("#0", "Recipe / Ingredient Breakdown"),
+            "skill_req": ("skill_req", "Skill & Req"),
+            "mat_cost": ("mat_cost", "Materials Cost"),
+            "alch_val": ("alch_val", "Alch Value"),
+            "profit_ea": ("profit_ea", "Profit (Craft + Alch)"),
+            "bonus": ("extra_vs_buy", "Bonus vs Buying Finished"),
+            "xp": ("xp_ea", "XP / Item"),
+            "hr_profit": ("profit_hr", "Est Craft+Alch GP/Hr")
         }
-        for c, title in headers.items():
-            if c == "recipe":
-                self.tree_craft.heading("#0", text=title + (arrow if self.craft_sort_col == "recipe" else ""))
-            else:
-                self.tree_craft.heading(c, text=title + (arrow if c == self.craft_sort_col else ""))
+        for sort_k, (col_id, title) in headers.items():
+            self.tree_craft.heading(col_id, text=title + (arrow if self.craft_sort_col == sort_k else ""))
 
         self.recalculate_craft_table()
 
@@ -3959,25 +3959,22 @@ class OSRSAlchDashboard(tk.Tk):
 
         arrow = " ▼" if self.ge_sort_desc else " ▲"
         headers = {
-            "name": "Item / Ingredients (▶ Expand)",
-            "skill": "Skill & Req",
-            "offer_bid": "Target Offer (Bid)",
-            "instant_ask": "Instant Buy (Ask)",
-            "sell_price": "GE Sell (-1% Tax)",
-            "profit_ea": "Profit ea",
-            "roi": "ROI %",
-            "limit": "4h Limit",
-            "batch_profit": "4h Batch Profit",
-            "profit_hr": "Profit / Hr",
-            "xp": "XP (ea & /hr)",
-            "speed": "Fill Speed",
-            "volume": "24h Volume"
+            "name": ("#0", "Item / Ingredients (▶ Expand)"),
+            "skill": ("skill_lvl", "Skill & Req"),
+            "offer_bid": ("offer_bid", "Target Offer (Bid)"),
+            "instant_ask": ("instant_ask", "Instant Buy (Ask)"),
+            "sell_price": ("sell_price", "GE Sell (-1% Tax)"),
+            "profit_ea": ("profit_ea", "Profit ea"),
+            "roi": ("roi", "ROI %"),
+            "limit": ("limit", "4h Limit"),
+            "batch_profit": ("batch_profit", "4h Batch Profit"),
+            "profit_hr": ("profit_hr", "Profit / Hr"),
+            "xp": ("xp_info", "XP (ea & /hr)"),
+            "speed": ("speed", "Fill Speed"),
+            "volume": ("volume", "24h Volume")
         }
-        for c, title in headers.items():
-            if c == "name":
-                self.tree_ge.heading("#0", text=title + (arrow if self.ge_sort_col == "name" else ""))
-            else:
-                self.tree_ge.heading(c, text=title + (arrow if c == self.ge_sort_col else ""))
+        for sort_k, (col_id, title) in headers.items():
+            self.tree_ge.heading(col_id, text=title + (arrow if self.ge_sort_col == sort_k else ""))
 
         self.recalculate_ge_craft_table()
 
@@ -4793,11 +4790,38 @@ class OSRSAlchDashboard(tk.Tk):
         item = self.tree_craft.identify_row(event.y)
         if not item:
             return
-        text_val = self.tree_craft.item(item, "text").strip().lstrip("+").lstrip("↳").strip()
-        if text_val:
-            # Strip extra quantity text if clicking a sub-ingredient
-            clean_name = text_val.split("(")[0].strip()
-            self.copy_to_clipboard(clean_name, f"Copied '{clean_name}' to clipboard!")
+        try:
+            col = self.tree_craft.identify_column(event.x)
+            # Toggle tree expansion if clicking tree column
+            if col == "#0" and self.tree_craft.get_children(item):
+                is_open = self.tree_craft.item(item, "open")
+                self.tree_craft.item(item, open=not is_open)
+
+            if col == "#2":
+                raw_cost = self.tree_craft.set(item, "mat_cost")
+                clean_num = "".join(c for c in raw_cost if c.isdigit())
+                if clean_num:
+                    self.copy_to_clipboard(clean_num, f"Copied Materials Cost: {int(clean_num):,} gp to clipboard!")
+                    return
+            elif col == "#3":
+                raw_alch = self.tree_craft.set(item, "alch_val")
+                clean_num = "".join(c for c in raw_alch if c.isdigit())
+                if clean_num:
+                    self.copy_to_clipboard(clean_num, f"Copied Alch Value: {int(clean_num):,} gp to clipboard!")
+                    return
+            elif col == "#4":
+                raw_p = self.tree_craft.set(item, "profit_ea")
+                clean_num = "".join(c for c in raw_p if c.isdigit())
+                if clean_num:
+                    self.copy_to_clipboard(clean_num, f"Copied Profit: {int(clean_num):,} gp to clipboard!")
+                    return
+
+            text_val = self.tree_craft.item(item, "text").strip().lstrip("+").lstrip("↳").strip()
+            if text_val:
+                clean_name = text_val.split("(")[0].strip()
+                self.copy_to_clipboard(clean_name, f"Copied '{clean_name}' to clipboard!")
+        except Exception:
+            pass
 
     def show_status_message(self, message, fg="#f39c12", duration_ms=3000):
         if not hasattr(self, "lbl_status_right"):
@@ -4808,8 +4832,16 @@ class OSRSAlchDashboard(tk.Tk):
         self.clipboard_clear_timer = self.after(duration_ms, lambda: self.lbl_status_right.config(text="Ready", fg="#888888"))
 
     def copy_to_clipboard(self, text, message=""):
-        self.clipboard_clear()
-        self.clipboard_append(text)
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(str(text))
+            self.update_idletasks()
+        except Exception:
+            try:
+                import pyperclip
+                pyperclip.copy(str(text))
+            except Exception:
+                pass
         if message:
             self.show_status_message(message)
 
@@ -5116,7 +5148,11 @@ class OSRSAlchDashboard(tk.Tk):
             s = int(self.ent_smith_lvl.get()) if hasattr(self, "ent_smith_lvl") else 99
             f = int(self.ent_fletch_lvl.get())
             m = int(self.ent_mage_lvl.get())
-            self.state.config["player_levels"] = {"Crafting": c, "Smithing": s, "Fletching": f, "Magic": m}
+            p_lvls = self.state.config.setdefault("player_levels", {})
+            p_lvls["Crafting"] = c
+            p_lvls["Smithing"] = s
+            p_lvls["Fletching"] = f
+            p_lvls["Magic"] = m
         except ValueError:
             pass
         self.state.config["only_usable_recipes"] = self.var_only_usable.get()

@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.30"
+APP_VERSION = "1.3.31"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
@@ -321,18 +321,20 @@ class WhatsNewDialog(tk.Toplevel):
 
         features = (
             f"✨ WHAT'S NEW IN v{version_str} 🎉:\n\n"
-            "• 🔄 Authoritative GE 4-Hour Limit & Trade Synchronization:\n"
-            "  The app now syncs directly from RuneLite / Microbot's authoritative buy limits and trade history. Your cooldown timers match the in-game countdown down to the exact second!\n\n"
-            "• 📊 True Bought Quantities & Auto-Backfill:\n"
-            "  Max-limit items (e.g. 70/70 platelegs, 70/70 warhammers) are tracked with 100% precision. Any trades completed while the app was closed are automatically imported into the Session Tracker.\n\n"
-            "• ⚒️ Smithing, Magic Enchanting & Shield Recipes:\n"
-            "  Added 24+ anvil Smithing recipes (Rune, Adamant, Mithril, Steel gear), 10 Magic Jewellery Enchantments (Glory, Ring of Wealth, etc.), and Shield Fletching recipes in Craft & Alch.\n\n"
-            "• 🏷️ Dedicated Skill Category Toggles:\n"
-            "  Filter Craft & Alch by skill with 🔨 Crafting, ⚒️ Smithing, 🏹 Fletching, ✨ Magic, and quick All/None buttons.\n\n"
-            "• ⚡ Dedicated '🔄 Sync with GE' Toolbar Buttons:\n"
-            "  Instant 1-click manual GE reconciliation in both 4h Timers and Session Tracker tabs.\n\n"
-            "• 👥 Multi-Account Bridge Integration:\n"
-            "  Live multi-character support automatically syncs player names, skill levels, and inventory cash/runes from RuneLite.\n"
+            "• 💰 New Dedicated 'Craft & Sell GE' Tab:\n"
+            "  Pure Grand Exchange production moneymaking tab featuring 122+ profitable processing and manufacturing recipes across Herblore, Crafting, Fletching, Smithing, Cooking, and Magic.\n\n"
+            "• ▶️ Expandable Hierarchical Ingredient Trees:\n"
+            "  Click ▶ next to any item to expand and reveal its exact raw materials indented underneath with individual quantity requirements and pricing.\n\n"
+            "• 🎯 Best Buy Ceilings & Breakeven Pricing:\n"
+            "  Ingredient rows show the exact maximum price you can pay for raw materials on the GE while still maintaining your target profit margin or breaking even.\n\n"
+            "• 📋 1-Click Clipboard Price & Name Copy:\n"
+            "  Click any Target Offer (Bid), Instant Buy (Ask), or Best Buy price cell to instantly copy the exact integer price to clipboard for lightning-fast trading in-game.\n\n"
+            "• 🔍 Universal Real-Time Search Across All Tabs:\n"
+            "  Search instantly filters across High Alch, Smart Recommendations, Craft & Alch, Craft & Sell GE, Skilling Guide, 4h Timers, Session History, and Alerts.\n\n"
+            "• 🛡️ Strict F2P vs Members Isolation:\n"
+            "  When F2P Only is checked, 100% of Members-only skills (Herblore, Fletching), recipes, quests, and member items are completely hidden.\n\n"
+            "• 📊 Exact Level Requirements & Total Materials Needed:\n"
+            "  Full recipe accuracy, including true smithing, crafting, and fletching level requirements and total raw ingredient counts.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")

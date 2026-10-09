@@ -317,11 +317,11 @@ class OSRSPricesAPI:
             avg_low = finfo.get("avg_low")
             avg_high = finfo.get("avg_high")
             if avg_low and avg_high:
-                return min(avg_low, avg_high), max(avg_low, avg_high)
+                return int(round(min(avg_low, avg_high))), int(round(max(avg_low, avg_high)))
             elif avg_low:
-                return avg_low, avg_low
+                return int(round(avg_low)), int(round(avg_low))
             elif avg_high:
-                return avg_high, avg_high
+                return int(round(avg_high)), int(round(avg_high))
 
         pdata = self.latest_prices.get(iid_str, {})
         low = pdata.get("low")

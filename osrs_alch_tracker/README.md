@@ -6,9 +6,15 @@
 
 A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that monitors live Grand Exchange prices via the official OSRS Wiki Real-time Prices API. It tracks high-margin High Alchemy flips, evaluates Craft-then-Alch skilling recipes, manages 4-hour Grand Exchange buy limit timers, tracks Nature Rune bank stockpiles, and logs session profit and Magic XP.
 
----
-
 ## ✨ Key Features
+
+- **🛡️ Full-Stack Audit, Column Sorting & Clipboard Hardening (v1.3.31):**
+  - **Comprehensive Production Stability Audit:** Performed deep audit across all 9 application modules, eliminating potential edge cases, crashes, and index mismatches.
+  - **Column Sorting Corrections:** Fixed Treeview column index lookups across both *Craft & Alch* and *Craft & Sell GE* tabs, ensuring multi-direction sorting works flawlessly on every single column without exception.
+  - **1-Click Cell Price Copying in Craft & Alch:** Clicking Material Cost, Alch Value, or Profit cells in *Craft & Alch* now copies the exact numerical values directly to the clipboard.
+  - **Clipboard Lock Protection:** Hardened `copy_to_clipboard` with OS-level exception handling and `pyperclip` fallback to prevent rare Windows clipboard locking errors.
+  - **Full Skill State Preservation:** Expanded default profile tracking to include *Smithing*, *Herblore*, and *Cooking* levels alongside *Crafting*, *Fletching*, and *Magic*, ensuring multi-skill configurations persist across restarts and account switches.
+  - **Enhanced Keyboard Shortcuts:** Bound `Esc` across all search inputs to instantly reset filters.
 
 - **💰 Brand New "Craft & Sell GE" Tab (v1.3.30):**
   - **Pure Grand Exchange Production Moneymaking:** A completely dedicated production moneymaking tab featuring over 120 verified recipes across **Herblore, Crafting, Fletching, Smithing, Cooking, and Magic**. Buy raw ingredients on the Grand Exchange, process them, and sell the finished items directly on the GE for pure gold profit!
