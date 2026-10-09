@@ -10,6 +10,16 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **💰 Brand New "Craft & Sell GE" Tab (v1.3.30):**
+  - **Pure Grand Exchange Production Moneymaking:** A completely dedicated production moneymaking tab featuring over 120 verified recipes across **Herblore, Crafting, Fletching, Smithing, Cooking, and Magic**. Buy raw ingredients on the Grand Exchange, process them, and sell the finished items directly on the GE for pure gold profit!
+  - **📂 Expandable Ingredient Rows (`▶` / `▼` Dropdown):** Click the arrow or double-click any product (e.g. *Rune pickaxe*, *Prayer potion(3)*, *Air battlestaff*) to expand its raw material breakdown directly underneath it.
+  - **🎯 Exact GE Bid & Ask Pricing with 1-Click Copy:**
+    - Parent finished items display Total Material Cost at Bid vs Ask, Net GE Sell Price (with 1% OSRS tax deducted), Profit ea, ROI %, 4h Limit, Batch Profit, and GP/Hr.
+    - Expanded ingredient rows display their exact **Target Offer (Bid)**, **Instant Buy (Ask)**, and **🎯 Best Buy Ceiling** (the maximum price you can pay for that raw material on the GE to guarantee profit!).
+    - Clicking any price cell instantly copies the number directly to your clipboard for instant GE order placement.
+  - **🛡️ Strict F2P vs Members Isolation:** Unticking Members or checking F2P Only completely hides 100% of Members skills (Herblore, Fletching) and Members-only materials/recipes across the entire dashboard.
+  - **1-Click Expand All / Collapse All:** Instantly expand all recipes or collapse back to summary view with a single click.
+
 - **🌐 Universal Search Across ALL Tabs & 57 New Recipes (v1.3.29):**
   - **Universal Instant Search:** The top search bar (`self.ent_search`) now dynamically filters live data across **EVERY single tab**: *Pure High Alch*, *Smart Picks*, *Craft & Alch*, *Level Guide*, *4h GE Timers*, *Session Tracker*, and *Alert Feed*.
   - **Dual Field Sync:** Typing in either the global search bar or the Craft & Alch search bar instantly keeps both fields in sync.

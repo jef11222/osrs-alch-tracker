@@ -15,6 +15,7 @@ except ImportError:
 
 from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
+from ge_crafting import GE_PROFIT_RECIPES
 from skilling_guide import SKILLING_GUIDES, get_xp_for_level, get_level_for_xp
 from state import AppState
 from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
@@ -878,7 +879,12 @@ class OSRSAlchDashboard(tk.Tk):
         self.notebook.add(self.tab_craft, text="🔨 Craft & Alch")
         self.build_craft_tab()
 
-        # Tab 4: Skilling & Level Training Guide
+        # Tab 4: GE Crafting & Production Profit
+        self.tab_ge_craft = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_ge_craft, text="💰 Craft & Sell GE")
+        self.build_ge_craft_tab()
+
+        # Tab 5: Skilling & Level Training Guide
         self.tab_guide = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_guide, text="🎓 Level Guide")
         self.build_guide_tab()
@@ -1467,6 +1473,137 @@ class OSRSAlchDashboard(tk.Tk):
         }
         HeadingToolTip(self.tree_craft, craft_col_tooltips)
         RowToolTip(self.tree_craft, self.get_craft_row_tooltip)
+
+    def build_ge_craft_tab(self):
+        # 1. Top Controls Bar
+        sub_top = tk.Frame(self.tab_ge_craft, bg="#252528")
+        sub_top.pack(fill="x", padx=6, pady=(6, 2))
+
+        # Skill Filter Combobox
+        tk.Label(sub_top, text="Skill:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(4, 2))
+        self.var_ge_skill = tk.StringVar(value="All")
+        cb_ge_skill = ttk.Combobox(sub_top, textvariable=self.var_ge_skill, values=[
+            "All", "🌿 Herblore", "🔨 Crafting", "🏹 Fletching", "⚒️ Smithing", "🍳 Cooking", "✨ Magic"
+        ], width=13, state="readonly")
+        cb_ge_skill.pack(side="left", padx=(2, 8))
+        cb_ge_skill.bind("<<ComboboxSelected>>", lambda e: self.recalculate_ge_craft_table())
+        ToolTip(cb_ge_skill, "Filter production recipes by skill.")
+
+        # Sell Strategy Combobox
+        tk.Label(sub_top, text="Sell Strategy:", fg="#cccccc", bg="#252528").pack(side="left")
+        self.var_ge_sell_strat = tk.StringVar(value="patient (Ask)")
+        cb_ge_sell = ttk.Combobox(sub_top, textvariable=self.var_ge_sell_strat, values=["patient (Ask)", "instant (Bid)"], width=13, state="readonly")
+        cb_ge_sell.pack(side="left", padx=(2, 8))
+        cb_ge_sell.bind("<<ComboboxSelected>>", lambda e: self.recalculate_ge_craft_table())
+        ToolTip(cb_ge_sell, "patient (Ask) = List finished products on GE for maximum sale profit.\ninstant (Bid) = Dump immediately into active buy orders on GE.")
+
+        # Target Safety Margin Input
+        tk.Label(sub_top, text="Target Margin:", fg="#cccccc", bg="#252528").pack(side="left")
+        self.ent_ge_margin = tk.Entry(sub_top, width=6, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        self.ent_ge_margin.insert(0, "0")
+        self.ent_ge_margin.pack(side="left", padx=(2, 8))
+        self.ent_ge_margin.bind("<KeyRelease>", lambda e: self.recalculate_ge_craft_table())
+        ToolTip(self.ent_ge_margin, "Desired profit margin per item in GP.\nAutomatically recalculates the 🎯 Best Buy ceiling prices for raw materials.")
+
+        # Checkbutton: Only Show Usable Recipes
+        self.var_ge_only_usable = tk.BooleanVar(value=False)
+        cb_ge_usable = tk.Checkbutton(sub_top, text="Only Usable", variable=self.var_ge_only_usable, command=self.recalculate_ge_craft_table,
+                                      bg="#252528", fg="#2ecc71", selectcolor="#2d2d30", activebackground="#252528")
+        cb_ge_usable.pack(side="left", padx=(2, 8))
+        ToolTip(cb_ge_usable, "Only show recipes you have the required level to make.")
+
+        # Min Profit Entry
+        tk.Label(sub_top, text="Min Profit:", fg="#cccccc", bg="#252528").pack(side="left")
+        self.ent_ge_min_profit = tk.Entry(sub_top, width=5, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
+        self.ent_ge_min_profit.pack(side="left", padx=(2, 8))
+        self.ent_ge_min_profit.bind("<KeyRelease>", lambda e: self.recalculate_ge_craft_table())
+        ToolTip(self.ent_ge_min_profit, "Minimum profit per craft. Leave blank to show all items (even negative for XP).")
+
+        # Local Search Box
+        tk.Label(sub_top, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(4, 1))
+        self.ent_ge_search = tk.Entry(sub_top, width=12, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
+        self.ent_ge_search.pack(side="left", padx=(1, 8))
+        self.ent_ge_search.bind("<KeyRelease>", self.on_ge_search_changed)
+        ToolTip(self.ent_ge_search, "Filter recipes or ingredients (e.g. 'pickaxe', 'ranarr', 'dart', 'molten glass').")
+
+        # Expand / Collapse All Buttons
+        btn_exp = tk.Button(sub_top, text="[+] Expand", command=self.expand_all_ge, bg="#2d2d30", fg="#f1f1f1", relief="flat", padx=6, font=("Segoe UI", 8))
+        btn_exp.pack(side="left", padx=2)
+        ToolTip(btn_exp, "Expand all recipes to reveal ingredient breakdowns.")
+
+        btn_col = tk.Button(sub_top, text="[-] Collapse", command=self.collapse_all_ge, bg="#2d2d30", fg="#888888", relief="flat", padx=6, font=("Segoe UI", 8))
+        btn_col.pack(side="left", padx=2)
+        ToolTip(btn_col, "Collapse all recipes back to summary view.")
+
+        # 2. Main Treeview Container
+        container = ttk.Frame(self.tab_ge_craft)
+        container.pack(fill="both", expand=True)
+
+        cols = ("skill_lvl", "offer_bid", "instant_ask", "sell_price", "profit_ea", "roi", "limit", "batch_profit", "profit_hr", "xp_info", "speed", "volume")
+        self.tree_ge = ttk.Treeview(container, columns=cols, show="tree headings", selectmode="browse")
+
+        self.tree_ge.heading("#0", text="Item / Ingredients (▶ Expand)", command=lambda: self.toggle_sort_ge("name"))
+        self.tree_ge.heading("skill_lvl", text="Skill & Req", command=lambda: self.toggle_sort_ge("skill"))
+        self.tree_ge.heading("offer_bid", text="Target Offer (Bid)", command=lambda: self.toggle_sort_ge("offer_bid"))
+        self.tree_ge.heading("instant_ask", text="Instant Buy (Ask)", command=lambda: self.toggle_sort_ge("instant_ask"))
+        self.tree_ge.heading("sell_price", text="GE Sell (-1% Tax)", command=lambda: self.toggle_sort_ge("sell_price"))
+        self.tree_ge.heading("profit_ea", text="Profit ea ▼", command=lambda: self.toggle_sort_ge("profit_ea"))
+        self.tree_ge.heading("roi", text="ROI %", command=lambda: self.toggle_sort_ge("roi"))
+        self.tree_ge.heading("limit", text="4h Limit", command=lambda: self.toggle_sort_ge("limit"))
+        self.tree_ge.heading("batch_profit", text="4h Batch Profit", command=lambda: self.toggle_sort_ge("batch_profit"))
+        self.tree_ge.heading("profit_hr", text="Profit / Hr", command=lambda: self.toggle_sort_ge("profit_hr"))
+        self.tree_ge.heading("xp_info", text="XP (ea & /hr)", command=lambda: self.toggle_sort_ge("xp"))
+        self.tree_ge.heading("speed", text="Fill Speed", command=lambda: self.toggle_sort_ge("speed"))
+        self.tree_ge.heading("volume", text="24h Volume", command=lambda: self.toggle_sort_ge("volume"))
+
+        self.tree_ge.column("#0", width=225, anchor="w")
+        self.tree_ge.column("skill_lvl", width=95, anchor="center")
+        self.tree_ge.column("offer_bid", width=105, anchor="e")
+        self.tree_ge.column("instant_ask", width=105, anchor="e")
+        self.tree_ge.column("sell_price", width=120, anchor="e")
+        self.tree_ge.column("profit_ea", width=100, anchor="e")
+        self.tree_ge.column("roi", width=75, anchor="e")
+        self.tree_ge.column("limit", width=75, anchor="center")
+        self.tree_ge.column("batch_profit", width=110, anchor="e")
+        self.tree_ge.column("profit_hr", width=110, anchor="e")
+        self.tree_ge.column("xp_info", width=105, anchor="center")
+        self.tree_ge.column("speed", width=110, anchor="center")
+        self.tree_ge.column("volume", width=85, anchor="e")
+
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.tree_ge.yview)
+        h_scrollbar = ttk.Scrollbar(container, orient="horizontal", command=self.tree_ge.xview)
+        self.tree_ge.configure(yscrollcommand=scrollbar.set, xscrollcommand=h_scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        h_scrollbar.pack(side="bottom", fill="x")
+        self.tree_ge.pack(side="left", fill="both", expand=True)
+
+        self.tree_ge.tag_configure("profit", foreground="#2ecc71")
+        self.tree_ge.tag_configure("loss", foreground="#e74c3c")
+        self.tree_ge.tag_configure("child_row", foreground="#cccccc")
+        self.tree_ge.tag_configure("locked", foreground="#7f8c8d")
+
+        self.tree_ge.bind("<Button-1>", self.on_ge_tree_click)
+        self.tree_ge.bind("<Double-Button-1>", self.on_ge_tree_double_click)
+        self.tree_ge.bind("<Button-3>", self.on_ge_context_menu)
+
+        ge_col_tooltips = {
+            "#0": "Finished Item / Ingredient Breakdown:\nClick [▶] or double-click row to expand materials and see individual bar/ingredient costs & Best Buy ceilings.",
+            "#1": "Skill & Requirement:\nSkill category and minimum level required to craft or process this item.",
+            "#2": "Target Offer (Bid):\nFor finished item: Total material cost if buying raw materials patiently on Bid.\nFor child ingredient: Exact buy bid to place on the Grand Exchange. Click cell to copy price!",
+            "#3": "Instant Buy (Ask):\nFor finished item: Total material cost if buying materials instantly.\nFor child ingredient: Instant purchase price from active sellers. Click cell to copy!",
+            "#4": "GE Sell (-1% Tax) / 🎯 Best Buy:\nFor finished item: Net gold received from selling on the GE after 1% OSRS tax deduction.\nFor child ingredient: 🎯 Best Buy ceiling price (maximum to pay for this material to guarantee profit!). Click to copy!",
+            "#5": "Profit ea:\nNet gold profit per craft (Net GE Sale Revenue - Total Material Cost).\nClick header to sort.",
+            "#6": "Return on Investment (ROI %):\nProfit margin percentage relative to total material cost.\nClick header to sort.",
+            "#7": "4h GE Buy Limit:\nGrand Exchange buy limit of the limiting raw material.",
+            "#8": "4h Batch Profit:\nTotal gold profit earned for crafting a full 4-hour limit batch.",
+            "#9": "Profit / Hr:\nEstimated hourly gold profit based on standard game action velocity.",
+            "#10": "XP (ea & /hr):\nExperience granted per craft, and estimated XP/hr rate.",
+            "#11": "Fill Speed:\nMarket transaction speed badge (⚡ Fast, ⏱️ Steady, 🐢 Slow).",
+            "#12": "24h Traded Volume:\nTotal 24-hour Grand Exchange transaction volume."
+        }
+        HeadingToolTip(self.tree_ge, ge_col_tooltips)
+        RowToolTip(self.tree_ge, self.get_ge_craft_row_tooltip)
 
     def build_guide_tab(self):
         container = ttk.Frame(self.tab_guide)
@@ -2763,6 +2900,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.recalculate_alch_table()
         self.recalculate_rec_table()
         self.recalculate_craft_table()
+        if hasattr(self, "recalculate_ge_craft_table"):
+            self.recalculate_ge_craft_table()
         if hasattr(self, "recalculate_guide_table"):
             if hasattr(self, "var_guide_skill"):
                 self.update_guide_quests_card(self.var_guide_skill.get())
@@ -2781,6 +2920,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_search.delete(0, tk.END)
         if hasattr(self, "ent_craft_search"):
             self.ent_craft_search.delete(0, tk.END)
+        if hasattr(self, "ent_ge_search"):
+            self.ent_ge_search.delete(0, tk.END)
         self.on_global_search_changed()
 
     def on_global_search_changed(self, event=None):
@@ -2789,11 +2930,18 @@ class OSRSAlchDashboard(tk.Tk):
             if self.ent_craft_search.get() != val:
                 self.ent_craft_search.delete(0, tk.END)
                 self.ent_craft_search.insert(0, val)
+        if hasattr(self, "ent_ge_search") and hasattr(self, "ent_search"):
+            val = self.ent_search.get()
+            if self.ent_ge_search.get() != val:
+                self.ent_ge_search.delete(0, tk.END)
+                self.ent_ge_search.insert(0, val)
         self.recalculate_alch_table()
         if hasattr(self, "recalculate_rec_table"):
             self.recalculate_rec_table()
         if hasattr(self, "recalculate_craft_table"):
             self.recalculate_craft_table()
+        if hasattr(self, "recalculate_ge_craft_table"):
+            self.recalculate_ge_craft_table()
         if hasattr(self, "recalculate_guide_table"):
             self.recalculate_guide_table()
         if hasattr(self, "update_timers_display"):
@@ -3531,6 +3679,460 @@ class OSRSAlchDashboard(tk.Tk):
                 self.tree_craft.heading(c, text=title + (arrow if c == self.craft_sort_col else ""))
 
         self.recalculate_craft_table()
+
+    # ------------------ GE PRODUCTION & CRAFTING PROFIT TAB ------------------
+
+    def recalculate_ge_craft_table(self):
+        if not hasattr(self, "tree_ge"):
+            return
+
+        strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "patient"
+        sell_strat = self.var_ge_sell_strat.get() if hasattr(self, "var_ge_sell_strat") else "patient (Ask)"
+        levels = self.state.config.get("player_levels", {})
+        only_usable = self.var_ge_only_usable.get() if hasattr(self, "var_ge_only_usable") else False
+        skill_filter = self.var_ge_skill.get() if hasattr(self, "var_ge_skill") else "All"
+        if " " in skill_filter:
+            skill_filter = skill_filter.split()[-1] # strip emoji
+
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
+        if not search_query and hasattr(self, "ent_ge_search"):
+            search_query = self.ent_ge_search.get().strip().lower()
+
+        target_margin = 0
+        if hasattr(self, "ent_ge_margin"):
+            try:
+                target_margin = max(0, parse_cash_input(self.ent_ge_margin.get()))
+            except Exception:
+                target_margin = 0
+
+        min_p_val = None
+        if hasattr(self, "ent_ge_min_profit"):
+            raw_p = self.ent_ge_min_profit.get().strip().replace(",", "")
+            if raw_p:
+                try:
+                    min_p_val = int(raw_p)
+                except ValueError:
+                    pass
+
+        mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
+        f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
+
+        prev_open = {iid for iid in self.tree_ge.get_children() if self.tree_ge.item(iid, "open")}
+        self.tree_ge.delete(*self.tree_ge.get_children())
+        self.ge_rows = []
+
+        basis = "5m" if hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get() else self.state.config.get("price_basis", "5m")
+
+        for r in GE_PROFIT_RECIPES:
+            req_skill = r["skill"]
+
+            # 1. Strict F2P vs Members Isolation: Herblore & Fletching are 100% P2P in OSRS
+            if (f2p_ok and not mem_ok) and req_skill in ("Herblore", "Fletching"):
+                continue
+
+            is_mem = (
+                r.get("members", True) or
+                any(self.api.mapping.get(str(m["id"]), {}).get("members", False) for m in r["materials"]) or
+                self.api.mapping.get(str(r["output_id"]), {}).get("members", False)
+            )
+            if f2p_ok and not mem_ok and is_mem:
+                continue
+            if not f2p_ok and not mem_ok:
+                continue
+
+            # 2. Skill Category Filter
+            req_skill = r["skill"]
+            if skill_filter != "All" and req_skill.lower() != skill_filter.lower():
+                continue
+
+            # 3. Player Level Requirement Check
+            req_lvl = r["level"]
+            player_lvl = levels.get(req_skill, 99)
+            can_make = player_lvl >= req_lvl
+            if only_usable and not can_make:
+                continue
+
+            # 4. Search Filter
+            if search_query:
+                name_match = search_query in r["name"].lower()
+                mat_match = any(search_query in m["name"].lower() for m in r.get("materials", []))
+                skill_match = search_query in req_skill.lower()
+                if not name_match and not mat_match and not skill_match:
+                    continue
+
+            # 5. Evaluate Material Costs
+            bid_total = 0
+            ask_total = 0
+            strat_total = 0
+            valid_mats = True
+            mat_info_list = []
+            min_limit = 9999999
+
+            for m in r["materials"]:
+                mid_str = str(m["id"])
+                m_meta = self.api.mapping.get(mid_str, {})
+                m_bid, m_ask = self.api.get_bid_ask(mid_str, basis=basis)
+                m_strat_p = self.api.get_price(mid_str, strat, basis=basis)
+                if not m_strat_p or m_strat_p <= 0:
+                    valid_mats = False
+                    break
+
+                q = m["qty"]
+                bid_total += (m_bid or m_strat_p) * q
+                ask_total += (m_ask or m_strat_p) * q
+                strat_total += m_strat_p * q
+
+                m_lim = m_meta.get("limit", 10000) or 10000
+                if m_lim > 0:
+                    min_limit = min(min_limit, m_lim // max(1, q))
+
+                m_vol = self.api.volumes_24h.get(mid_str, 0)
+                _, m_spd_badge, _, _ = self.api.get_fill_speed_info(m["id"], q * 100)
+
+                mat_info_list.append({
+                    "id": m["id"],
+                    "name": m["name"],
+                    "qty": q,
+                    "bid": m_bid or m_strat_p,
+                    "ask": m_ask or m_strat_p,
+                    "price_ea": m_strat_p,
+                    "limit": m_lim,
+                    "vol": m_vol,
+                    "speed_badge": m_spd_badge
+                })
+
+            if not valid_mats:
+                continue
+
+            # 6. Evaluate Output Finished Product
+            out_id_str = str(r["output_id"])
+            out_meta = self.api.mapping.get(out_id_str, {})
+            out_qty = r.get("output_qty", 1)
+
+            out_bid, out_ask = self.api.get_bid_ask(out_id_str, basis=basis)
+            gross_sell_ea = out_ask if "patient" in sell_strat.lower() else out_bid
+            if not gross_sell_ea or gross_sell_ea <= 0:
+                continue
+
+            # OSRS GE Tax (1% on items >= 100 gp, max 5,000,000 gp cap)
+            ge_tax_ea = min(5000000, math.floor(gross_sell_ea * 0.01)) if gross_sell_ea >= 100 else 0
+            net_sell_ea = gross_sell_ea - ge_tax_ea
+            net_revenue = net_sell_ea * out_qty
+
+            # 7. Net Profit & ROI
+            profit_ea = net_revenue - strat_total
+            if min_p_val is not None and profit_ea < min_p_val:
+                continue
+
+            roi_pct = (profit_ea / strat_total * 100.0) if strat_total > 0 else 0.0
+
+            # 8. Hourly Output & Velocity
+            actions_per_hr = r.get("hourly_actions", 1500)
+            profit_hr = profit_ea * actions_per_hr
+            xp_ea = r.get("xp", 0.0)
+            xp_hr = int(xp_ea * actions_per_hr)
+
+            # 9. 4h Batch Limits
+            batch_limit = min_limit if min_limit < 9999999 else (out_meta.get("limit", 70) or 70)
+            batch_profit = profit_ea * batch_limit
+
+            out_vol = self.api.volumes_24h.get(out_id_str, 0)
+            _, out_spd_badge, _, out_spd_score = self.api.get_fill_speed_info(r["output_id"], out_qty * 50)
+
+            # 10. Compute Best Buy / Breakeven ceiling for primary material
+            sec_cost = sum(m["price_ea"] * m["qty"] for m in mat_info_list[1:])
+            primary_m = mat_info_list[0]
+            prim_qty = primary_m["qty"]
+            net_alloc = net_revenue - sec_cost
+
+            breakeven_p = math.floor(net_alloc / prim_qty) if prim_qty > 0 else 0
+            target_buy_p = math.floor((net_alloc - target_margin) / prim_qty) if prim_qty > 0 else 0
+
+            parent_id = f"ge_rec_{r['output_id']}_{r['name']}"
+            parent_row = {
+                "id": parent_id,
+                "name": r["name"],
+                "skill": req_skill,
+                "level": req_lvl,
+                "skill_req": f"{req_skill[:5]} {req_lvl}",
+                "can_make": can_make,
+                "output_id": r["output_id"],
+                "output_qty": out_qty,
+                "bid_mat_cost": bid_total,
+                "ask_mat_cost": ask_total,
+                "strat_mat_cost": strat_total,
+                "gross_sell": gross_sell_ea,
+                "ge_tax": ge_tax_ea,
+                "net_sell": net_sell_ea,
+                "net_revenue": net_revenue,
+                "profit_ea": profit_ea,
+                "roi": roi_pct,
+                "limit": batch_limit,
+                "batch_profit": batch_profit,
+                "profit_hr": profit_hr,
+                "xp_ea": xp_ea,
+                "xp_hr": xp_hr,
+                "speed_badge": out_spd_badge,
+                "speed_score": out_spd_score,
+                "volume": out_vol,
+                "materials": mat_info_list,
+                "breakeven_p": breakeven_p,
+                "target_buy_p": target_buy_p
+            }
+            self.ge_rows.append(parent_row)
+
+        # Sort rows
+        sort_col = getattr(self, "ge_sort_col", "profit_ea")
+        sort_desc = getattr(self, "ge_sort_desc", True)
+        if sort_col == "name":
+            self.ge_rows.sort(key=lambda x: x["name"].lower(), reverse=sort_desc)
+        elif sort_col == "skill":
+            self.ge_rows.sort(key=lambda x: (x["skill"], x["level"]), reverse=sort_desc)
+        elif sort_col == "speed":
+            self.ge_rows.sort(key=lambda x: x["speed_score"], reverse=sort_desc)
+        else:
+            self.ge_rows.sort(key=lambda x: x.get(sort_col, 0), reverse=sort_desc)
+
+        for p in self.ge_rows:
+            prof_str = f"{p['profit_ea']:+,} gp"
+            roi_str = f"{p['roi']:+.1f}%"
+            b_sign = "+" if p["batch_profit"] >= 0 else "-"
+            b_prof_str = f"{b_sign}{format_gp(abs(p['batch_profit']))}"
+            hr_prof_str = f"{format_gp(p['profit_hr'])}/hr"
+            xp_str = f"{p['xp_ea']:.0f} XP ({format_gp(p['xp_hr'])}/hr)" if p["xp_ea"] > 0 else "--"
+            vol_str = f"{p['volume']:,}"
+
+            p_tag = "profit" if p["profit_ea"] >= 0 else "loss"
+            if not p["can_make"]:
+                p_tag = "locked"
+
+            # Insert parent row
+            self.tree_ge.insert("", "end", iid=p["id"], text=f"▶  {p['name']}", values=(
+                p["skill_req"],
+                f"{p['bid_mat_cost']:,} gp",
+                f"{p['ask_mat_cost']:,} gp",
+                f"{p['net_sell']:,} gp",
+                prof_str,
+                roi_str,
+                f"{p['limit']:,}",
+                b_prof_str,
+                hr_prof_str,
+                xp_str,
+                p["speed_badge"],
+                vol_str
+            ), tags=(p_tag,))
+
+            # Insert child ingredients underneath parent
+            for idx, m in enumerate(p["materials"]):
+                child_id = f"{p['id']}_mat_{m['id']}_{idx}"
+                if idx == 0:
+                    ceiling_str = f"🎯 ≤ {p['target_buy_p']:,} gp" if p["target_buy_p"] > 0 else f"≤ {p['breakeven_p']:,} gp"
+                    m_prof_str = f"≤ {p['breakeven_p']:,} be"
+                else:
+                    ceiling_str = f"{m['price_ea']:,} gp"
+                    m_prof_str = "--"
+
+                self.tree_ge.insert(p["id"], "end", iid=child_id, text=f"    ↳ {m['qty']}x {m['name']}", values=(
+                    "--",
+                    f"{m['bid']:,} gp",
+                    f"{m['ask']:,} gp",
+                    ceiling_str,
+                    m_prof_str,
+                    "--",
+                    f"{m['limit']:,}",
+                    f"Cost: {format_gp(m['price_ea'] * m['limit'])}",
+                    "--",
+                    "--",
+                    m["speed_badge"],
+                    f"{m['vol']:,}"
+                ), tags=("child_row",))
+
+            if p["id"] in prev_open:
+                self.tree_ge.item(p["id"], open=True)
+
+    def toggle_sort_ge(self, col):
+        if getattr(self, "ge_sort_col", "") == col:
+            self.ge_sort_desc = not self.ge_sort_desc
+        else:
+            self.ge_sort_col = col
+            self.ge_sort_desc = False if col in ("name", "skill") else True
+
+        arrow = " ▼" if self.ge_sort_desc else " ▲"
+        headers = {
+            "name": "Item / Ingredients (▶ Expand)",
+            "skill": "Skill & Req",
+            "offer_bid": "Target Offer (Bid)",
+            "instant_ask": "Instant Buy (Ask)",
+            "sell_price": "GE Sell (-1% Tax)",
+            "profit_ea": "Profit ea",
+            "roi": "ROI %",
+            "limit": "4h Limit",
+            "batch_profit": "4h Batch Profit",
+            "profit_hr": "Profit / Hr",
+            "xp": "XP (ea & /hr)",
+            "speed": "Fill Speed",
+            "volume": "24h Volume"
+        }
+        for c, title in headers.items():
+            if c == "name":
+                self.tree_ge.heading("#0", text=title + (arrow if self.ge_sort_col == "name" else ""))
+            else:
+                self.tree_ge.heading(c, text=title + (arrow if c == self.ge_sort_col else ""))
+
+        self.recalculate_ge_craft_table()
+
+    def expand_all_ge(self):
+        for iid in self.tree_ge.get_children():
+            self.tree_ge.item(iid, open=True)
+
+    def collapse_all_ge(self):
+        for iid in self.tree_ge.get_children():
+            self.tree_ge.item(iid, open=False)
+
+    def on_ge_search_changed(self, event=None):
+        if hasattr(self, "ent_ge_search") and hasattr(self, "ent_search"):
+            val = self.ent_ge_search.get()
+            if self.ent_search.get() != val:
+                self.ent_search.delete(0, tk.END)
+                self.ent_search.insert(0, val)
+        self.on_global_search_changed()
+
+    def on_ge_tree_click(self, event):
+        item_id = self.tree_ge.identify_row(event.y)
+        col = self.tree_ge.identify_column(event.x)
+        if not item_id:
+            return
+
+        if col == "#0":
+            if self.tree_ge.get_children(item_id):
+                cur = self.tree_ge.item(item_id, "open")
+                self.tree_ge.item(item_id, open=not cur)
+            raw_text = self.tree_ge.item(item_id, "text")
+            clean_name = raw_text.replace("▶", "").replace("↳", "").strip()
+            if "x " in clean_name and clean_name[:3].replace("x", "").strip().isdigit():
+                clean_name = clean_name.split("x ", 1)[-1].strip()
+            self.copy_to_clipboard(clean_name, f"Copied '{clean_name}' to clipboard!")
+            return
+
+        if col == "#2":
+            val_str = self.tree_ge.set(item_id, "offer_bid").replace("gp", "").replace(",", "").strip()
+            if val_str.isdigit():
+                self.copy_to_clipboard(val_str, f"Copied Target Offer (Bid): {int(val_str):,} gp to clipboard!")
+            return
+
+        if col == "#3":
+            val_str = self.tree_ge.set(item_id, "instant_ask").replace("gp", "").replace(",", "").strip()
+            if val_str.isdigit():
+                self.copy_to_clipboard(val_str, f"Copied Instant Buy (Ask): {int(val_str):,} gp to clipboard!")
+            return
+
+        if col == "#4":
+            raw_val = self.tree_ge.set(item_id, "sell_price")
+            clean_p = "".join(c for c in raw_val if c.isdigit())
+            if clean_p:
+                label = "Best Buy Ceiling" if "≤" in raw_val else "GE Sell Price"
+                self.copy_to_clipboard(clean_p, f"Copied {label}: {int(clean_p):,} gp to clipboard!")
+            return
+
+    def on_ge_tree_double_click(self, event):
+        item_id = self.tree_ge.identify_row(event.y)
+        if item_id and self.tree_ge.get_children(item_id):
+            cur = self.tree_ge.item(item_id, "open")
+            self.tree_ge.item(item_id, open=not cur)
+
+    def on_ge_context_menu(self, event):
+        item_id = self.tree_ge.identify_row(event.y)
+        if not item_id:
+            return
+        self.tree_ge.selection_set(item_id)
+        menu = tk.Menu(self, tearoff=0, bg="#252528", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
+
+        raw_text = self.tree_ge.item(item_id, "text")
+        clean_name = raw_text.replace("▶", "").replace("↳", "").strip()
+        if "x " in clean_name and clean_name[:3].replace("x", "").strip().isdigit():
+            clean_name = clean_name.split("x ", 1)[-1].strip()
+
+        menu.add_command(label=f"📋 Copy Name: {clean_name}", command=lambda: self.copy_to_clipboard(clean_name, f"Copied '{clean_name}'"))
+
+        bid_str = self.tree_ge.set(item_id, "offer_bid").replace("gp", "").replace(",", "").strip()
+        if bid_str.isdigit():
+            menu.add_command(label=f"🎯 Copy Target Offer (Bid): {int(bid_str):,} gp", command=lambda: self.copy_to_clipboard(bid_str, f"Copied Target Offer (Bid): {int(bid_str):,} gp"))
+
+        ask_str = self.tree_ge.set(item_id, "instant_ask").replace("gp", "").replace(",", "").strip()
+        if ask_str.isdigit():
+            menu.add_command(label=f"⚡ Copy Instant Buy (Ask): {int(ask_str):,} gp", command=lambda: self.copy_to_clipboard(ask_str, f"Copied Instant Buy (Ask): {int(ask_str):,} gp"))
+
+        sell_str = self.tree_ge.set(item_id, "sell_price")
+        clean_num = "".join(c for c in sell_str if c.isdigit())
+        if clean_num:
+            lbl = f"🎯 Copy Best Buy Ceiling: {int(clean_num):,} gp" if "≤" in sell_str else f"🏪 Copy Net Sell Price: {int(clean_num):,} gp"
+            menu.add_command(label=lbl, command=lambda: self.copy_to_clipboard(clean_num, f"Copied {int(clean_num):,} gp"))
+
+        menu.add_separator()
+        slug = clean_name.replace(" ", "_")
+        menu.add_command(label="🌐 Open OSRS Wiki", command=lambda: webbrowser.open(f"https://oldschool.runescape.wiki/w/{slug}"))
+
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def get_ge_craft_row_tooltip(self, iid):
+        try:
+            if "_mat_" in str(iid):
+                raw_text = self.tree_ge.item(iid, "text")
+                clean_name = raw_text.replace("↳", "").strip()
+                bid_val = self.tree_ge.set(iid, "offer_bid")
+                ask_val = self.tree_ge.set(iid, "instant_ask")
+                target_val = self.tree_ge.set(iid, "sell_price")
+                return {
+                    "title": f"Ingredient: {clean_name}",
+                    "subtitle": "Raw Material Requirement",
+                    "title_color": "#f39c12",
+                    "rows": [
+                        ("Target Offer (Bid):", bid_val, "#2ecc71"),
+                        ("Instant Buy (Ask):", ask_val, "#f1f1f1"),
+                        ("🎯 Best Buy Ceiling:", target_val, "#3498db"),
+                        ("4h GE Limit:", self.tree_ge.set(iid, "limit"), "#f1f1f1"),
+                        ("24h Volume:", self.tree_ge.set(iid, "volume"), "#f1f1f1")
+                    ],
+                    "warnings": [],
+                    "has_warning": False,
+                    "hint": "💡 Click Target Offer (Bid) or Best Buy to copy price to clipboard"
+                }
+
+            row = next((r for r in getattr(self, "ge_rows", []) if r["id"] == str(iid)), None)
+            if not row:
+                return None
+
+            p_ea = row["profit_ea"]
+            rows = [
+                ("Skill & Lvl:", f"{row['skill']} (Level {row['level']})", "#f1f1f1" if row["can_make"] else "#e74c3c"),
+                ("Total Mat Cost (Bid):", f"{row['bid_mat_cost']:,} gp", "#f1f1f1"),
+                ("Total Mat Cost (Ask):", f"{row['ask_mat_cost']:,} gp", "#f1f1f1"),
+                ("Gross GE Sell Price:", f"{row['gross_sell']:,} gp", "#f1c40f"),
+                ("GE Tax Deduction (1%):", f"-{row['ge_tax']:,} gp", "#e74c3c"),
+                ("Net GE Revenue:", f"{row['net_revenue']:,} gp", "#2ecc71"),
+                ("Net Profit ea:", f"{p_ea:+,} gp ({row['roi']:+.1f}%)", "#2ecc71" if p_ea >= 0 else "#e74c3c"),
+                ("Hourly Profit:", f"{format_gp(row['profit_hr'])}/hr", "#2ecc71" if row["profit_hr"] >= 0 else "#e74c3c"),
+                ("4h Batch Profit:", f"{format_gp(row['batch_profit'])} (full {row['limit']:,} batch)", "#f39c12")
+            ]
+
+            warnings = []
+            if not row["can_make"]:
+                warnings.append(f"Level Requirement Unmet: Requires Level {row['level']} {row['skill']}.")
+
+            return {
+                "title": f"Production: {row['name']}",
+                "subtitle": f"{row['skill']} • Level {row['level']}",
+                "title_color": "#2ecc71" if p_ea >= 250 else ("#f1c40f" if p_ea >= 0 else "#e74c3c"),
+                "rows": rows,
+                "warnings": warnings,
+                "has_warning": bool(warnings),
+                "hint": "💡 Click [▶] to expand ingredients | Click Target Offer cell to copy price"
+            }
+        except Exception:
+            return None
 
     def on_owned_nat_changed(self, event=None):
         raw = self.ent_owned_nat.get().strip().replace(",", "")
