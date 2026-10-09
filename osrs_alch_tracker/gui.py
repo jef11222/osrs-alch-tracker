@@ -1431,6 +1431,16 @@ class OSRSAlchDashboard(tk.Tk):
         self.cb_overnight_time.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
         ToolTip(self.cb_overnight_time, "Realistic Alching Time Constraint:\nCaps total items to what you can realistically alch in the morning (1,200 casts/hour).\nPrevents absurd 30,000 bolt or 50,000 battlestaff piles and prioritizes high-margin items!")
 
+        # Max Items Per Slot Cap
+        tk.Label(ctrl_strip, text="📦 Max / Slot:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 3))
+        self.var_overnight_max_slot = tk.StringVar(value="500 (Balanced)")
+        self.cb_overnight_max_slot = ttk.Combobox(ctrl_strip, textvariable=self.var_overnight_max_slot,
+                                                  values=["250 (Fast 12m)", "375 (12h Armor Cap)", "500 (Balanced)", "1,000 (Extended)", "♾️ Unlimited"],
+                                                  width=16, state="readonly")
+        self.cb_overnight_max_slot.pack(side="left", padx=(0, 6))
+        self.cb_overnight_max_slot.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
+        ToolTip(self.cb_overnight_max_slot, "Max Items Per GE Slot Offer:\nCaps individual buy offers (e.g. max 500) so no single item dominates your bag or turns into a 30k mountain.\nEnsures variety across your GE slots!")
+
         # 0 GP Nature Runes (Use Owned)
         self.var_overnight_owned_nat = tk.BooleanVar(value=True)
         self.cb_overnight_nats = tk.Checkbutton(ctrl_strip, text="🌿 0 GP Nats", variable=self.var_overnight_owned_nat,
@@ -1487,7 +1497,11 @@ class OSRSAlchDashboard(tk.Tk):
 
         tk.Label(self.overnight_summary_card, text="⏱️ Est. Alch Time:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
         self.lbl_on_time = tk.Label(self.overnight_summary_card, text="-- mins", font=("Segoe UI", 9, "bold"), fg="#f1c40f", bg="#1e1e1e")
-        self.lbl_on_time.pack(side="left", padx=(2, 0))
+        self.lbl_on_time.pack(side="left", padx=(2, 10))
+
+        tk.Label(self.overnight_summary_card, text="🚀 Hourly Rate:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_rate = tk.Label(self.overnight_summary_card, text="--/hr", font=("Segoe UI", 10, "bold"), fg="#00d2d3", bg="#1e1e1e")
+        self.lbl_on_rate.pack(side="left", padx=(2, 0))
 
         # 4. Overnight Table
         tree_frame = ttk.Frame(container)
@@ -4478,6 +4492,19 @@ class OSRSAlchDashboard(tk.Tk):
         else:
             max_casts = None
 
+        # 5b. Max Items Per Offer Slot Cap
+        slot_cap_str = self.var_overnight_max_slot.get() if hasattr(self, "var_overnight_max_slot") else "500"
+        if "250" in slot_cap_str:
+            max_per_item = 250
+        elif "375" in slot_cap_str:
+            max_per_item = 375
+        elif "500" in slot_cap_str:
+            max_per_item = 500
+        elif "1,000" in slot_cap_str:
+            max_per_item = 1000
+        else:
+            max_per_item = None
+
         # 6. Membership & Focus Filters
         mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
         f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
@@ -4488,6 +4515,8 @@ class OSRSAlchDashboard(tk.Tk):
         raw_candidates = self.api.get_overnight_data()
         pool = []
 
+        is_bulk_focus = any(k in focus for k in ("Battlestaves", "Stackables"))
+
         for it in raw_candidates:
             is_mem = it.get("members", False)
             if f2p_ok and not mem_ok and is_mem:
@@ -4497,6 +4526,11 @@ class OSRSAlchDashboard(tk.Tk):
 
             grp = it.get("group", "")
             name_lower = it["name"].lower()
+            base_ge_limit = it.get("limit", 0) or 0
+
+            # Auto-exclude bulk skilling & ammo (GE limit > 250) unless user explicitly selects Battlestaves or Stackables
+            if not is_bulk_focus and not search_query and base_ge_limit > 250:
+                continue
 
             if "Rune Heavy" in focus:
                 if grp != "rune" and "rune" not in name_lower:
@@ -4531,7 +4565,7 @@ class OSRSAlchDashboard(tk.Tk):
 
         # 7. Optimize Bag
         alloc, total_spend, total_profit = self.optimize_overnight_bag(
-            pool, num_slots, cash_stack, cycles, nat_cost, strat_type=strat_type, max_casts=max_casts
+            pool, num_slots, cash_stack, cycles, nat_cost, strat_type=strat_type, max_casts=max_casts, max_per_item=max_per_item
         )
         self.overnight_alloc = alloc
 
@@ -4547,6 +4581,9 @@ class OSRSAlchDashboard(tk.Tk):
             self.lbl_on_items.config(text=f"{total_items:,} items")
             alch_mins = int(math.ceil(total_items / 20.0)) if total_items > 0 else 0
             self.lbl_on_time.config(text=f"~{alch_mins} mins (1.2k/hr)" if alch_mins > 0 else "-- mins")
+            hourly_rate = int(total_profit / (total_items / 1200.0)) if total_items > 0 else 0
+            if hasattr(self, "lbl_on_rate"):
+                self.lbl_on_rate.config(text=f"+{format_gp(hourly_rate)}/hr" if hourly_rate > 0 else "--/hr")
 
         # 9. Build Table Rows
         alloc_map = {a["id"]: a for a in alloc}
@@ -4558,7 +4595,11 @@ class OSRSAlchDashboard(tk.Tk):
             bid = it["deep_bid"] if strat_type == "deep" else it["safe_bid"]
             prof_ea = it["alch"] - bid - nat_cost
             base_lim = it["limit"] * cycles
-            period_limit = min(base_lim, max_casts) if max_casts else base_lim
+            period_limit = base_lim
+            if max_per_item:
+                period_limit = min(period_limit, max_per_item)
+            if max_casts:
+                period_limit = min(period_limit, max_casts)
             conf = it.get("conf_deep" if strat_type == "deep" else "conf_safe", "🟢 High")
             is_alloc = it["id"] in alloc_map
 
@@ -4638,7 +4679,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_overnight.tag_configure("incart", font=("Segoe UI", 9, "bold"), foreground="#f39c12")
         self.tree_overnight.tag_configure("alt", foreground="#cccccc")
 
-    def optimize_overnight_bag(self, items, num_slots, total_budget, cycles, nat_cost, strat_type="safe", max_casts=None):
+    def optimize_overnight_bag(self, items, num_slots, total_budget, cycles, nat_cost, strat_type="safe", max_casts=None, max_per_item=None):
         if not items or num_slots <= 0:
             return [], 0, 0
 
@@ -4651,7 +4692,11 @@ class OSRSAlchDashboard(tk.Tk):
             if prof_ea <= 0:
                 continue
             base_limit = it["limit"] * cycles
-            period_limit = min(base_limit, max_casts) if max_casts else base_limit
+            period_limit = base_limit
+            if max_per_item:
+                period_limit = min(period_limit, max_per_item)
+            if max_casts:
+                period_limit = min(period_limit, max_casts)
             valid_items.append({
                 "item": it,
                 "id": it["id"],
