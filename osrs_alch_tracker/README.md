@@ -10,7 +10,12 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
-- **🛡️ Strict F2P vs Members Isolation (v1.3.25 New):**
+- **🎯 Breakeven & Target Material Buy Prices (v1.3.26 New):**
+  - **Live Breakeven Ceilings:** Automatically calculates the exact maximum Grand Exchange buy price for bars, dragonhides, and logs to train at **zero gold loss** based on live High Alch / GE sell values and real-time Nature Rune prices.
+  - **Configurable Safety Margin:** Real-time `Target Margin` input lets you set a desired profit per item (e.g. 50, 100, 200 gp), automatically recalculating required GE buy bids.
+  - **1-Click GE Price Copy:** Click the `🎯 Max Mat Buy` column to copy the exact integer buy price directly to your clipboard.
+  - **Permanent Filter Lock:** Game bridge snapshots (Microbot/RuneLite) no longer overwrite or revert your manual F2P / Members filter selection.
+- **🛡️ Strict F2P vs Members Isolation (v1.3.25+):**
   - **F2P Only Mode:** Toggling `F2P Only` strictly hides 100% of Members items, recipes, quests, and brackets across all tabs (Smithing hides Cannonballs and P2P quests; Crafting hides Dragonhide bodies, Battlestaves, and Unpowered orbs).
   - **Fletching P2P Warning:** When Free-to-Play is selected, Fletching cleanly indicates that it is a 100% Members-only skill in Old School RuneScape.
   - **Mutual Sync:** Checking `F2P Only` or `Members` seamlessly syncs across the global top bar and the Skilling Guide tab.

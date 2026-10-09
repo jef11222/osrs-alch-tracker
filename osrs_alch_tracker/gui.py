@@ -1540,6 +1540,16 @@ class OSRSAlchDashboard(tk.Tk):
         self.cb_guide_mem.pack(side="left", padx=3)
         ToolTip(self.cb_guide_mem, "Include Members-only (P2P) skilling brackets and quests.\nUncheck if training on Free-to-play (F2P).")
 
+        # Target Profit Margin per item (Breakeven if 0)
+        tk.Label(guide_ctrl, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
+        tk.Label(guide_ctrl, text="Target Margin:", fg="#cccccc", bg="#252528", font=("Segoe UI", 8)).pack(side="left", padx=(2, 2))
+        self.var_guide_margin = tk.StringVar(value=str(self.state.config.get("guide_margin", 0)))
+        self.ent_guide_margin = tk.Entry(guide_ctrl, textvariable=self.var_guide_margin, width=5, bg="#1e1e1e", fg="#2ecc71",
+                                         insertbackground="#ffffff", relief="flat", font=("Segoe UI", 8))
+        self.ent_guide_margin.pack(side="left", padx=(0, 4))
+        self.ent_guide_margin.bind("<KeyRelease>", lambda e: self.on_guide_margin_changed())
+        ToolTip(self.ent_guide_margin, "Target Safety Profit Margin per item (GP):\n• 0 gp = Exact Breakeven buy price (0 gp loss).\n• 50 / 100 / 200 gp = Max buy price needed to guarantee that profit margin.")
+
         # Right Action Buttons
         btn_guide_batch = tk.Button(guide_ctrl, text="🛒 Add Batch to Cart", command=self.add_guide_batch_to_cart,
                                     bg="#27ae60", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
@@ -1578,13 +1588,14 @@ class OSRSAlchDashboard(tk.Tk):
         tree_frame = ttk.Frame(container)
         tree_frame.pack(fill="both", expand=True)
 
-        cols = ("status", "level_range", "name", "materials", "xp_ea", "needed", "gp_xp", "bracket_cost", "action_rec", "xp_rate", "time_est", "verdict")
+        cols = ("status", "level_range", "name", "materials", "max_buy", "xp_ea", "needed", "gp_xp", "bracket_cost", "action_rec", "xp_rate", "time_est", "verdict")
         self.tree_guide = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
 
         self.tree_guide.heading("status", text="Status", command=lambda: self.toggle_sort_guide("status"))
         self.tree_guide.heading("level_range", text="Level Range", command=lambda: self.toggle_sort_guide("level_range"))
         self.tree_guide.heading("name", text="Training Method", command=lambda: self.toggle_sort_guide("name"))
         self.tree_guide.heading("materials", text="Materials Needed (ea)", command=lambda: self.toggle_sort_guide("materials"))
+        self.tree_guide.heading("max_buy", text="🎯 Max Mat Buy", command=lambda: self.toggle_sort_guide("max_buy"))
         self.tree_guide.heading("xp_ea", text="XP / Act", command=lambda: self.toggle_sort_guide("xp_ea"))
         self.tree_guide.heading("needed", text="Units Needed", command=lambda: self.toggle_sort_guide("needed"))
         self.tree_guide.heading("gp_xp", text="Live GP/XP", command=lambda: self.toggle_sort_guide("gp_xp"))
@@ -1594,18 +1605,19 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_guide.heading("time_est", text="Est. Time", command=lambda: self.toggle_sort_guide("time_est"))
         self.tree_guide.heading("verdict", text="Strategy Tips / Verdict", command=lambda: self.toggle_sort_guide("verdict"))
 
-        self.tree_guide.column("status", width=120, anchor="center")
-        self.tree_guide.column("level_range", width=85, anchor="center")
-        self.tree_guide.column("name", width=190, anchor="w")
-        self.tree_guide.column("materials", width=155, anchor="w")
-        self.tree_guide.column("xp_ea", width=75, anchor="e")
-        self.tree_guide.column("needed", width=95, anchor="e")
-        self.tree_guide.column("gp_xp", width=95, anchor="e")
-        self.tree_guide.column("bracket_cost", width=110, anchor="e")
-        self.tree_guide.column("action_rec", width=110, anchor="center")
-        self.tree_guide.column("xp_rate", width=90, anchor="e")
-        self.tree_guide.column("time_est", width=80, anchor="center")
-        self.tree_guide.column("verdict", width=270, anchor="w")
+        self.tree_guide.column("status", width=115, anchor="center")
+        self.tree_guide.column("level_range", width=80, anchor="center")
+        self.tree_guide.column("name", width=180, anchor="w")
+        self.tree_guide.column("materials", width=145, anchor="w")
+        self.tree_guide.column("max_buy", width=115, anchor="e")
+        self.tree_guide.column("xp_ea", width=70, anchor="e")
+        self.tree_guide.column("needed", width=90, anchor="e")
+        self.tree_guide.column("gp_xp", width=90, anchor="e")
+        self.tree_guide.column("bracket_cost", width=105, anchor="e")
+        self.tree_guide.column("action_rec", width=105, anchor="center")
+        self.tree_guide.column("xp_rate", width=85, anchor="e")
+        self.tree_guide.column("time_est", width=75, anchor="center")
+        self.tree_guide.column("verdict", width=280, anchor="w")
 
         v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree_guide.yview)
         h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree_guide.xview)
@@ -1747,6 +1759,15 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.recalculate_guide_table()
 
+    def on_guide_margin_changed(self):
+        try:
+            val = parse_cash_input(self.var_guide_margin.get())
+            self.state.config["guide_margin"] = max(0, val)
+            self.save_preferences()
+        except Exception:
+            pass
+        self.recalculate_guide_table()
+
     def recalculate_guide_table(self):
         if not hasattr(self, "tree_guide"):
             return
@@ -1793,6 +1814,7 @@ class OSRSAlchDashboard(tk.Tk):
                 "1 - 99",
                 "Fletching is Members-only",
                 "None (P2P)",
+                "--",
                 "0",
                 "0",
                 "--",
@@ -1902,6 +1924,55 @@ class OSRSAlchDashboard(tk.Tk):
                 total_cost = best_profit_ea * (actions_needed if actions_needed > 0 else 100)
                 bracket_cost_str = f"-{format_gp(abs(total_cost))}"
 
+            # Breakeven & Target Material Buy Calculation
+            target_margin = 0
+            if hasattr(self, "ent_guide_margin"):
+                try:
+                    target_margin = max(0, parse_cash_input(self.ent_guide_margin.get()))
+                except Exception:
+                    target_margin = 0
+
+            out_qty = b.get("output_qty", 1)
+            eff_alch_rev = (alch_val - nat_cost) if (b.get("can_alch") and alch_val > 0) else -99999999
+            eff_ge_rev = (int(ge_sell * 0.99) * out_qty) if (b.get("can_sell_ge") and out_id > 0) else -99999999
+            best_rev = max(eff_alch_rev, eff_ge_rev)
+
+            mats = b.get("materials", [])
+            primary_mat_name = ""
+            curr_mat_p = 0
+            breakeven_p = 0
+            target_buy_p = 0
+            margin_at_curr = 0
+            max_buy_str = "--"
+
+            if mats and best_rev > -99999999:
+                primary_mat = mats[0]
+                primary_qty = primary_mat.get("qty", 1)
+                primary_mat_name = primary_mat.get("name", "")
+                curr_mat_p = self.api.get_price(primary_mat["id"], strat)
+
+                # Secondary materials cost (e.g. gems or bow strings)
+                secondary_cost = sum(self.api.get_price(m["id"], strat) * m["qty"] for m in mats[1:])
+                net_alloc_rev = best_rev - secondary_cost
+
+                breakeven_p = math.floor(net_alloc_rev / primary_qty) if primary_qty > 0 else 0
+                target_buy_p = math.floor((net_alloc_rev - target_margin) / primary_qty) if primary_qty > 0 else 0
+                margin_at_curr = target_buy_p - curr_mat_p
+
+                if target_margin > 0:
+                    max_buy_str = f"≤ {target_buy_p:,} gp"
+                else:
+                    max_buy_str = f"≤ {breakeven_p:,} gp"
+            elif b_style == "quest":
+                max_buy_str = "FREE (Quest)"
+
+            verdict_text = b.get("verdict", "")
+            if breakeven_p > 0:
+                if target_margin > 0:
+                    verdict_text = f"{verdict_text} [🎯 Buy @ ≤ {target_buy_p:,} gp ea (+{target_margin:,} margin | Breakeven: ≤ {breakeven_p:,} gp)]"
+                else:
+                    verdict_text = f"{verdict_text} [🎯 Breakeven Buy: ≤ {breakeven_p:,} gp ea (Market: {curr_mat_p:,} gp)]"
+
             # Time estimate
             xp_rate = b.get("xp_rate", 50000)
             if xp_needed_bracket > 0 and xp_rate > 0:
@@ -1933,6 +2004,13 @@ class OSRSAlchDashboard(tk.Tk):
                 "name": b["name"],
                 "materials": materials_str,
                 "materials_raw": b.get("materials", []),
+                "max_buy": max_buy_str,
+                "max_buy_val": target_buy_p if target_buy_p > 0 else breakeven_p,
+                "breakeven_ea": breakeven_p,
+                "target_buy_p": target_buy_p,
+                "curr_mat_price": curr_mat_p,
+                "margin_ea": margin_at_curr,
+                "primary_mat_name": primary_mat_name,
                 "xp_ea": xp_ea,
                 "needed": actions_needed,
                 "gp_xp": gp_xp_str,
@@ -1943,7 +2021,7 @@ class OSRSAlchDashboard(tk.Tk):
                 "xp_rate": f"{xp_rate // 1000}k/hr" if xp_rate >= 1000 else f"{xp_rate}/hr",
                 "xp_rate_val": xp_rate,
                 "time_est": time_est_str,
-                "verdict": b.get("verdict", ""),
+                "verdict": verdict_text,
                 "output_id": out_id,
                 "nature_cost": b.get("nature_cost", 0),
                 "tag": final_tag,
@@ -1959,6 +2037,7 @@ class OSRSAlchDashboard(tk.Tk):
                 r["level_range"],
                 r["name"],
                 r["materials"],
+                r["max_buy"],
                 f"{r['xp_ea']:,.1f}" if r["xp_ea"] % 1 else f"{int(r['xp_ea']):,}",
                 f"{r['needed']:,}",
                 r["gp_xp"],
@@ -1968,6 +2047,13 @@ class OSRSAlchDashboard(tk.Tk):
                 r["time_est"],
                 r["verdict"]
             ), tags=(r["tag"],))
+
+        # Append current step target buy info to XP summary banner if available
+        curr_step = next((r for r in self.guide_rows if "YOU ARE HERE" in r.get("status", "")), None)
+        if curr_step and curr_step.get("breakeven_ea", 0) > 0 and hasattr(self, "lbl_guide_xp_summary"):
+            cur_summary = self.lbl_guide_xp_summary.cget("text")
+            if "Target Buy:" not in cur_summary:
+                self.lbl_guide_xp_summary.config(text=f"{cur_summary}  |  🎯 Current Step Buy: {curr_step['max_buy']} ({curr_step.get('primary_mat_name', 'bars')})")
 
     def get_selected_guide_row(self):
         sel = self.tree_guide.selection()
@@ -1986,6 +2072,13 @@ class OSRSAlchDashboard(tk.Tk):
         col_id = self.tree_guide.identify_column(event.x)
         if col_id == "#3":
             self.copy_to_clipboard(row["name"], f"Copied '{row['name']}' to clipboard!")
+        elif col_id == "#4":
+            self.copy_to_clipboard(row["materials"], f"Copied materials for '{row['name']}' to clipboard!")
+        elif col_id == "#5":
+            p = row.get("target_buy_p", 0) or row.get("breakeven_ea", 0)
+            if p > 0:
+                mat_n = row.get("primary_mat_name", "materials")
+                self.copy_to_clipboard(str(p), f"📋 Copied Max Buy Price ({p:,} gp) for {mat_n} to clipboard!")
 
     def on_guide_double_click(self, event):
         row_id = self.tree_guide.identify_row(event.y)
@@ -2005,6 +2098,11 @@ class OSRSAlchDashboard(tk.Tk):
 
         menu = tk.Menu(self, tearoff=0, bg="#2d2d30", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
         menu.add_command(label=f"🛒 Add Training Batch to Cart ({row['needed']:,} units)", command=self.add_guide_batch_to_cart)
+        p_buy = row.get("target_buy_p", 0) or row.get("breakeven_ea", 0)
+        if p_buy > 0:
+            mat_n = row.get("primary_mat_name", "materials")
+            menu.add_command(label=f"🎯 Copy Max Buy Price ({p_buy:,} gp for {mat_n})",
+                             command=lambda pb=p_buy, mn=mat_n: self.copy_to_clipboard(str(pb), f"Copied {pb:,} gp for {mn}!"))
         menu.add_separator()
         menu.add_command(label="📋 Copy Shopping List for this Step", command=self.copy_guide_shopping_list)
         menu.add_command(label="🏷️ Copy RuneLite Bank Tag Tab", command=self.copy_guide_bank_tag)
@@ -2085,6 +2183,11 @@ class OSRSAlchDashboard(tk.Tk):
             total_mat_cost += sub_nat
             lines.append(f"  • {tot_nats:,}x Nature rune (~{format_gp(sub_nat)})")
 
+        if row.get("breakeven_ea", 0) > 0:
+            lines.append(f"----------------------------------------")
+            lines.append(f"🎯 Target GE Buy: {row['max_buy']} ea (for {row.get('primary_mat_name', 'materials')})")
+            lines.append(f"   (Breakeven ceiling: ≤ {row['breakeven_ea']:,} gp ea)")
+
         lines.append(f"Total Est. Cost: {format_gp(total_mat_cost)}")
         lines.append(f"Disposal Strategy: {row['action_rec']}")
         lines.append(f"Net Est. Outcome: {row['bracket_cost']} ({row['gp_xp']})")
@@ -2131,19 +2234,31 @@ class OSRSAlchDashboard(tk.Tk):
         row = next((r for r in self.guide_rows if r["id"] == row_id), None)
         if not row:
             return ""
-        return (
-            f"Method: {row['name']} ({row['level_range']})\n"
-            f"Status: {row['status']}\n"
-            f"XP / Action: {row['xp_ea']} XP\n"
-            f"Actions Needed: {row['needed']:,} units\n"
-            f"Live GP/XP: {row['gp_xp']}\n"
-            f"Net Outcome: {row['bracket_cost']}\n"
-            f"Recommended Disposal: {row['action_rec']}\n"
-            f"XP Rate: {row['xp_rate']} (Est. {row['time_est']})\n\n"
-            f"Verdict & Tips:\n{row['verdict']}\n\n"
-            "• Double-click to add batch to Shopping Cart\n"
+        tip_lines = [
+            f"Method: {row['name']} ({row['level_range']})",
+            f"Status: {row['status']}",
+            f"XP / Action: {row['xp_ea']} XP",
+            f"Actions Needed: {row['needed']:,} units"
+        ]
+        if row.get("breakeven_ea", 0) > 0:
+            tip_lines.append(f"🎯 Target Mat Buy: {row['max_buy']} ea")
+            tip_lines.append(f"   • Breakeven Ceiling: ≤ {row['breakeven_ea']:,} gp ea (0 loss)")
+            if row.get("curr_mat_price", 0) > 0:
+                tip_lines.append(f"   • Current Market Price: {row['curr_mat_price']:,} gp ea")
+                tip_lines.append(f"   • Margin at Market: {row['margin_ea']:+d} gp ea")
+        tip_lines.extend([
+            f"Live GP/XP: {row['gp_xp']}",
+            f"Net Outcome: {row['bracket_cost']}",
+            f"Recommended Disposal: {row['action_rec']}",
+            f"XP Rate: {row['xp_rate']} (Est. {row['time_est']})",
+            "",
+            f"Verdict & Tips:\n{row['verdict']}",
+            "",
+            "• Click '🎯 Max Mat Buy' to copy GE buy price to clipboard",
+            "• Double-click to add batch to Shopping Cart",
             "• Right-click for Shopping List, Bank Tag, or Wiki link."
-        )
+        ])
+        return "\n".join(tip_lines)
 
     def toggle_sort_guide(self, col):
         if self.guide_sort_col == col:
@@ -2154,6 +2269,8 @@ class OSRSAlchDashboard(tk.Tk):
 
         if col == "level_range":
             self.guide_rows.sort(key=lambda r: r["min_lvl"], reverse=not self.guide_sort_asc)
+        elif col == "max_buy":
+            self.guide_rows.sort(key=lambda r: r.get("max_buy_val", 0), reverse=not self.guide_sort_asc)
         elif col == "xp_ea":
             self.guide_rows.sort(key=lambda r: r["xp_ea"], reverse=not self.guide_sort_asc)
         elif col == "needed":
@@ -2174,6 +2291,7 @@ class OSRSAlchDashboard(tk.Tk):
                 r["level_range"],
                 r["name"],
                 r["materials"],
+                r["max_buy"],
                 f"{r['xp_ea']:,.1f}" if r["xp_ea"] % 1 else f"{int(r['xp_ea']):,}",
                 f"{r['needed']:,}",
                 r["gp_xp"],
@@ -4358,10 +4476,6 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_owned_nat.insert(0, str(nats))
                     self.state.config["owned_nature_runes"] = nats
 
-                self.var_members.set(is_mem)
-                self.var_f2p.set(not is_mem)
-                if hasattr(self, "var_guide_members"):
-                    self.var_guide_members.set(is_mem)
 
                 if hasattr(self, "ent_craft_lvl") and "Crafting" in levels:
                     self.ent_craft_lvl.delete(0, tk.END)
