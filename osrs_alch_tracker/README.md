@@ -10,7 +10,11 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
-- **📦 Total Material Breakdown & Interactive Skilling Cards (v1.3.27 New):**
+- **🎯 Exact Level Requirements Accuracy (v1.3.28 Fix):**
+  - **Smithing Levels Corrected:** Fixed **Iron platebody** requirement to **Level 33** (previously listed as 29). Added **Bronze platebody** for Levels 18–33 to cleanly bridge from Level 29 (*The Knight's Sword*) up to Level 33. Iron platebody now properly covers Level 33➔48 (until Steel platebodies unlock at 48).
+  - **Fletching Bow Tiers Corrected:** Split Oak bows into **Oak shortbow** (Level 20) and **Oak longbow** (Level 25); updated **Willow longbow** to its true Level 40 requirement.
+  - **Crafting Tiers Corrected:** Added **Leather body** for Levels 14–20, and updated **Cut Sapphire** to its correct Level 20 requirement.
+- **📦 Total Material Breakdown & Interactive Skilling Cards (v1.3.27+):**
   - **Total Materials / Bars Needed:** New dedicated column dynamically calculates the exact total materials/bars required across each training bracket (or remaining to reach your target goal level).
   - **1-Click Total Quantity Copy:** Click the `Total Mats Needed` column or right-click to copy the exact total material quantity directly to your clipboard for instant buying on the Grand Exchange.
   - **Full Skilling Tooltip Cards:** Rich hover tooltip cards for every skilling step, detailing XP per action, total units and materials needed, breakeven ceilings, current market margin, live GP/XP, net profit/loss, and strategy tips.

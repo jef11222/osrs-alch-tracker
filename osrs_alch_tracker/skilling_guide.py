@@ -91,11 +91,27 @@ SKILLING_GUIDES = {
                 "xp_rate": 40000,
                 "can_alch": False,
                 "can_sell_ge": False,
-                "verdict": "⚡ Instant 1➔29 Skip: Do this quest first! Never waste gold smithing Bronze."
+                "verdict": "⚡ Instant 1➔29 Skip: Do this quest first! Never waste gold smithing low tiers."
             },
             {
-                "min_lvl": 29,
-                "max_lvl": 35,
+                "min_lvl": 18,
+                "max_lvl": 33,
+                "name": "Bronze platebody (Smithing Bridge)",
+                "item_name": "Bronze platebody",
+                "output_id": 1117,
+                "members": False,
+                "xp_per_action": 62.5,
+                "materials": [{"id": 2349, "name": "Bronze bar", "qty": 5}],
+                "nature_cost": 0,
+                "style": "fast",
+                "xp_rate": 50000,
+                "can_alch": False,
+                "can_sell_ge": True,
+                "verdict": "🔨 Level 18➔33 Bridge: Smith Bronze platebodies at Varrock anvil to bridge from Level 29 (The Knight's Sword) to Level 33."
+            },
+            {
+                "min_lvl": 33,
+                "max_lvl": 48,
                 "name": "Iron platebody (Smith + Alch)",
                 "item_name": "Iron platebody",
                 "output_id": 1115,
@@ -104,10 +120,10 @@ SKILLING_GUIDES = {
                 "materials": [{"id": 2351, "name": "Iron bar", "qty": 5}],
                 "nature_cost": 1,
                 "style": "fast",
-                "xp_rate": 65000,
+                "xp_rate": 100000,
                 "can_alch": True,
                 "can_sell_ge": True,
-                "verdict": "🔨 Cheap anvil training at Varrock West to bridge into Cannonballs/Steel."
+                "verdict": "🔨 Core Anvil Meta (33➔48): Requires Level 33! In F2P, this is the fastest method to bridge all the way to Level 48 Steel platebodies."
             },
             {
                 "min_lvl": 35,
@@ -276,7 +292,23 @@ SKILLING_GUIDES = {
             },
             {
                 "min_lvl": 20,
-                "max_lvl": 35,
+                "max_lvl": 25,
+                "name": "Oak shortbow (u + s)",
+                "item_name": "Oak shortbow",
+                "output_id": 843,
+                "members": True,
+                "xp_per_action": 33.0,
+                "materials": [{"id": 1521, "name": "Oak log", "qty": 1}, {"id": 1777, "name": "Bow string", "qty": 1}],
+                "nature_cost": 0,
+                "style": "fast",
+                "xp_rate": 55000,
+                "can_alch": False,
+                "can_sell_ge": True,
+                "verdict": "🏹 Level 20➔25: Cut & string Oak shortbows to unlock Oak longbows at Level 25."
+            },
+            {
+                "min_lvl": 25,
+                "max_lvl": 40,
                 "name": "Oak longbow (u + s)",
                 "item_name": "Oak longbow",
                 "output_id": 845,
@@ -288,10 +320,10 @@ SKILLING_GUIDES = {
                 "xp_rate": 75000,
                 "can_alch": False,
                 "can_sell_ge": True,
-                "verdict": "🏹 Cut logs into unstrung bows, then string with bowstrings for double XP."
+                "verdict": "🏹 Requires Level 25: Cut & string unstrung longbows for double XP."
             },
             {
-                "min_lvl": 35,
+                "min_lvl": 40,
                 "max_lvl": 50,
                 "name": "Willow longbow (u + s)",
                 "item_name": "Willow longbow",
@@ -304,7 +336,7 @@ SKILLING_GUIDES = {
                 "xp_rate": 110000,
                 "can_alch": True,
                 "can_sell_ge": True,
-                "verdict": "⚡ High speed bow cutting. Willow logs are dirt cheap on the GE."
+                "verdict": "⚡ Requires Level 40: High speed bow cutting. Willow logs are dirt cheap on the GE."
             },
             {
                 "min_lvl": 50,
@@ -448,8 +480,24 @@ SKILLING_GUIDES = {
                 "verdict": "⚡ Instant 1➔8 Skip: Zero requirement F2P quest."
             },
             {
-                "min_lvl": 1,
+                "min_lvl": 14,
                 "max_lvl": 20,
+                "name": "Leather body (Early Leather)",
+                "item_name": "Leather body",
+                "output_id": 1129,
+                "members": False,
+                "xp_per_action": 25.0,
+                "materials": [{"id": 1741, "name": "Leather", "qty": 1}],
+                "nature_cost": 0,
+                "style": "fast",
+                "xp_rate": 35000,
+                "can_alch": False,
+                "can_sell_ge": True,
+                "verdict": "🔨 Level 14➔20: Craft leather with needle & thread to reach gems & jewellery."
+            },
+            {
+                "min_lvl": 20,
+                "max_lvl": 27,
                 "name": "Cut Sapphire (Gems)",
                 "item_name": "Sapphire",
                 "output_id": 1607,
@@ -461,7 +509,7 @@ SKILLING_GUIDES = {
                 "xp_rate": 140000,
                 "can_alch": False,
                 "can_sell_ge": True,
-                "verdict": "💎 Cut uncut gems with chisel. Very fast early leveling."
+                "verdict": "💎 Requires Level 20: Cut uncut sapphires with chisel. Very fast leveling."
             },
             {
                 "min_lvl": 20,
