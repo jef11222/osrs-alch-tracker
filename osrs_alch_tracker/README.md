@@ -8,6 +8,9 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🔒 Tree Open/Closed State Persistence Bugfix (v1.3.37):**
+  - **Fixed Auto-Refresh Tree Expansion Bug:** Resolved an issue where background periodic price updates (or the 2-minute auto-refresh timer) would inadvertently re-expand collapsed tiers in the Skilling Guide Material Family Tree. The application now uses recursive open-node tracking and persistent initialization flags, ensuring user-defined open/collapsed node states remain 100% stable and untouched across refreshes.
+
 - **🌲 Smithing Material Family Tree & Opportunity Profit Analysis (v1.3.36):**
   - **Comprehensive Hierarchical Tree Mode:** Switch between `🌲 Material Chain Tree` and `📈 Level Progression (1-99)` in the Skilling Guide toolbar. The Material Chain Tree visualizes the complete production pipeline from raw ores to finished weapons and armor across all 6 metal tiers (Bronze, Iron, Steel, Mithril, Adamant, and Rune).
   - **🏷️ Instant Baseline Benchmark (`↳ 🏷️ Sell Bar on GE`):** Every metal tier unfolds with a dedicated benchmark row displaying the exact baseline profit of smelting the bar from raw ores and selling it directly on the Grand Exchange.

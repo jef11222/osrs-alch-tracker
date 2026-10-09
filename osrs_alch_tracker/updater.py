@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.36"
+APP_VERSION = "1.3.37"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 
 
@@ -336,7 +336,9 @@ class WhatsNewDialog(tk.Toplevel):
             "• 🛡️ Adaptive Blast Furnace (P2P) vs Regular Furnace (F2P):\n"
             "  Toggling P2P Methods automatically recalculates coal requirements: Blast Furnace coal counts for P2P vs full coal counts for F2P.\n\n"
             "• 🔄 One-Click View Selector & Recursive Expand/Collapse:\n"
-            "  Toggle seamlessly between '🌲 Material Chain Tree' and '📈 Level Progression (1-99)'. 'Expand All' and 'Collapse All' now work recursively across all tiers and ingredients.\n"
+            "  Toggle seamlessly between '🌲 Material Chain Tree' and '📈 Level Progression (1-99)'. 'Expand All' and 'Collapse All' now work recursively across all tiers and ingredients.\n\n"
+            "• 🔒 Tree Open/Closed State Persistence Across Auto-Refreshes:\n"
+            "  Fixed auto-refresh bug where collapsed tiers would automatically expand back open on periodic background price refreshes. Your exact expanded/collapsed tiers and item states are now 100% preserved.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")

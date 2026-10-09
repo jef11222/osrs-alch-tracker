@@ -1984,7 +1984,8 @@ class OSRSAlchDashboard(tk.Tk):
         sort_col = getattr(self, "guide_sort_col", "level_range")
         sort_asc = getattr(self, "guide_sort_asc", True)
 
-        first_load = len(prev_open) == 0
+        is_first_init = not getattr(self, "_guide_tree_initialized", False)
+        self._guide_tree_initialized = True
 
         for tier in SMITHING_MATERIAL_CHAINS:
             tier_name = tier["tier"]
@@ -2456,8 +2457,8 @@ class OSRSAlchDashboard(tk.Tk):
                 if itm_iid in prev_open:
                     self.tree_guide.item(itm_iid, open=True)
 
-            # Open root tiers by default on first load or if previously open
-            if first_load or tier_iid in prev_open:
+            # Open root tiers by default only on initial app load if not previously set
+            if (is_first_init and not prev_open) or tier_iid in prev_open:
                 self.tree_guide.item(tier_iid, open=True)
 
     def recalculate_guide_table(self):
@@ -2484,7 +2485,15 @@ class OSRSAlchDashboard(tk.Tk):
         if hasattr(self, "lbl_guide_xp_summary"):
             self.lbl_guide_xp_summary.config(text=summary_txt)
 
-        prev_open = {iid for iid in self.tree_guide.get_children() if self.tree_guide.item(iid, "open")}
+        def _get_open_iids(tree, parent=""):
+            open_set = set()
+            for iid in tree.get_children(parent):
+                if tree.item(iid, "open"):
+                    open_set.add(iid)
+                open_set.update(_get_open_iids(tree, iid))
+            return open_set
+
+        prev_open = _get_open_iids(self.tree_guide)
         self.tree_guide.delete(*self.tree_guide.get_children())
         self.guide_rows = []
         search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
