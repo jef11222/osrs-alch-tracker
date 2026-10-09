@@ -10,7 +10,11 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
-- **🎯 Breakeven & Target Material Buy Prices (v1.3.26 New):**
+- **📦 Total Material Breakdown & Interactive Skilling Cards (v1.3.27 New):**
+  - **Total Materials / Bars Needed:** New dedicated column dynamically calculates the exact total materials/bars required across each training bracket (or remaining to reach your target goal level).
+  - **1-Click Total Quantity Copy:** Click the `Total Mats Needed` column or right-click to copy the exact total material quantity directly to your clipboard for instant buying on the Grand Exchange.
+  - **Full Skilling Tooltip Cards:** Rich hover tooltip cards for every skilling step, detailing XP per action, total units and materials needed, breakeven ceilings, current market margin, live GP/XP, net profit/loss, and strategy tips.
+- **🎯 Breakeven & Target Material Buy Prices (v1.3.26+):**
   - **Live Breakeven Ceilings:** Automatically calculates the exact maximum Grand Exchange buy price for bars, dragonhides, and logs to train at **zero gold loss** based on live High Alch / GE sell values and real-time Nature Rune prices.
   - **Configurable Safety Margin:** Real-time `Target Margin` input lets you set a desired profit per item (e.g. 50, 100, 200 gp), automatically recalculating required GE buy bids.
   - **1-Click GE Price Copy:** Click the `🎯 Max Mat Buy` column to copy the exact integer buy price directly to your clipboard.
