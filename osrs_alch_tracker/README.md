@@ -10,6 +10,16 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🎓 Skilling & Level Training Guide (v1.3.24 New):**
+  - **Progression Database:** Comprehensive, mathematically exact leveling brackets for **Smithing, Fletching, Crafting, and Magic**.
+  - **📍 "You Are Here" Tracking:** Automatically highlights your current training bracket based on your live in-game stats.
+  - **📜 Early Game Quest Skips:** Instant 1-click browser access to OSRS Wiki quest guides for critical XP skips (*The Knight's Sword* 1➔29, *The Tourist Trap* 1➔26, *Sleeping Giants*, etc.).
+  - **Live Market GP/XP Rates:** Live Grand Exchange price evaluation computing exact GP/XP cost or net gold profit for each training step.
+  - **🪄 Alch vs. 🏪 GE Disposal:** Intelligent recommendations on whether to High Alch your crafted products or sell them on the Grand Exchange.
+  - **🛒 1-Click Skilling Shopping Cart & Bank Tags:** Instantly add materials to your cart, copy formatted skilling shopping lists, or export RuneLite Bank Tag tabs (`banktags,1,...`).
+- **🔒 Dedicated Multi-Instance / Monitored Character Lock (v1.3.24 New):**
+  - **Focus Lock:** Dropdown selector in the top bar to lock 100% of dashboard monitoring (Cash, Nats, Levels, GE Cart, Session, Timers) to a specific character (e.g. `jef112`).
+  - **Silent Background Processing:** Secondary clients / alts update silently in the background without stealing focus or overwriting active data.
 - **⭐ Smart Picks & Top Recommendations:**
   - **🏆 All-Time Workhorses:** Instant access to Hall-of-Fame staples that veteran players rely on (Rune platelegs, plateskirts, 2h swords, kiteshields, battleaxes, Adamant platebody, Battlestaves, D'hide) with custom strategic verdicts.
   - **⚡ Fast Fills (<5m):** High-velocity items with verified 5-minute sales that fill in minutes.
@@ -26,7 +36,7 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
   - **Auto Session Profit Logging:** Automatically records filled GE buy orders to your Session Tracker with exact prices paid and profit calculated.
   - **Live Inventory & Bank Sync:** Automatically keeps your active Cash Stack and Nature Rune stockpiles updated in real time.
   - **Multi-Instance / Multi-Account Tracking:** Run multiple client instances simultaneously; separate timers, cash stacks, and session profits per character with an instant Account dropdown selector.
-  - **Live Stat Sync:** Synchronizes your Crafting, Fletching, and Magic levels as well as World membership status on login.
+  - **Live Stat Sync:** Synchronizes your Crafting, Smithing, Fletching, and Magic levels as well as World membership status on login.
 - **⚡ Real-Time Price Sync:** Fetches live bid/ask margins and 24-hour traded volumes directly from the OSRS Wiki API.
 - **⏱️ Dynamic 4-Hour GE Limit Tracking:**
   - Real-time limit depletion with remaining and cooldown formatting (e.g. `5 / 70 (3h 52m)` or `0 / 70 (1h 44m)`).
@@ -107,6 +117,7 @@ python -m PyInstaller --noconsole --onefile --add-binary "%LOCALAPPDATA%\..\Loca
 osrs-alch-tracker/
 ├── api.py               # OSRS Wiki Real-time Prices API client
 ├── crafting.py          # Crafting & fletching recipe definitions
+├── skilling_guide.py    # Skilling & Level training progression and quest skip DB
 ├── state.py             # State persistence (config, 4h timers, session log)
 ├── gui.py               # Tkinter GUI (custom dark theme, tooltips, tables)
 ├── main.py              # Application entry point

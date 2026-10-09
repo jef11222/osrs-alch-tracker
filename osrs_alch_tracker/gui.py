@@ -15,6 +15,7 @@ except ImportError:
 
 from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
+from skilling_guide import SKILLING_GUIDES, get_xp_for_level, get_level_for_xp
 from state import AppState
 from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
 from bridge_server import BridgeServer
@@ -875,17 +876,22 @@ class OSRSAlchDashboard(tk.Tk):
         self.notebook.add(self.tab_craft, text="🔨 Craft & Alch")
         self.build_craft_tab()
 
-        # Tab 3: 4h GE Limit Timers
+        # Tab 4: Skilling & Level Training Guide
+        self.tab_guide = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_guide, text="🎓 Level Guide")
+        self.build_guide_tab()
+
+        # Tab 5: 4h GE Limit Timers
         self.tab_timers = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_timers, text="⏱️ 4h GE Timers")
         self.build_timers_tab()
 
-        # Tab 4: Session Profit Tracker
+        # Tab 6: Session Profit Tracker
         self.tab_session = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_session, text="📊 Session Tracker")
         self.build_session_tab()
 
-        # Tab 5: Alert Log
+        # Tab 7: Alert Log
         self.tab_alerts = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_alerts, text="🔔 Alert Feed")
         self.build_alerts_tab()
@@ -1042,13 +1048,16 @@ class OSRSAlchDashboard(tk.Tk):
 
         # Multi-Account Selector & Live Bridge Indicator
         tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
-        tk.Label(p2, text="Account:", fg="#cccccc", bg="#252528").pack(side="left", padx=(2, 2))
-        self.var_account = tk.StringVar(value="All Accounts")
+        tk.Label(p2, text="Monitor:", fg="#3498db", bg="#252528", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(2, 2))
+        saved_char = self.state.config.get("monitored_character", "All Accounts")
+        self.var_account = tk.StringVar(value=saved_char)
         init_accs = ["All Accounts"] + sorted(list(self.state.accounts.keys()))
-        self.cb_account = ttk.Combobox(p2, textvariable=self.var_account, values=init_accs, width=12, state="readonly")
+        if saved_char not in init_accs:
+            init_accs.append(saved_char)
+        self.cb_account = ttk.Combobox(p2, textvariable=self.var_account, values=init_accs, width=13, state="readonly")
         self.cb_account.pack(side="left", padx=(0, 4))
         self.cb_account.bind("<<ComboboxSelected>>", self.on_account_selected)
-        ToolTip(self.cb_account, "Multi-Account Selector:\nSwitch between individual accounts or 'All Accounts' combined overview.\nAccounts automatically register when logged in via RuneLite/Microbot.")
+        ToolTip(self.cb_account, "Character Lock / Multi-Instance Monitor:\nChoose an account to lock dashboard monitoring to (Cash, Nats, Levels, GE Cart, Session, Timers).\nAlt accounts will update silently in the background without stealing focus or disrupting your view.")
 
         self.lbl_bridge_status = tk.Label(p2, text="🟢 Bridge", fg="#2ecc71", bg="#252528", font=("Segoe UI", 8, "bold"))
         self.lbl_bridge_status.pack(side="left", padx=(2, 6))
@@ -1457,6 +1466,671 @@ class OSRSAlchDashboard(tk.Tk):
         HeadingToolTip(self.tree_craft, craft_col_tooltips)
         RowToolTip(self.tree_craft, self.get_craft_row_tooltip)
 
+    def build_guide_tab(self):
+        container = ttk.Frame(self.tab_guide)
+        container.pack(fill="both", expand=True, padx=6, pady=4)
+
+        # 1. Top Controls Bar: Skill Selector Buttons + Level Inputs + Dynamic Target Banner
+        guide_ctrl = tk.Frame(container, bg="#252528", relief="solid", borderwidth=1, padx=8, pady=5)
+        guide_ctrl.pack(fill="x", pady=(2, 4))
+
+        tk.Label(guide_ctrl, text="Skill:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 6))
+
+        self.var_guide_skill = tk.StringVar(value="Smithing")
+        self.btn_guide_skills = {}
+        skills_info = [
+            ("Smithing", "⚒️ Smithing"),
+            ("Fletching", "🏹 Fletching"),
+            ("Crafting", "🔨 Crafting"),
+            ("Magic", "✨ Magic")
+        ]
+        for sk_key, sk_label in skills_info:
+            b = tk.Button(guide_ctrl, text=sk_label, command=lambda k=sk_key: self.set_guide_skill(k),
+                          bg="#f39c12" if sk_key == "Smithing" else "#2d2d30",
+                          fg="#000000" if sk_key == "Smithing" else "#cccccc",
+                          font=("Segoe UI", 9, "bold" if sk_key == "Smithing" else "normal"),
+                          relief="flat", padx=8, pady=1, cursor="hand2")
+            b.pack(side="left", padx=2)
+            self.btn_guide_skills[sk_key] = b
+            ToolTip(b, f"Switch Skilling & Level Training Guide to {sk_key}.")
+
+        tk.Label(guide_ctrl, text="|", fg="#444444", bg="#252528").pack(side="left", padx=6)
+
+        # Current Level & Target Level Inputs
+        tk.Label(guide_ctrl, text="Current Lvl:", fg="#cccccc", bg="#252528", font=("Segoe UI", 8)).pack(side="left", padx=(2, 2))
+        self.ent_guide_cur_lvl = tk.Entry(guide_ctrl, width=4, bg="#1e1e1e", fg="#ffffff", relief="flat", justify="center")
+        init_smith = self.state.config.get("player_levels", {}).get("Smithing", 1)
+        self.ent_guide_cur_lvl.insert(0, str(init_smith))
+        self.ent_guide_cur_lvl.pack(side="left", padx=(0, 6))
+        self.ent_guide_cur_lvl.bind("<FocusOut>", lambda e: self.on_guide_levels_changed())
+        self.ent_guide_cur_lvl.bind("<Return>", lambda e: self.on_guide_levels_changed())
+        ToolTip(self.ent_guide_cur_lvl, "Your current skill level.\nAutomatically updates when logged into RuneLite / Microbot bridge, or edit manually.")
+
+        tk.Label(guide_ctrl, text="Goal Lvl:", fg="#cccccc", bg="#252528", font=("Segoe UI", 8)).pack(side="left", padx=(2, 2))
+        self.ent_guide_target_lvl = tk.Entry(guide_ctrl, width=4, bg="#1e1e1e", fg="#2ecc71", relief="flat", justify="center")
+        self.ent_guide_target_lvl.insert(0, str(self.state.config.get("guide_target_level", 99)))
+        self.ent_guide_target_lvl.pack(side="left", padx=(0, 6))
+        self.ent_guide_target_lvl.bind("<FocusOut>", lambda e: self.on_guide_levels_changed())
+        self.ent_guide_target_lvl.bind("<Return>", lambda e: self.on_guide_levels_changed())
+        ToolTip(self.ent_guide_target_lvl, "Target level goal (e.g. 50, 70, 85, 99).\nCalculates total remaining XP, actions, and cost required.")
+
+        tk.Label(guide_ctrl, text="|", fg="#444444", bg="#252528").pack(side="left", padx=6)
+
+        # Style & Strategy Radio / Filter
+        self.var_guide_style = tk.StringVar(value="all")
+        style_radios = [
+            ("All", "all", "Show all training methods."),
+            ("💰 Profitable", "profit", "Filter to methods that yield net gold profit or minimal loss."),
+            ("⚡ Fast XP", "fast", "Filter to high XP/hr progression methods."),
+            ("☕ AFK", "afk", "Filter to low-click, relaxed methods.")
+        ]
+        for slab, sval, stip in style_radios:
+            r = tk.Radiobutton(guide_ctrl, text=slab, variable=self.var_guide_style, value=sval,
+                               command=self.recalculate_guide_table,
+                               bg="#252528", fg="#f1f1f1", selectcolor="#2d2d30",
+                               activebackground="#252528", activeforeground="#f39c12",
+                               font=("Segoe UI", 8))
+            r.pack(side="left", padx=3)
+            ToolTip(r, stip)
+
+        self.var_guide_members = tk.BooleanVar(value=self.state.config.get("guide_members", True))
+        cb_mem = tk.Checkbutton(guide_ctrl, text="P2P", variable=self.var_guide_members, command=self.recalculate_guide_table,
+                                bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528", font=("Segoe UI", 8))
+        cb_mem.pack(side="left", padx=3)
+        ToolTip(cb_mem, "Include Members-only (P2P) training methods.")
+
+        # Right Action Buttons
+        btn_guide_batch = tk.Button(guide_ctrl, text="🛒 Add Batch to Cart", command=self.add_guide_batch_to_cart,
+                                    bg="#27ae60", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
+        btn_guide_batch.pack(side="right", padx=3)
+        ToolTip(btn_guide_batch, "🛒 Add Training Batch to Cart:\nAdds materials or alchables for the active or selected step into your shopping cart.")
+
+        btn_shop_list = tk.Button(guide_ctrl, text="📋 Shopping List", command=self.copy_guide_shopping_list,
+                                  bg="#2980b9", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_shop_list.pack(side="right", padx=3)
+        ToolTip(btn_shop_list, "📋 Copy Shopping List:\nCopies formatted materials and cost list for this bracket to clipboard.")
+
+        btn_bank_tag = tk.Button(guide_ctrl, text="🏷️ Bank Tag", command=self.copy_guide_bank_tag,
+                                 bg="#8e44ad", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_bank_tag.pack(side="right", padx=3)
+        ToolTip(btn_bank_tag, "🏷️ Copy RuneLite Bank Tag:\nCopies a RuneLite Bank Tag Tab string to organize all training materials in your bank.")
+
+        # 2. Dynamic Progress & XP Summary Banner
+        self.banner_guide_xp = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=8, pady=4)
+        self.banner_guide_xp.pack(fill="x", pady=(0, 4))
+        self.lbl_guide_xp_summary = tk.Label(self.banner_guide_xp, text="🎯 Calculating progression...", font=("Segoe UI", 9), fg="#e0e0e0", bg="#202023")
+        self.lbl_guide_xp_summary.pack(anchor="w")
+
+        # 3. Early Quest Skips & Shortcuts Card
+        self.frame_guide_quests = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=8, pady=4)
+        self.frame_guide_quests.pack(fill="x", pady=(0, 4))
+
+        q_top = tk.Frame(self.frame_guide_quests, bg="#202023")
+        q_top.pack(fill="x")
+        tk.Label(q_top, text="📜 Essential Early Quest Skips & Shortcuts (Click 🌐 to view Wiki Guide):",
+                 font=("Segoe UI", 8, "bold"), fg="#f1c40f", bg="#202023").pack(side="left")
+
+        self.frame_quest_inner = tk.Frame(self.frame_guide_quests, bg="#202023")
+        self.frame_quest_inner.pack(fill="x", pady=(3, 0))
+
+        # 4. Skilling Progression Treeview Table
+        tree_frame = ttk.Frame(container)
+        tree_frame.pack(fill="both", expand=True)
+
+        cols = ("status", "level_range", "name", "materials", "xp_ea", "needed", "gp_xp", "bracket_cost", "action_rec", "xp_rate", "time_est", "verdict")
+        self.tree_guide = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
+
+        self.tree_guide.heading("status", text="Status", command=lambda: self.toggle_sort_guide("status"))
+        self.tree_guide.heading("level_range", text="Level Range", command=lambda: self.toggle_sort_guide("level_range"))
+        self.tree_guide.heading("name", text="Training Method", command=lambda: self.toggle_sort_guide("name"))
+        self.tree_guide.heading("materials", text="Materials Needed (ea)", command=lambda: self.toggle_sort_guide("materials"))
+        self.tree_guide.heading("xp_ea", text="XP / Act", command=lambda: self.toggle_sort_guide("xp_ea"))
+        self.tree_guide.heading("needed", text="Units Needed", command=lambda: self.toggle_sort_guide("needed"))
+        self.tree_guide.heading("gp_xp", text="Live GP/XP", command=lambda: self.toggle_sort_guide("gp_xp"))
+        self.tree_guide.heading("bracket_cost", text="Net Profit / Loss", command=lambda: self.toggle_sort_guide("bracket_cost"))
+        self.tree_guide.heading("action_rec", text="Best Disposal", command=lambda: self.toggle_sort_guide("action_rec"))
+        self.tree_guide.heading("xp_rate", text="XP / Hour", command=lambda: self.toggle_sort_guide("xp_rate"))
+        self.tree_guide.heading("time_est", text="Est. Time", command=lambda: self.toggle_sort_guide("time_est"))
+        self.tree_guide.heading("verdict", text="Strategy Tips / Verdict", command=lambda: self.toggle_sort_guide("verdict"))
+
+        self.tree_guide.column("status", width=120, anchor="center")
+        self.tree_guide.column("level_range", width=85, anchor="center")
+        self.tree_guide.column("name", width=190, anchor="w")
+        self.tree_guide.column("materials", width=155, anchor="w")
+        self.tree_guide.column("xp_ea", width=75, anchor="e")
+        self.tree_guide.column("needed", width=95, anchor="e")
+        self.tree_guide.column("gp_xp", width=95, anchor="e")
+        self.tree_guide.column("bracket_cost", width=110, anchor="e")
+        self.tree_guide.column("action_rec", width=110, anchor="center")
+        self.tree_guide.column("xp_rate", width=90, anchor="e")
+        self.tree_guide.column("time_est", width=80, anchor="center")
+        self.tree_guide.column("verdict", width=270, anchor="w")
+
+        v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree_guide.yview)
+        h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree_guide.xview)
+        self.tree_guide.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+
+        v_scroll.pack(side="right", fill="y")
+        h_scroll.pack(side="bottom", fill="x")
+        self.tree_guide.pack(side="left", fill="both", expand=True)
+
+        self.tree_guide.tag_configure("current", foreground="#f1c40f", font=("Segoe UI", 9, "bold"))
+        self.tree_guide.tag_configure("completed", foreground="#7f8c8d")
+        self.tree_guide.tag_configure("locked", foreground="#666666")
+        self.tree_guide.tag_configure("profit", foreground="#2ecc71")
+        self.tree_guide.tag_configure("mild_loss", foreground="#f39c12")
+        self.tree_guide.tag_configure("loss", foreground="#e74c3c")
+        self.tree_guide.tag_configure("quest", foreground="#3498db", font=("Segoe UI", 9, "bold"))
+
+        self.tree_guide.bind("<Button-1>", self.on_guide_click)
+        self.tree_guide.bind("<Double-1>", self.on_guide_double_click)
+        self.tree_guide.bind("<Button-3>", self.on_guide_right_click)
+
+        guide_col_tooltips = {
+            "#1": "Status:\n📍 YOU ARE HERE (Current training step for your level)\n✅ Completed (Already passed this level)\n🔒 Locked (Requires higher level).",
+            "#2": "Level Range:\nRecommended level bracket for this skilling method.",
+            "#3": "Training Method:\nSpecific item to smith/fletch/craft or quest to complete.",
+            "#4": "Materials Needed (ea):\nRaw ingredients required per single action.",
+            "#5": "XP / Act:\nExperience granted per single crafted/smithed item or cast.",
+            "#6": "Units Needed:\nNumber of actions required to complete this bracket (or reach your target goal).",
+            "#7": "Live GP/XP:\nNet gold profit/cost per experience point based on live Grand Exchange market prices.",
+            "#8": "Net Profit / Loss:\nTotal projected gold profit (+) or loss (-) to complete all needed units in this bracket.",
+            "#9": "Best Disposal:\nOptimal way to dispose of finished products: 🪄 High Alch vs 🏪 Sell on GE vs 📜 Quest Turn-in.",
+            "#10": "XP / Hour:\nRealistic hourly experience rate attainable with this method.",
+            "#11": "Est. Time:\nProjected grind time to finish this bracket at standard XP/hr rates.",
+            "#12": "Strategy Tips / Verdict:\nPro tips, quest skips, and strategy breakdown."
+        }
+        HeadingToolTip(self.tree_guide, guide_col_tooltips)
+        RowToolTip(self.tree_guide, self.get_guide_row_tooltip)
+
+        self.guide_rows = []
+        self.guide_sort_col = "level_range"
+        self.guide_sort_asc = True
+        self.update_guide_quests_card("Smithing")
+
+    def set_guide_skill(self, skill_name):
+        self.var_guide_skill.set(skill_name)
+        for sk_key, b in self.btn_guide_skills.items():
+            if sk_key == skill_name:
+                b.config(bg="#f39c12", fg="#000000", font=("Segoe UI", 9, "bold"))
+            else:
+                b.config(bg="#2d2d30", fg="#cccccc", font=("Segoe UI", 9))
+
+        curr_char = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
+        player_levels = self.state.config.get("player_levels", {})
+        if curr_char != "All Accounts" and curr_char in self.state.accounts:
+            char_lvls = self.state.accounts[curr_char].get("levels", {})
+            lvl = char_lvls.get(skill_name, player_levels.get(skill_name, 1))
+        else:
+            lvl = player_levels.get(skill_name, 1)
+
+        self.ent_guide_cur_lvl.delete(0, tk.END)
+        self.ent_guide_cur_lvl.insert(0, str(lvl))
+
+        self.update_guide_quests_card(skill_name)
+        self.recalculate_guide_table()
+
+    def update_guide_quests_card(self, skill_name):
+        for w in self.frame_quest_inner.winfo_children():
+            w.destroy()
+
+        sdata = SKILLING_GUIDES.get(skill_name, {})
+        quests = sdata.get("quests", [])
+        if not quests:
+            tk.Label(self.frame_quest_inner, text="No early quest skips registered for this skill.", fg="#888888", bg="#202023", font=("Segoe UI", 8)).pack(side="left")
+            return
+
+        for q in quests:
+            q_btn = tk.Button(self.frame_quest_inner, text=f"📜 {q['name']} ({q['skip'].split('!')[0]}) 🌐",
+                              command=lambda slug=q['wiki_slug']: webbrowser.open(f"https://oldschool.runescape.wiki/w/{slug}"),
+                              bg="#2d2d30", fg="#3498db", activebackground="#3498db", activeforeground="#ffffff",
+                              relief="flat", padx=6, pady=1, font=("Segoe UI", 8, "bold"), cursor="hand2")
+            q_btn.pack(side="left", padx=3)
+            q_tip = (
+                f"Quest: {q['name']}\n"
+                f"XP Reward: {q['xp']:,} XP\n"
+                f"Benefit: {q['skip']}\n"
+                f"Requirements: {q['reqs']}\n\n"
+                f"Tip: {q['tip']}\n"
+                "Click to open the full OSRS Wiki Guide in your browser."
+            )
+            ToolTip(q_btn, q_tip)
+
+    def on_guide_levels_changed(self):
+        try:
+            cur_lvl = int(self.ent_guide_cur_lvl.get().strip())
+            cur_lvl = max(1, min(99, cur_lvl))
+        except ValueError:
+            cur_lvl = 1
+            self.ent_guide_cur_lvl.delete(0, tk.END)
+            self.ent_guide_cur_lvl.insert(0, "1")
+
+        try:
+            target_lvl = int(self.ent_guide_target_lvl.get().strip())
+            target_lvl = max(cur_lvl, min(99, target_lvl))
+        except ValueError:
+            target_lvl = 99
+            self.ent_guide_target_lvl.delete(0, tk.END)
+            self.ent_guide_target_lvl.insert(0, "99")
+
+        active_skill = self.var_guide_skill.get()
+        self.state.config.setdefault("player_levels", {})[active_skill] = cur_lvl
+        self.state.config["guide_target_level"] = target_lvl
+        self.state.save_config()
+
+        self.recalculate_guide_table()
+
+    def recalculate_guide_table(self):
+        if not hasattr(self, "tree_guide"):
+            return
+
+        active_skill = self.var_guide_skill.get()
+        try:
+            cur_lvl = int(self.ent_guide_cur_lvl.get().strip())
+        except ValueError:
+            cur_lvl = 1
+
+        try:
+            target_lvl = int(self.ent_guide_target_lvl.get().strip())
+        except ValueError:
+            target_lvl = 99
+
+        cur_xp = get_xp_for_level(cur_lvl)
+        target_xp = get_xp_for_level(target_lvl)
+        rem_xp = max(0, target_xp - cur_xp)
+        pct_done = (1.0 - (rem_xp / max(1, target_xp))) * 100.0 if target_xp > 0 else 100.0
+
+        summary_txt = f"🎯 Goal: Level {target_lvl} ({target_xp:,} XP)  |  Current: Level {cur_lvl} ({cur_xp:,} XP)  |  XP Remaining: {rem_xp:,} XP ({pct_done:.1f}% Complete)"
+        if hasattr(self, "lbl_guide_xp_summary"):
+            self.lbl_guide_xp_summary.config(text=summary_txt)
+
+        self.tree_guide.delete(*self.tree_guide.get_children())
+        self.guide_rows = []
+
+        sdata = SKILLING_GUIDES.get(active_skill, {})
+        brackets = sdata.get("brackets", [])
+        style_filter = self.var_guide_style.get()
+        mem_ok = self.var_guide_members.get()
+        strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+        nat_price = self.get_effective_nature_price()
+
+        current_step_found = False
+
+        for b in brackets:
+            b_mem = b.get("members", True)
+            if b_mem and not mem_ok:
+                continue
+
+            b_style = b.get("style", "standard")
+            if style_filter == "profit" and b_style not in ("profit", "quest"):
+                continue
+            if style_filter == "fast" and b_style not in ("fast", "quest"):
+                continue
+            if style_filter == "afk" and b_style not in ("afk", "quest"):
+                continue
+
+            min_l = b["min_lvl"]
+            max_l = b["max_lvl"]
+
+            # Status determination
+            if cur_lvl >= max_l:
+                status = "✅ Completed"
+                status_tag = "completed"
+            elif min_l <= cur_lvl < max_l:
+                status = "📍 YOU ARE HERE"
+                status_tag = "current"
+                current_step_found = True
+            elif not current_step_found and cur_lvl < min_l:
+                status = "🔒 Locked"
+                status_tag = "locked"
+            else:
+                status = "🔒 Locked"
+                status_tag = "locked"
+
+            if b_style == "quest":
+                status_tag = "quest"
+
+            # Actions needed
+            xp_ea = b.get("xp_per_action", 1.0)
+            if cur_lvl >= max_l:
+                xp_needed_bracket = 0
+                actions_needed = 0
+            else:
+                step_start_xp = max(get_xp_for_level(cur_lvl), get_xp_for_level(min_l))
+                step_end_xp = min(get_xp_for_level(max_l), target_xp)
+                xp_needed_bracket = max(0, step_end_xp - step_start_xp)
+                actions_needed = math.ceil(xp_needed_bracket / xp_ea) if (xp_ea > 0 and xp_needed_bracket > 0) else 0
+
+            # Material cost calculation
+            mat_cost_ea = 0
+            mat_str_list = []
+            for m in b.get("materials", []):
+                p = self.api.get_price(m["id"], strat)
+                mat_cost_ea += p * m["qty"]
+                mat_str_list.append(f"{m['qty']}x {m['name']}")
+            materials_str = ", ".join(mat_str_list) if mat_str_list else "None / Quest"
+
+            # Output valuation & disposal recommendation
+            out_id = b.get("output_id", 0)
+            alch_val = self.api.mapping.get(str(out_id), {}).get("highalch", 0) if b.get("can_alch") else 0
+            nat_cost = nat_price if b.get("nature_cost", 0) > 0 else 0
+            total_act_cost = mat_cost_ea + nat_cost
+
+            profit_alch = (alch_val - total_act_cost) if b.get("can_alch") else -99999999
+            ge_sell = self.api.get_price(out_id, "instasell") if b.get("can_sell_ge") and out_id > 0 else 0
+            profit_ge = (int(ge_sell * 0.99) - mat_cost_ea) if b.get("can_sell_ge") and out_id > 0 else -99999999
+
+            if b_style == "quest":
+                action_rec = "📜 Quest Turn-in"
+                best_profit_ea = 0
+                gp_per_xp = 0.0
+                gp_xp_str = "FREE (0 GP)"
+                bracket_cost_str = "0 gp"
+                total_cost = 0
+            elif profit_alch >= profit_ge and b.get("can_alch"):
+                action_rec = "🪄 High Alch"
+                best_profit_ea = profit_alch
+                gp_per_xp = best_profit_ea / xp_ea if xp_ea > 0 else 0.0
+                gp_xp_str = f"+{gp_per_xp:.2f} GP/XP" if gp_per_xp >= 0 else f"{gp_per_xp:.2f} GP/XP"
+                total_cost = best_profit_ea * (actions_needed if actions_needed > 0 else 100)
+                bracket_cost_str = f"+{format_gp(total_cost)}" if total_cost >= 0 else f"-{format_gp(abs(total_cost))}"
+            elif b.get("can_sell_ge"):
+                action_rec = "🏪 Sell on GE"
+                best_profit_ea = profit_ge
+                gp_per_xp = best_profit_ea / xp_ea if xp_ea > 0 else 0.0
+                gp_xp_str = f"+{gp_per_xp:.2f} GP/XP" if gp_per_xp >= 0 else f"{gp_per_xp:.2f} GP/XP"
+                total_cost = best_profit_ea * (actions_needed if actions_needed > 0 else 100)
+                bracket_cost_str = f"+{format_gp(total_cost)}" if total_cost >= 0 else f"-{format_gp(abs(total_cost))}"
+            else:
+                action_rec = "⚔️ Train / Consume"
+                best_profit_ea = -mat_cost_ea
+                gp_per_xp = best_profit_ea / xp_ea if xp_ea > 0 else 0.0
+                gp_xp_str = f"{gp_per_xp:.2f} GP/XP"
+                total_cost = best_profit_ea * (actions_needed if actions_needed > 0 else 100)
+                bracket_cost_str = f"-{format_gp(abs(total_cost))}"
+
+            # Time estimate
+            xp_rate = b.get("xp_rate", 50000)
+            if xp_needed_bracket > 0 and xp_rate > 0:
+                hrs = xp_needed_bracket / xp_rate
+                time_est_str = f"{int(hrs)}h {int((hrs % 1) * 60):02d}m" if hrs >= 1 else f"{max(1, int(hrs * 60))}m"
+            elif xp_needed_bracket == 0:
+                time_est_str = "0m"
+            else:
+                time_est_str = "--"
+
+            # Row tag priority
+            if status_tag == "current":
+                final_tag = "current"
+            elif status_tag == "quest":
+                final_tag = "quest"
+            elif status_tag == "completed":
+                final_tag = "completed"
+            elif gp_per_xp >= 0:
+                final_tag = "profit"
+            elif gp_per_xp >= -2.0:
+                final_tag = "mild_loss"
+            else:
+                final_tag = "loss"
+
+            row_obj = {
+                "id": f"{min_l}_{max_l}_{b['name']}",
+                "status": status,
+                "level_range": f"{min_l} - {max_l}",
+                "name": b["name"],
+                "materials": materials_str,
+                "materials_raw": b.get("materials", []),
+                "xp_ea": xp_ea,
+                "needed": actions_needed,
+                "gp_xp": gp_xp_str,
+                "gp_xp_val": gp_per_xp,
+                "bracket_cost": bracket_cost_str,
+                "bracket_cost_val": total_cost,
+                "action_rec": action_rec,
+                "xp_rate": f"{xp_rate // 1000}k/hr" if xp_rate >= 1000 else f"{xp_rate}/hr",
+                "xp_rate_val": xp_rate,
+                "time_est": time_est_str,
+                "verdict": b.get("verdict", ""),
+                "output_id": out_id,
+                "nature_cost": b.get("nature_cost", 0),
+                "tag": final_tag,
+                "min_lvl": min_l,
+                "max_lvl": max_l,
+                "wiki_slug": b.get("wiki_slug", "")
+            }
+            self.guide_rows.append(row_obj)
+
+        for r in self.guide_rows:
+            self.tree_guide.insert("", "end", iid=r["id"], values=(
+                r["status"],
+                r["level_range"],
+                r["name"],
+                r["materials"],
+                f"{r['xp_ea']:,.1f}" if r["xp_ea"] % 1 else f"{int(r['xp_ea']):,}",
+                f"{r['needed']:,}",
+                r["gp_xp"],
+                r["bracket_cost"],
+                r["action_rec"],
+                r["xp_rate"],
+                r["time_est"],
+                r["verdict"]
+            ), tags=(r["tag"],))
+
+    def get_selected_guide_row(self):
+        sel = self.tree_guide.selection()
+        if not sel:
+            return None
+        row_id = sel[0]
+        return next((r for r in self.guide_rows if r["id"] == row_id), None)
+
+    def on_guide_click(self, event):
+        row_id = self.tree_guide.identify_row(event.y)
+        if not row_id:
+            return
+        row = next((r for r in self.guide_rows if r["id"] == row_id), None)
+        if not row:
+            return
+        col_id = self.tree_guide.identify_column(event.x)
+        if col_id == "#3":
+            self.copy_to_clipboard(row["name"], f"Copied '{row['name']}' to clipboard!")
+
+    def on_guide_double_click(self, event):
+        row_id = self.tree_guide.identify_row(event.y)
+        if not row_id:
+            return
+        self.tree_guide.selection_set(row_id)
+        self.add_guide_batch_to_cart()
+
+    def on_guide_right_click(self, event):
+        row_id = self.tree_guide.identify_row(event.y)
+        if not row_id:
+            return
+        self.tree_guide.selection_set(row_id)
+        row = next((r for r in self.guide_rows if r["id"] == row_id), None)
+        if not row:
+            return
+
+        menu = tk.Menu(self, tearoff=0, bg="#2d2d30", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
+        menu.add_command(label=f"🛒 Add Training Batch to Cart ({row['needed']:,} units)", command=self.add_guide_batch_to_cart)
+        menu.add_separator()
+        menu.add_command(label="📋 Copy Shopping List for this Step", command=self.copy_guide_shopping_list)
+        menu.add_command(label="🏷️ Copy RuneLite Bank Tag Tab", command=self.copy_guide_bank_tag)
+        menu.add_command(label=f"📋 Copy Method Name ('{row['name']}')", command=lambda: self.copy_to_clipboard(row["name"], f"Copied '{row['name']}'!"))
+        if row.get("output_id", 0) > 0:
+            menu.add_separator()
+            menu.add_command(label="🌐 Open in OSRS Wiki Prices", command=lambda: self.open_wiki_url(row["output_id"]))
+        elif row.get("wiki_slug"):
+            menu.add_separator()
+            menu.add_command(label="🌐 Open Quest Guide on OSRS Wiki", command=lambda: webbrowser.open(f"https://oldschool.runescape.wiki/w/{row['wiki_slug']}"))
+        menu.post(event.x_root, event.y_root)
+
+    def add_guide_batch_to_cart(self):
+        row = self.get_selected_guide_row()
+        if not row:
+            row = next((r for r in self.guide_rows if "YOU ARE HERE" in r.get("status", "")), None)
+        if not row or (row.get("output_id", 0) == 0 and not row.get("materials_raw")):
+            row = next((r for r in self.guide_rows if r.get("materials_raw") or r.get("output_id", 0) > 0), None)
+        if not row:
+            return
+
+        needed_actions = max(1, row.get("needed", 100))
+        mats = row.get("materials_raw", [])
+        if mats:
+            primary_mat = mats[0]
+            mat_id = str(primary_mat["id"])
+            total_needed = primary_mat["qty"] * needed_actions
+            mdata = self.api.mapping.get(mat_id, {})
+            base_limit = mdata.get("limit", 10000)
+            batch_qty = min(total_needed, base_limit)
+
+            self.state.cart_items[mat_id] = batch_qty
+            self.recalculate_alch_table()
+            self.update_cart_display()
+            self.lbl_status_right.config(text=f"🛒 Added {batch_qty:,}x {primary_mat['name']} to cart for {row['name']}", fg="#2ecc71")
+        elif row.get("output_id", 0) > 0:
+            item_id = str(row["output_id"])
+            mdata = self.api.mapping.get(item_id, {})
+            base_limit = mdata.get("limit", 70)
+            batch_qty = min(needed_actions, base_limit)
+            self.state.cart_items[item_id] = batch_qty
+            self.recalculate_alch_table()
+            self.update_cart_display()
+            self.lbl_status_right.config(text=f"🛒 Added {batch_qty:,}x {row['name']} to cart", fg="#2ecc71")
+
+    def copy_guide_shopping_list(self):
+        row = self.get_selected_guide_row()
+        if not row:
+            row = next((r for r in self.guide_rows if "YOU ARE HERE" in r.get("status", "")), None)
+        if not row or (row.get("output_id", 0) == 0 and not row.get("materials_raw")):
+            row = next((r for r in self.guide_rows if r.get("materials_raw") or r.get("output_id", 0) > 0), None)
+        if not row:
+            return
+
+        needed_units = max(1, row["needed"]) if row["needed"] > 0 else 100
+        lines = [
+            f"========================================",
+            f"🎓 OSRS SKILLING SHOPPING LIST: {self.var_guide_skill.get()}",
+            f"Method: {row['name']}",
+            f"Level Bracket: {row['level_range']}",
+            f"Actions Required: {needed_units:,} units",
+            f"----------------------------------------",
+            f"Required Materials:"
+        ]
+        total_mat_cost = 0
+        strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+        for m in row.get("materials_raw", []):
+            p = self.api.get_price(m["id"], strat)
+            tot_qty = m["qty"] * needed_units
+            sub = p * tot_qty
+            total_mat_cost += sub
+            lines.append(f"  • {tot_qty:,}x {m['name']} (~{format_gp(sub)})")
+
+        if row.get("nature_cost", 0) > 0 and row.get("action_rec") == "🪄 High Alch":
+            nat_price = self.get_effective_nature_price()
+            tot_nats = row["nature_cost"] * needed_units
+            sub_nat = nat_price * tot_nats
+            total_mat_cost += sub_nat
+            lines.append(f"  • {tot_nats:,}x Nature rune (~{format_gp(sub_nat)})")
+
+        lines.append(f"Total Est. Cost: {format_gp(total_mat_cost)}")
+        lines.append(f"Disposal Strategy: {row['action_rec']}")
+        lines.append(f"Net Est. Outcome: {row['bracket_cost']} ({row['gp_xp']})")
+        lines.append(f"Est. Training Time: {row['time_est']} ({row['xp_rate']})")
+        lines.append(f"========================================")
+
+        text = "\n".join(lines)
+        self.copy_to_clipboard(text, f"📋 Copied Skilling Shopping List for {row['name']}!")
+
+    def copy_guide_bank_tag(self):
+        row = self.get_selected_guide_row()
+        if not row:
+            row = next((r for r in self.guide_rows if "YOU ARE HERE" in r.get("status", "")), None)
+        if not row or (row.get("output_id", 0) == 0 and not row.get("materials_raw")):
+            row = next((r for r in self.guide_rows if r.get("materials_raw") or r.get("output_id", 0) > 0), None)
+        if not row:
+            return
+
+        skill_tag = self.var_guide_skill.get().lower()[:5]
+        bracket_tag = row['level_range'].replace(' ', '').replace('-', '_')
+        tag_name = f"{skill_tag}_{bracket_tag}"
+
+        item_ids = []
+        for m in row.get("materials_raw", []):
+            item_ids.append(str(m["id"]))
+        if row.get("output_id", 0) > 0:
+            item_ids.append(str(row["output_id"]))
+        if row.get("nature_cost", 0) > 0:
+            item_ids.append("561")
+
+        if not item_ids:
+            self.lbl_status_right.config(text=f"No item IDs associated with this step.", fg="#f1c40f")
+            return
+
+        icon_id = item_ids[0]
+        tag_str = f"banktags,1,{tag_name},{icon_id}," + ",".join(item_ids)
+        self.copy_to_clipboard(tag_str, f"📋 Copied RuneLite Bank Tag tab '{tag_name}' to clipboard!")
+        messagebox.showinfo("Bank Tag Copied",
+            f"Successfully copied Bank Tag tab '{tag_name}' to clipboard!\n\n"
+            f"Items included: {len(item_ids)}\n"
+            "In RuneLite, right-click the '+' tab icon in your bank and click 'Import tag tab'.")
+
+    def get_guide_row_tooltip(self, row_id):
+        row = next((r for r in self.guide_rows if r["id"] == row_id), None)
+        if not row:
+            return ""
+        return (
+            f"Method: {row['name']} ({row['level_range']})\n"
+            f"Status: {row['status']}\n"
+            f"XP / Action: {row['xp_ea']} XP\n"
+            f"Actions Needed: {row['needed']:,} units\n"
+            f"Live GP/XP: {row['gp_xp']}\n"
+            f"Net Outcome: {row['bracket_cost']}\n"
+            f"Recommended Disposal: {row['action_rec']}\n"
+            f"XP Rate: {row['xp_rate']} (Est. {row['time_est']})\n\n"
+            f"Verdict & Tips:\n{row['verdict']}\n\n"
+            "• Double-click to add batch to Shopping Cart\n"
+            "• Right-click for Shopping List, Bank Tag, or Wiki link."
+        )
+
+    def toggle_sort_guide(self, col):
+        if self.guide_sort_col == col:
+            self.guide_sort_asc = not self.guide_sort_asc
+        else:
+            self.guide_sort_col = col
+            self.guide_sort_asc = True
+
+        if col == "level_range":
+            self.guide_rows.sort(key=lambda r: r["min_lvl"], reverse=not self.guide_sort_asc)
+        elif col == "xp_ea":
+            self.guide_rows.sort(key=lambda r: r["xp_ea"], reverse=not self.guide_sort_asc)
+        elif col == "needed":
+            self.guide_rows.sort(key=lambda r: r["needed"], reverse=not self.guide_sort_asc)
+        elif col == "gp_xp":
+            self.guide_rows.sort(key=lambda r: r["gp_xp_val"], reverse=not self.guide_sort_asc)
+        elif col == "bracket_cost":
+            self.guide_rows.sort(key=lambda r: r["bracket_cost_val"], reverse=not self.guide_sort_asc)
+        elif col == "xp_rate":
+            self.guide_rows.sort(key=lambda r: r["xp_rate_val"], reverse=not self.guide_sort_asc)
+        else:
+            self.guide_rows.sort(key=lambda r: str(r.get(col, "")), reverse=not self.guide_sort_asc)
+
+        self.tree_guide.delete(*self.tree_guide.get_children())
+        for r in self.guide_rows:
+            self.tree_guide.insert("", "end", iid=r["id"], values=(
+                r["status"],
+                r["level_range"],
+                r["name"],
+                r["materials"],
+                f"{r['xp_ea']:,.1f}" if r["xp_ea"] % 1 else f"{int(r['xp_ea']):,}",
+                f"{r['needed']:,}",
+                r["gp_xp"],
+                r["bracket_cost"],
+                r["action_rec"],
+                r["xp_rate"],
+                r["time_est"],
+                r["verdict"]
+            ), tags=(r["tag"],))
+
     def build_timers_tab(self):
         container = ttk.Frame(self.tab_timers)
         container.pack(fill="both", expand=True, padx=10, pady=10)
@@ -1652,7 +2326,10 @@ class OSRSAlchDashboard(tk.Tk):
         except Exception as e:
             print(f"Worker fetch error: {e}")
 
-        self.after(0, self._on_fetch_complete)
+        try:
+            self.after(0, self._on_fetch_complete)
+        except Exception:
+            pass
 
     def _on_fetch_complete(self):
         self.is_fetching = False
@@ -1730,12 +2407,18 @@ class OSRSAlchDashboard(tk.Tk):
             has_up, remote_v, dl_url, notes = check_for_updates(APP_VERSION)
             if has_up:
                 self.latest_update_info = (remote_v, dl_url, notes)
-                self.after(0, self._render_update_available)
+                try:
+                    self.after(0, self._render_update_available)
+                except Exception:
+                    pass
         except Exception as e:
             print(f"Startup update check: {e}")
         finally:
             # Automatically re-checks GitHub every 30 minutes while running
-            self.after(30 * 60 * 1000, lambda: threading.Thread(target=self._check_update_startup, daemon=True).start())
+            try:
+                self.after(30 * 60 * 1000, lambda: threading.Thread(target=self._check_update_startup, daemon=True).start())
+            except Exception:
+                pass
 
     def _render_update_available(self):
         if self.latest_update_info:
@@ -1820,6 +2503,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.recalculate_alch_table()
         self.recalculate_rec_table()
         self.recalculate_craft_table()
+        if hasattr(self, "recalculate_guide_table"):
+            self.recalculate_guide_table()
         self.update_cart_display()
         self.update_session_display()
         self.update_timers_display()
@@ -3485,6 +4170,13 @@ class OSRSAlchDashboard(tk.Tk):
         self.state.config["only_usable_recipes"] = self.var_only_usable.get()
         self.save_preferences()
         self.recalculate_craft_table()
+        if hasattr(self, "var_guide_skill") and hasattr(self, "ent_guide_cur_lvl"):
+            g_sk = self.var_guide_skill.get()
+            cur_p_lvls = self.state.config.get("player_levels", {})
+            if g_sk in cur_p_lvls:
+                self.ent_guide_cur_lvl.delete(0, tk.END)
+                self.ent_guide_cur_lvl.insert(0, str(cur_p_lvls[g_sk]))
+                self.recalculate_guide_table()
 
     def on_skill_filter_changed(self):
         self.state.config["filter_craft"] = self.var_filter_craft.get()
@@ -3543,13 +4235,17 @@ class OSRSAlchDashboard(tk.Tk):
             curr_vals = list(self.cb_account["values"])
             if account not in curr_vals:
                 curr_vals.append(account)
-                self.cb_account["values"] = curr_vals
+                self.cb_account["values"] = sorted(curr_vals, key=lambda x: (x != "All Accounts", x))
 
     def on_account_selected(self, event=None):
         sel = self.var_account.get()
         self.state.active_account = "All" if sel == "All Accounts" else sel
+        self.state.config["monitored_character"] = sel
+        self.state.save_config()
         self._apply_active_account_data()
         self.recalculate_all()
+        if hasattr(self, "recalculate_guide_table"):
+            self.recalculate_guide_table()
 
     def _apply_active_account_data(self):
         sel = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
@@ -3606,6 +4302,12 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_mage_lvl.insert(0, str(levels["Magic"]))
                     self.state.config.setdefault("player_levels", {})["Magic"] = levels["Magic"]
 
+                if hasattr(self, "ent_guide_cur_lvl") and hasattr(self, "var_guide_skill"):
+                    g_sk = self.var_guide_skill.get()
+                    if g_sk in levels:
+                        self.ent_guide_cur_lvl.delete(0, tk.END)
+                        self.ent_guide_cur_lvl.insert(0, str(levels[g_sk]))
+
         self._sync_cart_from_ge()
 
     def _sync_cart_from_ge(self):
@@ -3642,6 +4344,8 @@ class OSRSAlchDashboard(tk.Tk):
             account = "Default"
 
         self._register_account(account)
+        active_monitored = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
+        is_active = (active_monitored == "All Accounts" or account == active_monitored)
 
         if event_type in ("ACCOUNT_LOGIN", "ACCOUNT_SNAPSHOT"):
             world = data.get("world")
@@ -3655,16 +4359,21 @@ class OSRSAlchDashboard(tk.Tk):
             coins = data.get("coins")
             nats = data.get("natureRunes")
             self.state.update_account(account, coins=coins, nature_runes=nats, world=world, is_members=is_mem, levels=levels)
-            self._apply_active_account_data()
-            if hasattr(self, "lbl_bridge_status"):
-                self.lbl_bridge_status.config(text=f"🟢 {account}", fg="#2ecc71")
-            self.recalculate_all()
+            if is_active:
+                self._apply_active_account_data()
+                if hasattr(self, "lbl_bridge_status"):
+                    self.lbl_bridge_status.config(text=f"🟢 {account}", fg="#2ecc71")
+                self.recalculate_all()
+                if hasattr(self, "recalculate_guide_table"):
+                    self.recalculate_guide_table()
 
         elif event_type == "INVENTORY_SYNC":
             coins = data.get("coins")
             nats = data.get("natureRunes")
             self.state.update_account(account, coins=coins, nature_runes=nats)
-            self._apply_active_account_data()
+            if is_active:
+                self._apply_active_account_data()
+                self.recalculate_alch_table()
 
         elif event_type == "BANK_SYNC":
             bank_coins = data.get("bankCoins")
@@ -3674,7 +4383,8 @@ class OSRSAlchDashboard(tk.Tk):
                 acc["bank_coins"] = bank_coins
             if bank_nats is not None:
                 acc["bank_nats"] = bank_nats
-            self._apply_active_account_data()
+            if is_active:
+                self._apply_active_account_data()
 
         elif event_type == "SKILLS_SYNC":
             levels = {
@@ -3684,8 +4394,11 @@ class OSRSAlchDashboard(tk.Tk):
                 "Magic": data.get("magic")
             }
             self.state.update_account(account, levels={k: v for k, v in levels.items() if v is not None})
-            self._apply_active_account_data()
-            self.recalculate_craft_table()
+            if is_active:
+                self._apply_active_account_data()
+                self.recalculate_craft_table()
+                if hasattr(self, "recalculate_guide_table"):
+                    self.recalculate_guide_table()
 
         elif event_type == "GE_OFFER":
             item_id = data.get("itemId", 0)
@@ -3729,9 +4442,13 @@ class OSRSAlchDashboard(tk.Tk):
                             entry = self.state.log_alch_batch(item_id, item_name, qty_sold, unit_buy_price, nat_price, high_alch, account=account, timestamp=data.get("timestamp"))
                             self.update_session_display()
                             tag = "Completed" if state == "BOUGHT" else "Cancelled (Partial)"
-                            self.lbl_status_right.config(text=f"🛒 Logged GE Buy ({tag}): {qty_sold}x {item_name} [{account}]", fg="#2ecc71")
-                            if self.state.config.get("desktop_alerts"):
-                                FloatingToast(self, f"🛒 GE Buy {tag} [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp (Profit: +{format_gp(entry['profit'])})")
+                            if is_active:
+                                self.lbl_status_right.config(text=f"🛒 Logged GE Buy ({tag}): {qty_sold}x {item_name} [{account}]", fg="#2ecc71")
+                                if self.state.config.get("desktop_alerts"):
+                                    FloatingToast(self, f"🛒 GE Buy {tag} [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp (Profit: +{format_gp(entry['profit'])})")
+                            else:
+                                if self.state.config.get("desktop_alerts"):
+                                    FloatingToast(self, f"🛒 Alt GE Buy [{account}]", f"Bought {qty_sold}x {item_name} at {unit_buy_price:,} gp")
 
                         # Immediately reconcile authoritative 4h buy limits and trades from RuneLite
                         try:
@@ -3746,15 +4463,17 @@ class OSRSAlchDashboard(tk.Tk):
                 self.update_timers_display()
                 self.update_session_display()
                 self.recalculate_alch_table()
-                self.lbl_status_right.config(
-                    text=f"🔄 GE Synced [{account}]: {res.get('timers_updated', 0)} timers, {res.get('session_imported', 0)} trades",
-                    fg="#3498db"
-                )
+                if is_active:
+                    self.lbl_status_right.config(
+                        text=f"🔄 GE Synced [{account}]: {res.get('timers_updated', 0)} timers, {res.get('session_imported', 0)} trades",
+                        fg="#3498db"
+                    )
             except Exception as e:
                 print(f"Error handling GE_SYNC: {e}")
 
         elif event_type == "ALCH_CAST":
-            self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")
+            if is_active:
+                self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")
 
 if __name__ == "__main__":
     app = OSRSAlchDashboard()
