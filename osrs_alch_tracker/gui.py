@@ -1421,6 +1421,16 @@ class OSRSAlchDashboard(tk.Tk):
         self.cb_overnight_focus.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
         ToolTip(self.cb_overnight_focus, "Filter candidate pool:\n• All Staples: Evaluates all items to maximize total profit.\n• Rune Heavy Gear: High alch value armor & weapons (Helms, Platebodies, Legs, Warhammers).\n• Adamant & Budget: High-ROI lower cost gear.\n• Battlestaves / Stackables: Bulk P2P items.")
 
+        # Max Alch Time (Realistic Morning Window)
+        tk.Label(ctrl_strip, text="⏱️ Alch Time:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 3))
+        self.var_overnight_time = tk.StringVar(value="1 Hour (~1.2k items)")
+        self.cb_overnight_time = ttk.Combobox(ctrl_strip, textvariable=self.var_overnight_time,
+                                              values=["30 Mins (~600 items)", "45 Mins (~900 items)", "1 Hour (~1.2k items)", "2 Hours (~2.4k items)", "3 Hours (~3.6k items)", "♾️ Unlimited (No Cap)"],
+                                              width=19, state="readonly")
+        self.cb_overnight_time.pack(side="left", padx=(0, 6))
+        self.cb_overnight_time.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
+        ToolTip(self.cb_overnight_time, "Realistic Alching Time Constraint:\nCaps total items to what you can realistically alch in the morning (1,200 casts/hour).\nPrevents absurd 30,000 bolt or 50,000 battlestaff piles and prioritizes high-margin items!")
+
         # 0 GP Nature Runes (Use Owned)
         self.var_overnight_owned_nat = tk.BooleanVar(value=True)
         self.cb_overnight_nats = tk.Checkbutton(ctrl_strip, text="🌿 0 GP Nats", variable=self.var_overnight_owned_nat,
@@ -4453,7 +4463,22 @@ class OSRSAlchDashboard(tk.Tk):
         use_cash = self.var_use_cash.get() if hasattr(self, "var_use_cash") else True
         cash_stack = self.state.config.get("cash_stack", 5000000) if use_cash else 999_999_999
 
-        # 5. Membership & Focus Filters
+        # 5. Max Alch Time (Morning Session Duration)
+        time_str = self.var_overnight_time.get() if hasattr(self, "var_overnight_time") else "1 Hour"
+        if "30 Mins" in time_str:
+            max_casts = 600
+        elif "45 Mins" in time_str:
+            max_casts = 900
+        elif "1 Hour" in time_str:
+            max_casts = 1200
+        elif "2 Hours" in time_str:
+            max_casts = 2400
+        elif "3 Hours" in time_str:
+            max_casts = 3600
+        else:
+            max_casts = None
+
+        # 6. Membership & Focus Filters
         mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
         f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
         focus = self.var_overnight_focus.get() if hasattr(self, "var_overnight_focus") else "All"
@@ -4498,15 +4523,19 @@ class OSRSAlchDashboard(tk.Tk):
             if prof_ea <= 0:
                 continue
 
+            # Exclude low-margin ammo (< 200 gp profit) unless explicitly searching or focusing on stackables
+            if grp in ("bolt", "ammo") and prof_ea < 200 and "Stackables" not in focus and not search_query:
+                continue
+
             pool.append(it)
 
-        # 6. Optimize Bag
+        # 7. Optimize Bag
         alloc, total_spend, total_profit = self.optimize_overnight_bag(
-            pool, num_slots, cash_stack, cycles, nat_cost, strat_type=strat_type
+            pool, num_slots, cash_stack, cycles, nat_cost, strat_type=strat_type, max_casts=max_casts
         )
         self.overnight_alloc = alloc
 
-        # 7. Update Summary Card
+        # 8. Update Summary Card
         total_items = sum(a["qty"] for a in alloc)
         leftover_gp = max(0, cash_stack - total_spend) if use_cash else 0
 
@@ -4519,7 +4548,7 @@ class OSRSAlchDashboard(tk.Tk):
             alch_mins = int(math.ceil(total_items / 20.0)) if total_items > 0 else 0
             self.lbl_on_time.config(text=f"~{alch_mins} mins (1.2k/hr)" if alch_mins > 0 else "-- mins")
 
-        # 8. Build Table Rows
+        # 9. Build Table Rows
         alloc_map = {a["id"]: a for a in alloc}
         medals = ["🥇 Pick #1", "🥈 Pick #2", "🥉 Pick #3", "⭐ Pick #4", "⭐ Pick #5", "⭐ Pick #6", "⭐ Pick #7", "⭐ Pick #8"]
         pick_order = {a["id"]: idx for idx, a in enumerate(alloc)}
@@ -4528,7 +4557,8 @@ class OSRSAlchDashboard(tk.Tk):
         for it in pool:
             bid = it["deep_bid"] if strat_type == "deep" else it["safe_bid"]
             prof_ea = it["alch"] - bid - nat_cost
-            period_limit = it["limit"] * cycles
+            base_lim = it["limit"] * cycles
+            period_limit = min(base_lim, max_casts) if max_casts else base_lim
             conf = it.get("conf_deep" if strat_type == "deep" else "conf_safe", "🟢 High")
             is_alloc = it["id"] in alloc_map
 
@@ -4608,8 +4638,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_overnight.tag_configure("incart", font=("Segoe UI", 9, "bold"), foreground="#f39c12")
         self.tree_overnight.tag_configure("alt", foreground="#cccccc")
 
-    def optimize_overnight_bag(self, items, num_slots, total_budget, cycles, nat_cost, strat_type="safe"):
-        import itertools
+    def optimize_overnight_bag(self, items, num_slots, total_budget, cycles, nat_cost, strat_type="safe", max_casts=None):
         if not items or num_slots <= 0:
             return [], 0, 0
 
@@ -4621,7 +4650,8 @@ class OSRSAlchDashboard(tk.Tk):
             prof_ea = it["alch"] - bid - nat_cost
             if prof_ea <= 0:
                 continue
-            period_limit = it["limit"] * cycles
+            base_limit = it["limit"] * cycles
+            period_limit = min(base_limit, max_casts) if max_casts else base_limit
             valid_items.append({
                 "item": it,
                 "id": it["id"],
@@ -4640,112 +4670,56 @@ class OSRSAlchDashboard(tk.Tk):
         if not valid_items:
             return [], 0, 0
 
-        # Virtually unlimited cash: pick top items by pure period profit
-        if total_budget >= 900_000_000:
-            sorted_items = sorted(valid_items, key=lambda x: x["period_profit"], reverse=True)[:num_slots]
-            alloc = []
-            tot_spend = 0
-            tot_profit = 0
-            for it in sorted_items:
-                cost = it["period_cost"]
-                prof = it["period_profit"]
-                tot_spend += cost
-                tot_profit += prof
-                alloc.append({
-                    "id": it["id"],
-                    "name": it["name"],
-                    "bid": it["bid"],
-                    "alch": it["alch"],
-                    "profit_ea": it["profit_ea"],
-                    "period_limit": it["period_limit"],
-                    "qty": it["period_limit"],
-                    "cost": cost,
-                    "profit": prof,
-                    "conf": it["conf"],
-                    "verdict": it["verdict"]
-                })
-            return alloc, tot_spend, tot_profit
+        # Multi-pass greedy knapsack evaluating:
+        # Pass 1: Highest Profit Per Cast (profit_ea) - maximizes hourly rate / morning alch profit
+        # Pass 2: Highest ROI (profit_ea / bid) - maximizes coin efficiency when capital constrained
+        # Pass 3: Highest Total Batch Profit (period_profit) - for bulk hoarding runs
+        passes = [
+            sorted(valid_items, key=lambda x: x["profit_ea"], reverse=True),
+            sorted(valid_items, key=lambda x: x["roi"], reverse=True),
+            sorted(valid_items, key=lambda x: (x["period_profit"], x["profit_ea"]), reverse=True)
+        ]
 
-        # Exact combination search if candidates pool is reasonable
-        use_exact = (len(valid_items) <= 18 and num_slots <= 4)
-        if use_exact:
-            best_profit = -1
-            best_alloc = []
-            best_spend = 0
-            for combo in itertools.combinations(valid_items, min(num_slots, len(valid_items))):
-                sorted_combo = sorted(combo, key=lambda x: x["roi"], reverse=True)
-                rem_budget = total_budget
-                cur_alloc = []
-                tot_prof = 0
-                tot_spend = 0
-                for it in sorted_combo:
-                    can_buy = min(it["period_limit"], rem_budget // it["bid"])
-                    if can_buy > 0:
-                        cost = can_buy * it["bid"]
-                        prof = can_buy * it["profit_ea"]
-                        rem_budget -= cost
-                        tot_spend += cost
-                        tot_prof += prof
-                        cur_alloc.append({
-                            "id": it["id"],
-                            "name": it["name"],
-                            "bid": it["bid"],
-                            "alch": it["alch"],
-                            "profit_ea": it["profit_ea"],
-                            "period_limit": it["period_limit"],
-                            "qty": can_buy,
-                            "cost": cost,
-                            "profit": prof,
-                            "conf": it["conf"],
-                            "verdict": it["verdict"]
-                        })
-                if tot_prof > best_profit:
-                    best_profit = tot_prof
-                    best_alloc = cur_alloc
-                    best_spend = tot_spend
-            return best_alloc, best_spend, best_profit
-        else:
-            # Multi-pass greedy knapsack (evaluates ROI order and Period Profit order)
-            passes = [
-                sorted(valid_items, key=lambda x: x["roi"], reverse=True),
-                sorted(valid_items, key=lambda x: (x["period_profit"], x["roi"]), reverse=True)
-            ]
-            best_alloc = []
-            best_profit = -1
-            best_spend = 0
-            for candidate_list in passes:
-                rem_budget = total_budget
-                cur_alloc = []
-                tot_prof = 0
-                tot_spend = 0
-                for it in candidate_list:
-                    if len(cur_alloc) >= num_slots:
-                        break
-                    can_buy = min(it["period_limit"], rem_budget // it["bid"])
-                    if can_buy > 0:
-                        cost = can_buy * it["bid"]
-                        prof = can_buy * it["profit_ea"]
-                        rem_budget -= cost
-                        tot_spend += cost
-                        tot_prof += prof
-                        cur_alloc.append({
-                            "id": it["id"],
-                            "name": it["name"],
-                            "bid": it["bid"],
-                            "alch": it["alch"],
-                            "profit_ea": it["profit_ea"],
-                            "period_limit": it["period_limit"],
-                            "qty": can_buy,
-                            "cost": cost,
-                            "profit": prof,
-                            "conf": it["conf"],
-                            "verdict": it["verdict"]
-                        })
-                if tot_prof > best_profit:
-                    best_profit = tot_prof
-                    best_alloc = cur_alloc
-                    best_spend = tot_spend
-            return best_alloc, best_spend, best_profit
+        best_alloc = []
+        best_profit = -1
+        best_spend = 0
+
+        for candidate_list in passes:
+            rem_budget = total_budget
+            rem_casts = max_casts if max_casts else 999_999_999
+            cur_alloc = []
+            tot_prof = 0
+            tot_spend = 0
+            for it in candidate_list:
+                if len(cur_alloc) >= num_slots or rem_casts <= 0:
+                    break
+                can_buy = min(it["period_limit"], rem_casts, rem_budget // it["bid"])
+                if can_buy > 0:
+                    cost = can_buy * it["bid"]
+                    prof = can_buy * it["profit_ea"]
+                    rem_budget -= cost
+                    rem_casts -= can_buy
+                    tot_spend += cost
+                    tot_prof += prof
+                    cur_alloc.append({
+                        "id": it["id"],
+                        "name": it["name"],
+                        "bid": it["bid"],
+                        "alch": it["alch"],
+                        "profit_ea": it["profit_ea"],
+                        "period_limit": it["period_limit"],
+                        "qty": can_buy,
+                        "cost": cost,
+                        "profit": prof,
+                        "conf": it["conf"],
+                        "verdict": it["verdict"]
+                    })
+            if tot_prof > best_profit:
+                best_profit = tot_prof
+                best_alloc = cur_alloc
+                best_spend = tot_spend
+
+        return best_alloc, best_spend, best_profit
 
     def on_auto_optimize_clicked(self):
         self.recalculate_overnight_table()
