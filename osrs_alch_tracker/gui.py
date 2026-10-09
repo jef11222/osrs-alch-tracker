@@ -874,7 +874,12 @@ class OSRSAlchDashboard(tk.Tk):
         self.notebook.add(self.tab_rec, text="⭐ Smart Picks")
         self.build_rec_tab()
 
-        # Tab 3: Craft & Alch
+        # Tab 3: Overnight Planner
+        self.tab_overnight = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_overnight, text="🌙 Overnight Planner")
+        self.build_overnight_tab()
+
+        # Tab 4: Craft & Alch
         self.tab_craft = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_craft, text="🔨 Craft & Alch")
         self.build_craft_tab()
@@ -1342,6 +1347,195 @@ class OSRSAlchDashboard(tk.Tk):
         }
         HeadingToolTip(self.tree_rec, rec_col_tooltips)
         RowToolTip(self.tree_rec, self.get_alch_row_tooltip)
+
+    def build_overnight_tab(self):
+        container = ttk.Frame(self.tab_overnight)
+        container.pack(fill="both", expand=True, padx=6, pady=4)
+
+        # 1. Market Timing & Sleep Strategy Banner Card
+        self.overnight_banner_card = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=10, pady=6)
+        self.overnight_banner_card.pack(fill="x", pady=(2, 6))
+
+        b_top = tk.Frame(self.overnight_banner_card, bg="#202023")
+        b_top.pack(fill="x")
+
+        lbl_on_title = tk.Label(b_top, text="🌙 GE Overnight Optimizer", font=("Segoe UI", 11, "bold"), fg="#f1c40f", bg="#202023")
+        lbl_on_title.pack(side="left", padx=(0, 10))
+        ToolTip(lbl_on_title, "Optimizes Grand Exchange buy offers for overnight sleep windows.\nAnalyzes 48h & 7-day percentile dips to catch off-peak sell dumps with high fill rates.")
+
+        lbl_on_badge = tk.Label(b_top, text="💤 48h & 7d Multi-Day Dip Analysis", font=("Segoe UI", 10, "bold"), fg="#2ecc71", bg="#202023")
+        lbl_on_badge.pack(side="left", padx=(0, 12))
+
+        self.lbl_overnight_cycles = tk.Label(b_top, text="⏰ Limit Multiplier: 3.0x (12h Window = 3 GE Limit Resets)", font=("Segoe UI", 9, "bold"), fg="#3498db", bg="#202023")
+        self.lbl_overnight_cycles.pack(side="left")
+
+        self.lbl_overnight_tip = tk.Label(
+            self.overnight_banner_card,
+            text="💡 Sleep Strategy: Between 03:00 and 08:00 UTC, player activity drops ~50%. Placing patient percentile bids lets you catch massive undercut dumps while 4h buy limits reset multiple times!",
+            font=("Segoe UI", 9, "italic"), fg="#e0e0e0", bg="#202023"
+        )
+        self.lbl_overnight_tip.pack(anchor="w", pady=(4, 0))
+
+        # 2. Control Strip (Duration, Strategy, Slots, Focus, Owned Nats)
+        ctrl_strip = tk.Frame(container, bg="#252528", relief="solid", borderwidth=1, padx=8, pady=5)
+        ctrl_strip.pack(fill="x", pady=(0, 6))
+
+        # Duration
+        tk.Label(ctrl_strip, text="💤 Duration:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 3))
+        self.var_overnight_dur = tk.StringVar(value="12 Hours (3x limit)")
+        self.cb_overnight_dur = ttk.Combobox(ctrl_strip, textvariable=self.var_overnight_dur,
+                                             values=["6 Hours (2x limit)", "8 Hours (2x limit)", "10 Hours (3x limit)", "12 Hours (3x limit)"],
+                                             width=17, state="readonly")
+        self.cb_overnight_dur.pack(side="left", padx=(0, 6))
+        self.cb_overnight_dur.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
+        ToolTip(self.cb_overnight_dur, "Select your sleep duration.\nGrand Exchange 4-hour buy limits reset every 4h, so you can buy 2x or 3x the normal limit while asleep!")
+
+        # Strategy
+        tk.Label(ctrl_strip, text="🎯 Strategy:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 3))
+        self.var_overnight_strat = tk.StringVar(value="Safe Morning Fill (25% Low)")
+        self.cb_overnight_strat = ttk.Combobox(ctrl_strip, textvariable=self.var_overnight_strat,
+                                               values=["Safe Morning Fill (25% Low)", "Deep-Dip Sniper (10% Low)"],
+                                               width=23, state="readonly")
+        self.cb_overnight_strat.pack(side="left", padx=(0, 6))
+        self.cb_overnight_strat.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
+        ToolTip(self.cb_overnight_strat, "• Safe Morning Fill (25% Low): Bids at 25th percentile of 48h lows + 5 gp. High fill probability (>95%) by morning.\n• Deep-Dip Sniper (10% Low): Bids at 10th percentile of 48h lows + 5 gp with 7d floor clamp. Highest margin for 3-6 AM dumps.")
+
+        # Slots
+        tk.Label(ctrl_strip, text="📦 Slots:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 3))
+        init_slot = "3 Slots (F2P)" if (hasattr(self, "var_f2p") and self.var_f2p.get()) else "8 Slots (P2P)"
+        self.var_overnight_slots = tk.StringVar(value=init_slot)
+        self.cb_overnight_slots = ttk.Combobox(ctrl_strip, textvariable=self.var_overnight_slots,
+                                               values=["1 Slot", "2 Slots", "3 Slots (F2P)", "4 Slots", "5 Slots", "6 Slots", "7 Slots", "8 Slots (P2P)"],
+                                               width=13, state="readonly")
+        self.cb_overnight_slots.pack(side="left", padx=(0, 6))
+        self.cb_overnight_slots.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
+        ToolTip(self.cb_overnight_slots, "Number of Grand Exchange offer slots to allocate.\nF2P players have 3 slots. Members have up to 8 slots.")
+
+        # Focus / Category
+        tk.Label(ctrl_strip, text="🔍 Focus:", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 3))
+        self.var_overnight_focus = tk.StringVar(value="🌟 All Staples (Highest Profit)")
+        self.cb_overnight_focus = ttk.Combobox(ctrl_strip, textvariable=self.var_overnight_focus,
+                                               values=["🌟 All Staples (Highest Profit)", "🛡️ Rune Heavy Gear Only", "📦 Adamant & Budget High-ROI", "🪄 Battlestaves & Crafting (P2P)", "🏹 Stackables & Bolts (P2P)"],
+                                               width=24, state="readonly")
+        self.cb_overnight_focus.pack(side="left", padx=(0, 6))
+        self.cb_overnight_focus.bind("<<ComboboxSelected>>", lambda e: self.recalculate_overnight_table())
+        ToolTip(self.cb_overnight_focus, "Filter candidate pool:\n• All Staples: Evaluates all items to maximize total profit.\n• Rune Heavy Gear: High alch value armor & weapons (Helms, Platebodies, Legs, Warhammers).\n• Adamant & Budget: High-ROI lower cost gear.\n• Battlestaves / Stackables: Bulk P2P items.")
+
+        # 0 GP Nature Runes (Use Owned)
+        self.var_overnight_owned_nat = tk.BooleanVar(value=True)
+        self.cb_overnight_nats = tk.Checkbutton(ctrl_strip, text="🌿 0 GP Nats", variable=self.var_overnight_owned_nat,
+                                                command=self.recalculate_overnight_table,
+                                                bg="#252528", fg="#2ecc71", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#2ecc71",
+                                                font=("Segoe UI", 9, "bold"))
+        self.cb_overnight_nats.pack(side="left", padx=(2, 6))
+        ToolTip(self.cb_overnight_nats, "🌿 Use Owned Nature Runes (0 GP Nat Cost):\nAssumes you already own Nature Runes in your bank, dedicating 100% of your cash stack to buying alch items!")
+
+        # Right Action Buttons
+        btn_opt = tk.Button(ctrl_strip, text="⚡ Auto-Optimize Bag", command=self.on_auto_optimize_clicked,
+                            bg="#27ae60", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
+        btn_opt.pack(side="right", padx=3)
+        ToolTip(btn_opt, "⚡ Auto-Optimize Overnight Bag:\nSolves the optimal cash stack allocation across the selected GE slots to maximize overnight profit with minimal idle coins!")
+
+        btn_cart = tk.Button(ctrl_strip, text="🛒 Send to Cart", command=self.send_overnight_bag_to_cart,
+                             bg="#2980b9", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_cart.pack(side="right", padx=3)
+        ToolTip(btn_cart, "Load the optimized overnight items and quantities directly into your Grand Exchange Shopping Cart!")
+
+        btn_copy = tk.Button(ctrl_strip, text="📋 Copy Plan", command=self.copy_overnight_offers,
+                             bg="#8e44ad", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_copy.pack(side="right", padx=3)
+        ToolTip(btn_copy, "Copy formatted GE buy orders (Item, Bid, Quantity, Total Cost) to clipboard for fast in-game entry!")
+
+        btn_ref = tk.Button(ctrl_strip, text="🔄 Refresh", command=self.refresh_overnight_dips,
+                            bg="#3e3e42", fg="#f1f1f1", font=("Segoe UI", 8), relief="flat", padx=5, pady=2, cursor="hand2")
+        btn_ref.pack(side="right", padx=3)
+        ToolTip(btn_ref, "Re-fetch latest 48h and 7d timeseries dip prices from OSRS Wiki API.")
+
+        # 3. Overnight Summary Metrics Bar
+        self.overnight_summary_card = tk.Frame(container, bg="#1e1e1e", relief="solid", borderwidth=1, padx=10, pady=5)
+        self.overnight_summary_card.pack(fill="x", pady=(0, 6))
+
+        tk.Label(self.overnight_summary_card, text="💰 Budget:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_budget = tk.Label(self.overnight_summary_card, text="-- gp", font=("Segoe UI", 9, "bold"), fg="#ffffff", bg="#1e1e1e")
+        self.lbl_on_budget.pack(side="left", padx=(2, 10))
+
+        tk.Label(self.overnight_summary_card, text="🛒 Spend Allocated:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_spend = tk.Label(self.overnight_summary_card, text="-- gp", font=("Segoe UI", 9, "bold"), fg="#3498db", bg="#1e1e1e")
+        self.lbl_on_spend.pack(side="left", padx=(2, 10))
+
+        tk.Label(self.overnight_summary_card, text="🪙 Leftover GP:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_leftover = tk.Label(self.overnight_summary_card, text="-- gp", font=("Segoe UI", 9, "bold"), fg="#e67e22", bg="#1e1e1e")
+        self.lbl_on_leftover.pack(side="left", padx=(2, 10))
+
+        tk.Label(self.overnight_summary_card, text="✨ Expected Profit:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_profit = tk.Label(self.overnight_summary_card, text="+-- gp", font=("Segoe UI", 10, "bold"), fg="#2ecc71", bg="#1e1e1e")
+        self.lbl_on_profit.pack(side="left", padx=(2, 10))
+
+        tk.Label(self.overnight_summary_card, text="🔥 Total Items:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_items = tk.Label(self.overnight_summary_card, text="-- items", font=("Segoe UI", 9, "bold"), fg="#9b59b6", bg="#1e1e1e")
+        self.lbl_on_items.pack(side="left", padx=(2, 10))
+
+        tk.Label(self.overnight_summary_card, text="⏱️ Est. Alch Time:", font=("Segoe UI", 8), fg="#888888", bg="#1e1e1e").pack(side="left")
+        self.lbl_on_time = tk.Label(self.overnight_summary_card, text="-- mins", font=("Segoe UI", 9, "bold"), fg="#f1c40f", bg="#1e1e1e")
+        self.lbl_on_time.pack(side="left", padx=(2, 0))
+
+        # 4. Overnight Table
+        tree_frame = ttk.Frame(container)
+        tree_frame.pack(fill="both", expand=True)
+
+        cols = ("badge", "name", "bid", "alch", "profit_ea", "limit_period", "alloc_qty", "total_cost", "slot_profit", "confidence", "verdict")
+        self.tree_overnight = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
+
+        self.tree_overnight.heading("badge", text="Pick", command=lambda: self.toggle_sort_overnight("badge"))
+        self.tree_overnight.heading("name", text="Item Name", command=lambda: self.toggle_sort_overnight("name"))
+        self.tree_overnight.heading("bid", text="Optimal Bid", command=lambda: self.toggle_sort_overnight("bid"))
+        self.tree_overnight.heading("alch", text="High Alch", command=lambda: self.toggle_sort_overnight("alch"))
+        self.tree_overnight.heading("profit_ea", text="Profit / Ea", command=lambda: self.toggle_sort_overnight("profit_ea"))
+        self.tree_overnight.heading("limit_period", text="Period Limit", command=lambda: self.toggle_sort_overnight("limit_period"))
+        self.tree_overnight.heading("alloc_qty", text="Allocated Qty", command=lambda: self.toggle_sort_overnight("alloc_qty"))
+        self.tree_overnight.heading("total_cost", text="Total Spend", command=lambda: self.toggle_sort_overnight("total_cost"))
+        self.tree_overnight.heading("slot_profit", text="Expected Profit ▼", command=lambda: self.toggle_sort_overnight("slot_profit"))
+        self.tree_overnight.heading("confidence", text="Fill Confidence", command=lambda: self.toggle_sort_overnight("confidence"))
+        self.tree_overnight.heading("verdict", text="Night Market Analysis / Historical Dips", command=lambda: self.toggle_sort_overnight("verdict"))
+
+        self.tree_overnight.column("badge", width=70, anchor="center")
+        self.tree_overnight.column("name", width=165, anchor="w")
+        self.tree_overnight.column("bid", width=95, anchor="e")
+        self.tree_overnight.column("alch", width=85, anchor="e")
+        self.tree_overnight.column("profit_ea", width=95, anchor="e")
+        self.tree_overnight.column("limit_period", width=95, anchor="center")
+        self.tree_overnight.column("alloc_qty", width=90, anchor="center")
+        self.tree_overnight.column("total_cost", width=105, anchor="e")
+        self.tree_overnight.column("slot_profit", width=115, anchor="e")
+        self.tree_overnight.column("confidence", width=130, anchor="center")
+        self.tree_overnight.column("verdict", width=310, anchor="w")
+
+        v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree_overnight.yview)
+        h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree_overnight.xview)
+        self.tree_overnight.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+
+        v_scroll.pack(side="right", fill="y")
+        h_scroll.pack(side="bottom", fill="x")
+        self.tree_overnight.pack(side="left", fill="both", expand=True)
+
+        self.tree_overnight.bind("<Button-1>", self.on_overnight_click)
+        self.tree_overnight.bind("<Double-1>", self.on_overnight_double_click)
+        self.tree_overnight.bind("<Button-3>", self.on_overnight_right_click)
+
+        overnight_col_tooltips = {
+            "#1": "Pick Badge:\nIdentifies whether this item is an active allocated pick in your overnight bag or an alternative candidate.",
+            "#2": "Item Name:\nGrand Exchange item name. Click to copy name to clipboard.",
+            "#3": "Optimal Bid:\nCalculated percentile buy price based on 48h/7d dips. Click to copy price!",
+            "#4": "High Alch:\nHigh Alchemy value in gold.",
+            "#5": "Profit / Ea:\nNet profit per item alched (High Alch - Optimal Bid - Nat Cost).",
+            "#6": "Period Limit:\nTotal Grand Exchange buy limit over your selected sleep duration.",
+            "#7": "Allocated Qty:\nOptimal quantity to buy with your cash stack. Click to copy quantity!",
+            "#8": "Total Spend:\nTotal gold required to purchase the allocated quantity.",
+            "#9": "Expected Profit:\nTotal gold profit earned once all units are bought and alched.",
+            "#10": "Fill Confidence:\nLikelihood of the buy offer filling before morning based on historical 24h & 48h volume.",
+            "#11": "Night Market Analysis:\nDetailed rationale based on 48h/7d timeseries market behavior."
+        }
+        HeadingToolTip(self.tree_overnight, overnight_col_tooltips)
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
@@ -3622,6 +3816,8 @@ class OSRSAlchDashboard(tk.Tk):
     def recalculate_all(self):
         self.recalculate_alch_table()
         self.recalculate_rec_table()
+        if hasattr(self, "recalculate_overnight_table"):
+            self.recalculate_overnight_table()
         self.recalculate_craft_table()
         if hasattr(self, "recalculate_ge_craft_table"):
             self.recalculate_ge_craft_table()
@@ -3661,6 +3857,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.recalculate_alch_table()
         if hasattr(self, "recalculate_rec_table"):
             self.recalculate_rec_table()
+        if hasattr(self, "recalculate_overnight_table"):
+            self.recalculate_overnight_table()
         if hasattr(self, "recalculate_craft_table"):
             self.recalculate_craft_table()
         if hasattr(self, "recalculate_ge_craft_table"):
@@ -4216,6 +4414,503 @@ class OSRSAlchDashboard(tk.Tk):
             self.rec_sort_col = col
             self.rec_sort_desc = False if col in ("name", "category", "badge") else True
         self.recalculate_rec_table()
+
+    # ------------------ OVERNIGHT PLANNER LOGIC ------------------
+
+    def recalculate_overnight_table(self):
+        if not hasattr(self, "tree_overnight"):
+            return
+
+        # 1. Parse Duration & Limit Multiplier
+        dur_str = self.var_overnight_dur.get() if hasattr(self, "var_overnight_dur") else "12 Hours (3x limit)"
+        if "6 Hours" in dur_str:
+            hours, cycles = 6, 2
+        elif "8 Hours" in dur_str:
+            hours, cycles = 8, 2
+        elif "10 Hours" in dur_str:
+            hours, cycles = 10, 3
+        else:
+            hours, cycles = 12, 3
+
+        if hasattr(self, "lbl_overnight_cycles"):
+            self.lbl_overnight_cycles.config(text=f"⏰ Limit Multiplier: {cycles}.0x ({hours}h Window = {cycles} GE Limit Resets)")
+
+        # 2. Parse Strategy & Slots
+        strat_str = self.var_overnight_strat.get() if hasattr(self, "var_overnight_strat") else "Safe"
+        strat_type = "deep" if "Deep" in strat_str else "safe"
+
+        slots_str = self.var_overnight_slots.get() if hasattr(self, "var_overnight_slots") else "3"
+        try:
+            num_slots = int(slots_str.split()[0])
+        except Exception:
+            num_slots = 3 if (hasattr(self, "var_f2p") and self.var_f2p.get()) else 8
+
+        # 3. Nature Rune Cost
+        use_owned_nats = self.var_overnight_owned_nat.get() if hasattr(self, "var_overnight_owned_nat") else True
+        nat_cost = 0 if use_owned_nats else self.get_effective_nature_price()
+
+        # 4. Cash Budget
+        use_cash = self.var_use_cash.get() if hasattr(self, "var_use_cash") else True
+        cash_stack = self.state.config.get("cash_stack", 5000000) if use_cash else 999_999_999
+
+        # 5. Membership & Focus Filters
+        mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
+        f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
+        focus = self.var_overnight_focus.get() if hasattr(self, "var_overnight_focus") else "All"
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
+
+        # Fetch candidate data
+        raw_candidates = self.api.get_overnight_data()
+        pool = []
+
+        for it in raw_candidates:
+            is_mem = it.get("members", False)
+            if f2p_ok and not mem_ok and is_mem:
+                continue
+            if not f2p_ok and not mem_ok:
+                continue
+
+            grp = it.get("group", "")
+            name_lower = it["name"].lower()
+
+            if "Rune Heavy" in focus:
+                if grp != "rune" and "rune" not in name_lower:
+                    continue
+            elif "Adamant" in focus:
+                if grp != "adamant" and "adamant" not in name_lower:
+                    continue
+            elif "Battlestaves" in focus:
+                if grp != "staff" and "staff" not in name_lower:
+                    continue
+            elif "Stackables" in focus:
+                if grp not in ("bolt", "ammo") and "bolt" not in name_lower:
+                    continue
+
+            if search_query:
+                if (search_query not in name_lower and
+                    search_query not in it.get("verdict", "").lower()):
+                    continue
+
+            bid = it["deep_bid"] if strat_type == "deep" else it["safe_bid"]
+            if not bid or bid <= 0:
+                continue
+            prof_ea = it["alch"] - bid - nat_cost
+            if prof_ea <= 0:
+                continue
+
+            pool.append(it)
+
+        # 6. Optimize Bag
+        alloc, total_spend, total_profit = self.optimize_overnight_bag(
+            pool, num_slots, cash_stack, cycles, nat_cost, strat_type=strat_type
+        )
+        self.overnight_alloc = alloc
+
+        # 7. Update Summary Card
+        total_items = sum(a["qty"] for a in alloc)
+        leftover_gp = max(0, cash_stack - total_spend) if use_cash else 0
+
+        if hasattr(self, "lbl_on_budget"):
+            self.lbl_on_budget.config(text=format_gp(cash_stack) if use_cash else "Unlimited")
+            self.lbl_on_spend.config(text=format_gp(total_spend))
+            self.lbl_on_leftover.config(text=format_gp(leftover_gp) if use_cash else "N/A")
+            self.lbl_on_profit.config(text=f"+{format_gp(total_profit)}")
+            self.lbl_on_items.config(text=f"{total_items:,} items")
+            alch_mins = int(math.ceil(total_items / 20.0)) if total_items > 0 else 0
+            self.lbl_on_time.config(text=f"~{alch_mins} mins (1.2k/hr)" if alch_mins > 0 else "-- mins")
+
+        # 8. Build Table Rows
+        alloc_map = {a["id"]: a for a in alloc}
+        medals = ["🥇 Pick #1", "🥈 Pick #2", "🥉 Pick #3", "⭐ Pick #4", "⭐ Pick #5", "⭐ Pick #6", "⭐ Pick #7", "⭐ Pick #8"]
+        pick_order = {a["id"]: idx for idx, a in enumerate(alloc)}
+
+        rows = []
+        for it in pool:
+            bid = it["deep_bid"] if strat_type == "deep" else it["safe_bid"]
+            prof_ea = it["alch"] - bid - nat_cost
+            period_limit = it["limit"] * cycles
+            conf = it.get("conf_deep" if strat_type == "deep" else "conf_safe", "🟢 High")
+            is_alloc = it["id"] in alloc_map
+
+            if is_alloc:
+                a_info = alloc_map[it["id"]]
+                rank_idx = pick_order.get(it["id"], 0)
+                badge = medals[rank_idx] if rank_idx < len(medals) else f"⭐ Pick #{rank_idx+1}"
+                alloc_qty = a_info["qty"]
+                cost = a_info["cost"]
+                slot_prof = a_info["profit"]
+                sort_rank = rank_idx
+            else:
+                badge = "Alternative"
+                alloc_qty = 0
+                cost = 0
+                slot_prof = prof_ea * period_limit
+                sort_rank = 999
+
+            rows.append({
+                "id": it["id"],
+                "badge": badge,
+                "name": it["name"],
+                "bid": bid,
+                "alch": it["alch"],
+                "profit_ea": prof_ea,
+                "limit_period": period_limit,
+                "alloc_qty": alloc_qty,
+                "total_cost": cost,
+                "slot_profit": slot_prof,
+                "confidence": conf,
+                "verdict": it.get("verdict", ""),
+                "is_alloc": is_alloc,
+                "sort_rank": sort_rank
+            })
+
+        # Sorting
+        sort_col = getattr(self, "overnight_sort_col", None)
+        sort_desc = getattr(self, "overnight_sort_desc", True)
+
+        if sort_col:
+            rows.sort(key=lambda r: r.get(sort_col, 0), reverse=sort_desc)
+        else:
+            # Default sort: Allocated picks first by rank, then alternatives by expected profit descending
+            rows.sort(key=lambda r: (r["sort_rank"], -r["slot_profit"]))
+
+        self.overnight_rows = rows
+
+        # Render Treeview
+        self.tree_overnight.delete(*self.tree_overnight.get_children())
+        for r in rows:
+            iid_str = str(r["id"])
+            in_cart = iid_str in self.state.cart_items
+
+            tags = []
+            if in_cart:
+                tags.append("incart")
+            elif r["is_alloc"]:
+                tags.append("allocated")
+            else:
+                tags.append("alt")
+
+            self.tree_overnight.insert("", "end", iid=iid_str, values=(
+                r["badge"],
+                r["name"],
+                f"{r['bid']:,} gp",
+                f"{r['alch']:,} gp",
+                f"+{r['profit_ea']:,} gp",
+                f"{r['limit_period']:,}",
+                f"{r['alloc_qty']:,}x" if r["alloc_qty"] > 0 else "--",
+                f"{r['total_cost']:,} gp" if r["total_cost"] > 0 else "--",
+                f"+{r['slot_profit']:,} gp",
+                r["confidence"],
+                r["verdict"]
+            ), tags=tags)
+
+        self.tree_overnight.tag_configure("allocated", font=("Segoe UI", 9, "bold"), foreground="#2ecc71")
+        self.tree_overnight.tag_configure("incart", font=("Segoe UI", 9, "bold"), foreground="#f39c12")
+        self.tree_overnight.tag_configure("alt", foreground="#cccccc")
+
+    def optimize_overnight_bag(self, items, num_slots, total_budget, cycles, nat_cost, strat_type="safe"):
+        import itertools
+        if not items or num_slots <= 0:
+            return [], 0, 0
+
+        valid_items = []
+        for it in items:
+            bid = it["deep_bid"] if strat_type == "deep" else it["safe_bid"]
+            if not bid or bid <= 0:
+                continue
+            prof_ea = it["alch"] - bid - nat_cost
+            if prof_ea <= 0:
+                continue
+            period_limit = it["limit"] * cycles
+            valid_items.append({
+                "item": it,
+                "id": it["id"],
+                "name": it["name"],
+                "bid": bid,
+                "alch": it["alch"],
+                "profit_ea": prof_ea,
+                "period_limit": period_limit,
+                "roi": prof_ea / max(1, bid),
+                "period_profit": prof_ea * period_limit,
+                "period_cost": bid * period_limit,
+                "verdict": it.get("verdict", ""),
+                "conf": it.get("conf_deep" if strat_type == "deep" else "conf_safe", "")
+            })
+
+        if not valid_items:
+            return [], 0, 0
+
+        # Virtually unlimited cash: pick top items by pure period profit
+        if total_budget >= 900_000_000:
+            sorted_items = sorted(valid_items, key=lambda x: x["period_profit"], reverse=True)[:num_slots]
+            alloc = []
+            tot_spend = 0
+            tot_profit = 0
+            for it in sorted_items:
+                cost = it["period_cost"]
+                prof = it["period_profit"]
+                tot_spend += cost
+                tot_profit += prof
+                alloc.append({
+                    "id": it["id"],
+                    "name": it["name"],
+                    "bid": it["bid"],
+                    "alch": it["alch"],
+                    "profit_ea": it["profit_ea"],
+                    "period_limit": it["period_limit"],
+                    "qty": it["period_limit"],
+                    "cost": cost,
+                    "profit": prof,
+                    "conf": it["conf"],
+                    "verdict": it["verdict"]
+                })
+            return alloc, tot_spend, tot_profit
+
+        # Exact combination search if candidates pool is reasonable
+        use_exact = (len(valid_items) <= 18 and num_slots <= 4)
+        if use_exact:
+            best_profit = -1
+            best_alloc = []
+            best_spend = 0
+            for combo in itertools.combinations(valid_items, min(num_slots, len(valid_items))):
+                sorted_combo = sorted(combo, key=lambda x: x["roi"], reverse=True)
+                rem_budget = total_budget
+                cur_alloc = []
+                tot_prof = 0
+                tot_spend = 0
+                for it in sorted_combo:
+                    can_buy = min(it["period_limit"], rem_budget // it["bid"])
+                    if can_buy > 0:
+                        cost = can_buy * it["bid"]
+                        prof = can_buy * it["profit_ea"]
+                        rem_budget -= cost
+                        tot_spend += cost
+                        tot_prof += prof
+                        cur_alloc.append({
+                            "id": it["id"],
+                            "name": it["name"],
+                            "bid": it["bid"],
+                            "alch": it["alch"],
+                            "profit_ea": it["profit_ea"],
+                            "period_limit": it["period_limit"],
+                            "qty": can_buy,
+                            "cost": cost,
+                            "profit": prof,
+                            "conf": it["conf"],
+                            "verdict": it["verdict"]
+                        })
+                if tot_prof > best_profit:
+                    best_profit = tot_prof
+                    best_alloc = cur_alloc
+                    best_spend = tot_spend
+            return best_alloc, best_spend, best_profit
+        else:
+            # Multi-pass greedy knapsack (evaluates ROI order and Period Profit order)
+            passes = [
+                sorted(valid_items, key=lambda x: x["roi"], reverse=True),
+                sorted(valid_items, key=lambda x: (x["period_profit"], x["roi"]), reverse=True)
+            ]
+            best_alloc = []
+            best_profit = -1
+            best_spend = 0
+            for candidate_list in passes:
+                rem_budget = total_budget
+                cur_alloc = []
+                tot_prof = 0
+                tot_spend = 0
+                for it in candidate_list:
+                    if len(cur_alloc) >= num_slots:
+                        break
+                    can_buy = min(it["period_limit"], rem_budget // it["bid"])
+                    if can_buy > 0:
+                        cost = can_buy * it["bid"]
+                        prof = can_buy * it["profit_ea"]
+                        rem_budget -= cost
+                        tot_spend += cost
+                        tot_prof += prof
+                        cur_alloc.append({
+                            "id": it["id"],
+                            "name": it["name"],
+                            "bid": it["bid"],
+                            "alch": it["alch"],
+                            "profit_ea": it["profit_ea"],
+                            "period_limit": it["period_limit"],
+                            "qty": can_buy,
+                            "cost": cost,
+                            "profit": prof,
+                            "conf": it["conf"],
+                            "verdict": it["verdict"]
+                        })
+                if tot_prof > best_profit:
+                    best_profit = tot_prof
+                    best_alloc = cur_alloc
+                    best_spend = tot_spend
+            return best_alloc, best_spend, best_profit
+
+    def on_auto_optimize_clicked(self):
+        self.recalculate_overnight_table()
+        if getattr(self, "overnight_alloc", None):
+            self.lbl_status_right.config(
+                text=f"⚡ Auto-optimized {len(self.overnight_alloc)} overnight slots to maximize profit!",
+                fg="#2ecc71"
+            )
+
+    def send_overnight_bag_to_cart(self):
+        alloc = getattr(self, "overnight_alloc", [])
+        if not alloc:
+            messagebox.showinfo("No Overnight Bag", "Please configure or auto-optimize your overnight bag first.")
+            return
+
+        added_count = 0
+        for item in alloc:
+            iid_str = str(item["id"])
+            qty = item["qty"]
+            if qty > 0:
+                self.state.cart_items[iid_str] = qty
+                added_count += 1
+
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        self.recalculate_overnight_table()
+        self.lbl_status_right.config(
+            text=f"🛒 Sent {added_count} overnight items to your Grand Exchange Shopping Cart!",
+            fg="#2ecc71"
+        )
+
+    def copy_overnight_offers(self):
+        alloc = getattr(self, "overnight_alloc", [])
+        if not alloc:
+            self.lbl_status_right.config(text="No overnight bag to copy", fg="#888888")
+            return
+
+        dur = self.var_overnight_dur.get() if hasattr(self, "var_overnight_dur") else "12 Hours"
+        strat = self.var_overnight_strat.get() if hasattr(self, "var_overnight_strat") else "Safe"
+
+        lines = [
+            f"🌙 Grand Exchange Overnight Buy Plan ({dur} - {strat})",
+            "────────────────────────────────────────────────────────────"
+        ]
+        tot_spend = 0
+        tot_prof = 0
+        for idx, it in enumerate(alloc, 1):
+            name = it["name"]
+            qty = it["qty"]
+            bid = it["bid"]
+            cost = it["cost"]
+            prof = it["profit"]
+            tot_spend += cost
+            tot_prof += prof
+            lines.append(f"{idx}. {name}: {qty:,}x @ {bid:,} gp (Cost: {format_gp(cost)} | Profit: +{format_gp(prof)})")
+
+        lines.append("────────────────────────────────────────────────────────────")
+        lines.append(f"Total Spend: {format_gp(tot_spend)} | Expected Profit: +{format_gp(tot_prof)}")
+        text = "\n".join(lines)
+
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        self.lbl_status_right.config(text=f"📋 Copied overnight buy plan ({len(alloc)} items) to clipboard!", fg="#3498db")
+
+    def refresh_overnight_dips(self):
+        self.lbl_status_right.config(text="Refreshing overnight dip data from Wiki API...", fg="#f39c12")
+        def _worker():
+            try:
+                self.api.get_overnight_data(force_refresh=True)
+            except Exception as e:
+                print(f"Overnight refresh error: {e}")
+            try:
+                self.after(0, self.recalculate_overnight_table)
+            except Exception:
+                pass
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def toggle_sort_overnight(self, col):
+        if getattr(self, "overnight_sort_col", "") == col:
+            self.overnight_sort_desc = not self.overnight_sort_desc
+        else:
+            self.overnight_sort_col = col
+            self.overnight_sort_desc = False if col in ("name", "badge", "confidence") else True
+        self.recalculate_overnight_table()
+
+    def on_overnight_click(self, event):
+        item_id = self.tree_overnight.identify_row(event.y)
+        if not item_id:
+            return
+        row = next((r for r in getattr(self, "overnight_rows", []) if str(r["id"]) == item_id), None)
+        if not row:
+            return
+        col_id = self.tree_overnight.identify_column(event.x)
+        if col_id == "#3": # Bid
+            self.copy_to_clipboard(str(row["bid"]), f"Copied Bid: {row['bid']:,} gp ({row['name']})")
+        elif col_id == "#7": # Alloc Qty
+            qty = row["alloc_qty"] if row["alloc_qty"] > 0 else row["limit_period"]
+            self.copy_to_clipboard(str(qty), f"Copied Qty: {qty:,}x ({row['name']})")
+        else:
+            self.copy_to_clipboard(row["name"], f"Copied '{row['name']}' to clipboard!")
+
+    def on_overnight_double_click(self, event):
+        item_id = self.tree_overnight.identify_row(event.y)
+        if not item_id:
+            return
+        if item_id in self.state.cart_items:
+            del self.state.cart_items[item_id]
+            self.lbl_status_right.config(text="Removed item from cart", fg="#888888")
+        else:
+            row = next((r for r in getattr(self, "overnight_rows", []) if str(r["id"]) == item_id), None)
+            if row:
+                qty = row["alloc_qty"] if row["alloc_qty"] > 0 else row["limit_period"]
+                self.state.cart_items[item_id] = qty
+                self.lbl_status_right.config(text=f"Added {qty:,}x {row['name']} to cart", fg="#2ecc71")
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        self.recalculate_overnight_table()
+
+    def on_overnight_right_click(self, event):
+        item_id = self.tree_overnight.identify_row(event.y)
+        if not item_id:
+            return
+        row = next((r for r in getattr(self, "overnight_rows", []) if str(r["id"]) == item_id), None)
+        if not row:
+            return
+
+        qty = row["alloc_qty"] if row["alloc_qty"] > 0 else row["limit_period"]
+        menu = tk.Menu(self, tearoff=0, bg="#2d2d30", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
+        menu.add_command(label=f"🛒 Add to Cart ({qty:,}x)", command=lambda: self._overnight_add_to_cart(row, qty))
+        menu.add_command(label="✏️ Set Custom Quantity in Cart...", command=lambda: self._overnight_set_custom_qty(row))
+        menu.add_separator()
+        menu.add_command(label=f"📋 Copy Name ('{row['name']}')", command=lambda: self.copy_to_clipboard(row["name"], f"Copied '{row['name']}'!"))
+        menu.add_command(label=f"💰 Copy Bid Price ({row['bid']:,} gp)", command=lambda: self.copy_to_clipboard(str(row["bid"]), f"Copied {row['bid']:,} gp!"))
+        menu.add_command(label=f"🔢 Copy Quantity ({qty:,}x)", command=lambda: self.copy_to_clipboard(str(qty), f"Copied {qty:,}x!"))
+        menu.add_command(label=f"📝 Copy GE Order ('Buy {qty:,}x @ {row['bid']:,} gp')", command=lambda: self.copy_to_clipboard(f"Buy {qty:,}x {row['name']} @ {row['bid']:,} gp", f"Copied GE Order!"))
+        menu.add_separator()
+        menu.add_command(label="🌐 Open in OSRS Wiki Prices", command=lambda: self.open_wiki_url(row["id"]))
+        menu.post(event.x_root, event.y_root)
+
+    def _overnight_add_to_cart(self, row, qty):
+        item_id = str(row["id"])
+        self.state.cart_items[item_id] = qty
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        self.recalculate_overnight_table()
+        self.lbl_status_right.config(text=f"Added {qty:,}x {row['name']} to cart", fg="#2ecc71")
+
+    def _overnight_set_custom_qty(self, row):
+        item_id = str(row["id"])
+        curr_qty = self.state.cart_items.get(item_id, 0)
+        max_allowed = row.get("limit_period", 1000)
+
+        def save_qty(new_qty):
+            if new_qty <= 0:
+                if item_id in self.state.cart_items:
+                    del self.state.cart_items[item_id]
+                self.lbl_status_right.config(text=f"Removed {row['name']} from cart", fg="#888888")
+            else:
+                self.state.cart_items[item_id] = new_qty
+                self.lbl_status_right.config(text=f"Set {new_qty:,}x {row['name']} in cart", fg="#2ecc71")
+            self.recalculate_alch_table()
+            self.update_cart_display()
+            self.recalculate_overnight_table()
+
+        SetQuantityDialog(self, row["name"], curr_qty, max_allowed, save_qty)
 
     def recalculate_craft_table(self):
         nat_cost = self.get_effective_nature_price()
@@ -5804,10 +6499,14 @@ class OSRSAlchDashboard(tk.Tk):
             self.var_f2p.set(False)
             if hasattr(self, "var_guide_members"):
                 self.var_guide_members.set(True)
+            if hasattr(self, "var_overnight_slots"):
+                self.var_overnight_slots.set("8 Slots (P2P)")
         else:
             self.var_f2p.set(True)
             if hasattr(self, "var_guide_members"):
                 self.var_guide_members.set(False)
+            if hasattr(self, "var_overnight_slots"):
+                self.var_overnight_slots.set("3 Slots (F2P)")
         self.on_filter_changed()
 
     def on_f2p_clicked(self):
@@ -5815,10 +6514,14 @@ class OSRSAlchDashboard(tk.Tk):
             self.var_members.set(False)
             if hasattr(self, "var_guide_members"):
                 self.var_guide_members.set(False)
+            if hasattr(self, "var_overnight_slots"):
+                self.var_overnight_slots.set("3 Slots (F2P)")
         else:
             self.var_members.set(True)
             if hasattr(self, "var_guide_members"):
                 self.var_guide_members.set(True)
+            if hasattr(self, "var_overnight_slots"):
+                self.var_overnight_slots.set("8 Slots (P2P)")
         self.on_filter_changed()
 
     def on_filter_changed(self, event=None):
