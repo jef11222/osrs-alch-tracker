@@ -16,7 +16,7 @@ except ImportError:
 from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
 from ge_crafting import GE_PROFIT_RECIPES
-from skilling_guide import SKILLING_GUIDES, get_xp_for_level, get_level_for_xp
+from skilling_guide import SKILLING_GUIDES, SMITHING_MATERIAL_CHAINS, get_xp_for_level, get_level_for_xp
 from state import AppState
 from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
 from bridge_server import BridgeServer
@@ -1682,6 +1682,22 @@ class OSRSAlchDashboard(tk.Tk):
         self.cb_guide_mem.pack(side="left", padx=3)
         ToolTip(self.cb_guide_mem, "Include Members-only (P2P) skilling brackets and quests.\nUncheck if training on Free-to-play (F2P).")
 
+        # Guide View Selector (Material Chain Tree vs Linear Progression)
+        tk.Label(guide_ctrl, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
+        tk.Label(guide_ctrl, text="View:", fg="#cccccc", bg="#252528", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(2, 2))
+        self.var_guide_view = tk.StringVar(value=self.state.config.get("guide_view_mode", "🌲 Material Chain Tree"))
+        self.combo_guide_view = ttk.Combobox(
+            guide_ctrl,
+            textvariable=self.var_guide_view,
+            values=["🌲 Material Chain Tree", "📈 Level Progression (1-99)"],
+            state="readonly",
+            width=21,
+            font=("Segoe UI", 8)
+        )
+        self.combo_guide_view.pack(side="left", padx=(0, 4))
+        self.combo_guide_view.bind("<<ComboboxSelected>>", lambda e: self.on_guide_view_changed())
+        ToolTip(self.combo_guide_view, "Switch between:\n• 🌲 Material Chain Tree: Hierarchical comparison of smelting raw ores into bars vs smithing each weapon/armor, showing exact profit differences & chain verdicts.\n• 📈 Level Progression (1-99): Standard skilling brackets sorted by level requirement.")
+
         # Target Profit Margin per item (Breakeven if 0)
         tk.Label(guide_ctrl, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
         tk.Label(guide_ctrl, text="Target Margin:", fg="#cccccc", bg="#252528", font=("Segoe UI", 8)).pack(side="left", padx=(2, 2))
@@ -1789,6 +1805,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_guide.tag_configure("loss", foreground="#e74c3c")
         self.tree_guide.tag_configure("quest", foreground="#3498db", font=("Segoe UI", 9, "bold"))
         self.tree_guide.tag_configure("child_row", foreground="#a0a0a5")
+        self.tree_guide.tag_configure("tier_root", foreground="#f39c12", font=("Segoe UI", 9, "bold"))
+        self.tree_guide.tag_configure("baseline", foreground="#3498db")
 
         self.tree_guide.bind("<Button-1>", self.on_guide_click)
         self.tree_guide.bind("<Double-1>", self.on_guide_double_click)
@@ -1818,13 +1836,24 @@ class OSRSAlchDashboard(tk.Tk):
         self.guide_sort_asc = True
         self.update_guide_quests_card("Smithing")
 
+    def on_guide_view_changed(self):
+        self.state.config["guide_view_mode"] = self.var_guide_view.get()
+        self.save_preferences()
+        self.recalculate_guide_table()
+
     def expand_all_guide(self):
-        for iid in self.tree_guide.get_children():
-            self.tree_guide.item(iid, open=True)
+        def _exp_rec(parent=""):
+            for iid in self.tree_guide.get_children(parent):
+                self.tree_guide.item(iid, open=True)
+                _exp_rec(iid)
+        _exp_rec("")
 
     def collapse_all_guide(self):
-        for iid in self.tree_guide.get_children():
-            self.tree_guide.item(iid, open=False)
+        def _col_rec(parent=""):
+            for iid in self.tree_guide.get_children(parent):
+                self.tree_guide.item(iid, open=False)
+                _col_rec(iid)
+        _col_rec("")
 
 
     def set_guide_skill(self, skill_name):
@@ -1934,6 +1963,503 @@ class OSRSAlchDashboard(tk.Tk):
             pass
         self.recalculate_guide_table()
 
+    def _render_smithing_material_tree(self, cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open):
+        coal_id = 453
+        coal_price = self.api.get_price(coal_id, strat) or 140
+        basis = "5m" if hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get() else self.state.config.get("price_basis", "5m")
+
+        target_margin = 0
+        if hasattr(self, "ent_guide_margin"):
+            try:
+                target_margin = max(0, parse_cash_input(self.ent_guide_margin.get()))
+            except Exception:
+                target_margin = 0
+
+        # Update XP summary banner with tree explanation
+        if hasattr(self, "lbl_guide_xp_summary"):
+            bf_tag = "Blast Furnace (Halved Coal)" if mem_ok else "Standard Furnace (Full Coal)"
+            self.lbl_guide_xp_summary.config(text=f"🌲 Smithing Material Family Tree ({bf_tag})  |  Compare Smelting vs Anvil Products  |  🟢 ⭐ Beats Bar  |  🟡 ⚡ Subsidized XP  |  🔴 ⛔ Sell Bar on GE")
+
+        # Determine active sort column and direction
+        sort_col = getattr(self, "guide_sort_col", "level_range")
+        sort_asc = getattr(self, "guide_sort_asc", True)
+
+        first_load = len(prev_open) == 0
+
+        for tier in SMITHING_MATERIAL_CHAINS:
+            tier_name = tier["tier"]
+            bar_name = tier["bar_name"]
+            bar_id = tier["bar_id"]
+            ore_name = tier["ore_name"]
+            ore_id = tier["ore_id"]
+            second_name = tier.get("second_name", "")
+            second_id = tier.get("second_id", 0)
+            smelt_lvl = tier["smelt_lvl"]
+            smelt_xp = tier["smelt_xp"]
+            coal_qty = tier.get("coal_qty_bf", 0) if mem_ok else tier.get("coal_qty_reg", 0)
+
+            # Check if tier itself is members-only
+            if tier.get("members", False) and not mem_ok:
+                continue
+
+            # Pricing for ores & bar
+            ore_p = self.api.get_price(ore_id, strat)
+            second_p = self.api.get_price(second_id, strat) if (second_id > 0 and tier_name == "Bronze") else 0
+            if tier_name == "Bronze":
+                ore_cost_per_bar = ore_p + second_p
+                ore_summary_str = f"1x {ore_name} + 1x {second_name}"
+            elif coal_qty > 0:
+                ore_cost_per_bar = ore_p + (coal_qty * coal_price)
+                ore_summary_str = f"1x {ore_name} + {coal_qty}x Coal"
+            else:
+                ore_cost_per_bar = ore_p
+                ore_summary_str = f"1x {ore_name}"
+
+            bar_buy = self.api.get_price(bar_id, strat)
+            bar_sell = self.api.get_price(bar_id, "instasell")
+            bar_net = math.floor(bar_sell * 0.99)
+            bar_profit = bar_net - ore_cost_per_bar
+            smelt_gp_xp = (bar_profit / smelt_xp) if smelt_xp > 0 else 0.0
+
+            # Raw ore breakeven buy price
+            other_fuel = (coal_qty * coal_price) if tier_name != "Bronze" else second_p
+            max_ore_buy = max(0, bar_net - other_fuel - target_margin)
+
+            # Evaluate child craftable items first
+            tier_items = []
+            for item in tier.get("items", []):
+                # Filter members
+                if item.get("members", False) and not mem_ok:
+                    continue
+
+                bars_needed = item["bars"]
+                item_ore_cost = bars_needed * ore_cost_per_bar
+                out_qty = item.get("qty", 1)
+                alch_val = self.api.mapping.get(str(item["id"]), {}).get("highalch", 0)
+                ge_sell = self.api.get_price(item["id"], "instasell")
+
+                eff_alch = ((alch_val * out_qty) - nat_price) if alch_val > 0 else -99999999
+                eff_ge = (math.floor(ge_sell * 0.99) * out_qty) if ge_sell > 0 else -99999999
+                best_rev = max(eff_alch, eff_ge)
+                if best_rev < 0:
+                    best_rev = 0
+
+                chain_profit = best_rev - item_ore_cost
+                total_bar_net = bars_needed * bar_net
+                diff_vs_bar = best_rev - total_bar_net
+
+                smith_xp = item["xp"]
+                chain_gp_xp = (chain_profit / smith_xp) if smith_xp > 0 else 0.0
+
+                # Classification & Verdict
+                if diff_vs_bar >= 0:
+                    tag = "profit"
+                    badge = f"⭐ Beats Bar (+{diff_vs_bar:,} gp vs GE)"
+                    verdict_msg = f"Crafting beats selling bars! Yields +{diff_vs_bar:,} gp MORE than selling bars on GE, plus {smith_xp:.1f} Smithing XP!"
+                elif chain_profit > 0:
+                    cost_per_anvil_xp = abs(diff_vs_bar) / smith_xp if smith_xp > 0 else 0.0
+                    tag = "mild_loss"
+                    badge = f"⚡ Subsidized XP ({cost_per_anvil_xp:.1f} gp/xp)"
+                    verdict_msg = f"Net cash profit: +{chain_profit:,} gp from ores. Trades {abs(diff_vs_bar):,} gp bar profit to buy {smith_xp:.1f} anvil XP at only {cost_per_anvil_xp:.1f} gp/xp!"
+                else:
+                    tag = "loss"
+                    badge = f"⛔ Sell Bar on GE ({diff_vs_bar:,} gp vs bar)"
+                    verdict_msg = f"Net cash loss: -{abs(chain_profit):,} gp from raw ores. Better to sell raw bars on GE (+{abs(diff_vs_bar):,} gp better)!"
+
+                # Filter by style
+                if style_filter == "profit" and chain_profit <= 0 and diff_vs_bar < 0:
+                    continue
+                if style_filter == "fast" and item["name"] not in ("Dart tip", "Knife", "Platebody", "Arrowtips") and "platebody" not in item["name"].lower() and "dart" not in item["name"].lower():
+                    continue
+                if style_filter == "afk" and "cannonball" not in item["name"].lower() and "dart" not in item["name"].lower() and "arrow" not in item["name"].lower():
+                    continue
+
+                # Filter by search
+                if search_query:
+                    match_name = search_query in item["name"].lower()
+                    match_tier = search_query in tier_name.lower()
+                    if not (match_name or match_tier):
+                        continue
+
+                # Anvil XP Rate
+                item_lower = item["name"].lower()
+                if "cannonball" in item_lower:
+                    xp_rate = 25600
+                elif "dart" in item_lower:
+                    xp_rate = 120000
+                elif "knife" in item_lower:
+                    xp_rate = 105000
+                elif "arrow" in item_lower:
+                    xp_rate = 110000
+                elif "bolts" in item_lower:
+                    xp_rate = 95000
+                elif "platebody" in item_lower:
+                    xp_rate = 220000
+                elif any(k in item_lower for k in ("platelegs", "plateskirt", "chainbody", "2h")):
+                    xp_rate = 150000
+                elif any(k in item_lower for k in ("scimitar", "sq shield", "claws", "warhammer", "battleaxe")):
+                    xp_rate = 110000
+                else:
+                    xp_rate = 75000
+
+                # Max buy ceiling for the bar
+                be_bar = math.floor(best_rev / bars_needed) if bars_needed > 0 else 0
+                tb_bar = math.floor((best_rev - target_margin) / bars_needed) if bars_needed > 0 else 0
+
+                item_obj = {
+                    "tier_name": tier_name,
+                    "bar_name": bar_name,
+                    "bar_id": bar_id,
+                    "ore_name": ore_name,
+                    "ore_id": ore_id,
+                    "second_name": second_name,
+                    "second_id": second_id,
+                    "coal_qty": coal_qty,
+                    "coal_price": coal_price,
+                    "ore_cost_per_bar": ore_cost_per_bar,
+                    "item": item,
+                    "bars_needed": bars_needed,
+                    "item_ore_cost": item_ore_cost,
+                    "out_qty": out_qty,
+                    "alch_val": alch_val,
+                    "ge_sell": ge_sell,
+                    "eff_alch": eff_alch,
+                    "eff_ge": eff_ge,
+                    "best_rev": best_rev,
+                    "action_rec": "🪄 High Alch" if (eff_alch >= eff_ge and eff_alch > 0) else "🏪 Sell on GE",
+                    "chain_profit": chain_profit,
+                    "diff_vs_bar": diff_vs_bar,
+                    "smith_xp": smith_xp,
+                    "chain_gp_xp": chain_gp_xp,
+                    "tag": tag,
+                    "badge": badge,
+                    "verdict_msg": verdict_msg,
+                    "xp_rate": xp_rate,
+                    "be_bar": be_bar,
+                    "tb_bar": tb_bar,
+                    "bar_buy": bar_buy,
+                    "req_lvl": item["level"]
+                }
+                tier_items.append(item_obj)
+
+            # If searching or filtering and no items match, skip tier unless search matches tier name directly
+            if search_query and not tier_items and search_query not in tier_name.lower():
+                continue
+            if style_filter != "all" and not tier_items:
+                continue
+
+            # Sort tier items according to user sort choice
+            if sort_col == "level_range":
+                tier_items.sort(key=lambda x: x["req_lvl"], reverse=not sort_asc)
+            elif sort_col == "bracket_cost":
+                tier_items.sort(key=lambda x: x["chain_profit"], reverse=not sort_asc)
+            elif sort_col == "gp_xp":
+                tier_items.sort(key=lambda x: x["chain_gp_xp"], reverse=not sort_asc)
+            elif sort_col == "xp_ea":
+                tier_items.sort(key=lambda x: x["smith_xp"], reverse=not sort_asc)
+            elif sort_col == "max_buy":
+                tier_items.sort(key=lambda x: x["tb_bar"], reverse=not sort_asc)
+            elif sort_col == "xp_rate":
+                tier_items.sort(key=lambda x: x["xp_rate"], reverse=not sort_asc)
+            elif sort_col == "needed":
+                tier_items.sort(key=lambda x: x["bars_needed"], reverse=not sort_asc)
+            elif sort_col == "name":
+                tier_items.sort(key=lambda x: x["item"]["name"], reverse=not sort_asc)
+            else:
+                tier_items.sort(key=lambda x: x["req_lvl"], reverse=not sort_asc)
+
+            # Insert Tier Root
+            tier_iid = f"tier_root_{tier_name}"
+            tier_status = f"✅ Smelt Lvl {smelt_lvl}" if cur_lvl >= smelt_lvl else f"🔒 Smelt Lvl {smelt_lvl}"
+            tier_tag = "tier_root"
+
+            furnace_rec = "🔥 Blast Furnace" if (mem_ok and coal_qty > 0) else "🔥 Edgeville Furnace"
+            furnace_xp_rate = "90k/hr (BF)" if (mem_ok and coal_qty > 0) else "25k/hr (Smelt)"
+
+            self.tree_guide.insert("", "end", iid=tier_iid, text=f"⚒️ {bar_name} Smelting & Smithing Family Tree", values=(
+                tier_status,
+                f"Lvl {smelt_lvl}+",
+                ore_summary_str,
+                "1 Bar = 1 Bar",
+                "--",
+                f"≤ {max_ore_buy:,} gp" if max_ore_buy > 0 else "--",
+                f"{smelt_xp:.1f}",
+                f"{'+' if smelt_gp_xp >= 0 else ''}{smelt_gp_xp:.2f} GP/XP",
+                f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp / bar",
+                furnace_rec,
+                furnace_xp_rate,
+                "--",
+                f"Smelt {bar_name} from raw ores ({ore_summary_str}). Sells on GE for {bar_net:,} gp net ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar)."
+            ), tags=(tier_tag,))
+
+            # Register tier in self.guide_rows
+            tier_mats_raw = [{"id": ore_id, "name": ore_name, "qty": 1}]
+            if tier_name == "Bronze" and second_id > 0:
+                tier_mats_raw.append({"id": second_id, "name": second_name, "qty": 1})
+            elif coal_qty > 0:
+                tier_mats_raw.append({"id": coal_id, "name": "Coal", "qty": coal_qty})
+
+            self.guide_rows.append({
+                "id": tier_iid,
+                "name": f"{bar_name} (Smelt Ore)",
+                "status": tier_status,
+                "level_range": f"{smelt_lvl} - 99",
+                "min_lvl": smelt_lvl,
+                "max_lvl": 99,
+                "materials": ore_summary_str,
+                "materials_raw": tier_mats_raw,
+                "tot_mats": "1 Bar = 1 Bar",
+                "tot_mat_qty": 1,
+                "needed": 100,
+                "max_buy": f"≤ {max_ore_buy:,} gp",
+                "breakeven_ea": max_ore_buy,
+                "target_buy_p": max_ore_buy,
+                "curr_mat_price": ore_p,
+                "margin_ea": max_ore_buy - ore_p,
+                "primary_mat_name": ore_name,
+                "xp_ea": smelt_xp,
+                "gp_xp": f"{'+' if smelt_gp_xp >= 0 else ''}{smelt_gp_xp:.2f} GP/XP",
+                "gp_xp_val": smelt_gp_xp,
+                "bracket_cost": f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp / bar",
+                "bracket_cost_val": bar_profit,
+                "action_rec": furnace_rec,
+                "xp_rate": furnace_xp_rate,
+                "xp_rate_val": 90000 if (mem_ok and coal_qty > 0) else 25000,
+                "time_est": "--",
+                "verdict": f"Smelt {bar_name} from raw ores ({ore_summary_str}). Sells on GE for {bar_net:,} gp net ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar).",
+                "output_id": bar_id,
+                "tag": tier_tag
+            })
+
+            # 1. Baseline Benchmark Child Row: Sell Bar on GE
+            base_iid = f"{tier_iid}_baseline"
+            self.tree_guide.insert(tier_iid, "end", iid=base_iid, text=f"  ↳ 🏷️ Sell {bar_name} on GE (Baseline Benchmark)", values=(
+                "🏷️ Baseline",
+                f"Lvl {smelt_lvl}",
+                f"1x {bar_name}",
+                ore_summary_str,
+                "1 bar",
+                f"≤ {bar_net:,} gp",
+                "0.0",
+                "--",
+                f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp",
+                "🏪 Sell on GE",
+                "--",
+                "--",
+                f"BASELINE BENCHMARK: Smelt bar and sell directly on GE for {bar_net:,} gp ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar). Compare all anvil items against this baseline!"
+            ), tags=("baseline",))
+
+            self.guide_rows.append({
+                "id": base_iid,
+                "name": f"Sell {bar_name} on GE (Baseline)",
+                "status": "🏷️ Baseline",
+                "level_range": f"{smelt_lvl}",
+                "min_lvl": smelt_lvl,
+                "max_lvl": smelt_lvl,
+                "materials": f"1x {bar_name}",
+                "materials_raw": [{"id": bar_id, "name": bar_name, "qty": 1}],
+                "tot_mats": ore_summary_str,
+                "tot_mat_qty": 1,
+                "needed": 1,
+                "max_buy": f"≤ {bar_net:,} gp",
+                "breakeven_ea": bar_net,
+                "target_buy_p": bar_net,
+                "curr_mat_price": bar_buy,
+                "margin_ea": bar_net - bar_buy,
+                "primary_mat_name": bar_name,
+                "xp_ea": 0.0,
+                "gp_xp": "--",
+                "gp_xp_val": 0.0,
+                "bracket_cost": f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp",
+                "bracket_cost_val": bar_profit,
+                "action_rec": "🏪 Sell on GE",
+                "xp_rate": "--",
+                "xp_rate_val": 0,
+                "time_est": "--",
+                "verdict": f"BASELINE BENCHMARK: Smelt bar and sell directly on GE for {bar_net:,} gp ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar).",
+                "output_id": bar_id,
+                "tag": "baseline"
+            })
+
+            # 2. Insert Craftable Child Items
+            for itm in tier_items:
+                raw_item = itm["item"]
+                req_lvl = itm["req_lvl"]
+                itm_id = raw_item["id"]
+                itm_name = raw_item["name"]
+                bars_cnt = itm["bars_needed"]
+                smith_xp = itm["smith_xp"]
+                chain_prof = itm["chain_profit"]
+                diff_bar = itm["diff_vs_bar"]
+                chain_gpxp = itm["chain_gp_xp"]
+                act_rec = itm["action_rec"]
+                xp_rt = itm["xp_rate"]
+                tb_b = itm["tb_bar"]
+                be_b = itm["be_bar"]
+                tag = itm["tag"]
+                badge = itm["badge"]
+                verdict_text = f"{badge} | {itm['verdict_msg']}"
+
+                itm_iid = f"tree_{tier_name}_{itm_id}_{req_lvl}"
+                status_str = f"✅ Lvl {req_lvl}" if cur_lvl >= req_lvl else f"🔒 Lvl {req_lvl}"
+
+                # Total raw ores string
+                if tier_name == "Bronze":
+                    raw_ores_str = f"{bars_cnt}x Copper + {bars_cnt}x Tin"
+                elif coal_qty > 0:
+                    raw_ores_str = f"{bars_cnt}x {ore_name} + {bars_cnt * coal_qty}x Coal"
+                else:
+                    raw_ores_str = f"{bars_cnt}x {ore_name}"
+
+                max_bar_str = f"≤ {tb_b:,} gp" if target_margin > 0 else f"≤ {be_b:,} gp"
+
+                self.tree_guide.insert(tier_iid, "end", iid=itm_iid, text=f"    ↳ {itm_name}", values=(
+                    status_str,
+                    f"Lvl {req_lvl}",
+                    f"{bars_cnt}x {bar_name}",
+                    raw_ores_str,
+                    f"{bars_cnt} bars",
+                    max_bar_str,
+                    f"{smith_xp:.1f}",
+                    f"{'+' if chain_gpxp >= 0 else ''}{chain_gpxp:.2f} GP/XP",
+                    f"{'+' if chain_prof >= 0 else '-'}{format_gp(abs(chain_prof))}",
+                    act_rec,
+                    f"{xp_rt // 1000}k/hr",
+                    f"~{itm['out_qty']}x out" if itm["out_qty"] > 1 else "--",
+                    verdict_text
+                ), tags=(tag,))
+
+                # Register in self.guide_rows
+                self.guide_rows.append({
+                    "id": itm_iid,
+                    "name": itm_name,
+                    "status": status_str,
+                    "level_range": f"{req_lvl}",
+                    "min_lvl": req_lvl,
+                    "max_lvl": req_lvl,
+                    "materials": f"{bars_cnt}x {bar_name}",
+                    "materials_raw": [{"id": bar_id, "name": bar_name, "qty": bars_cnt}],
+                    "tot_mats": raw_ores_str,
+                    "tot_mat_qty": bars_cnt,
+                    "needed": bars_cnt,
+                    "max_buy": max_bar_str,
+                    "breakeven_ea": be_b,
+                    "target_buy_p": tb_b,
+                    "curr_mat_price": bar_buy,
+                    "margin_ea": tb_b - bar_buy,
+                    "primary_mat_name": bar_name,
+                    "xp_ea": smith_xp,
+                    "gp_xp": f"{'+' if chain_gpxp >= 0 else ''}{chain_gpxp:.2f} GP/XP",
+                    "gp_xp_val": chain_gpxp,
+                    "bracket_cost": f"{'+' if chain_prof >= 0 else '-'}{format_gp(abs(chain_prof))}",
+                    "bracket_cost_val": chain_prof,
+                    "action_rec": act_rec,
+                    "xp_rate": f"{xp_rt // 1000}k/hr",
+                    "xp_rate_val": xp_rt,
+                    "time_est": f"{itm['out_qty']}x out" if itm["out_qty"] > 1 else "--",
+                    "verdict": verdict_text,
+                    "output_id": itm_id,
+                    "nature_cost": 1 if act_rec == "🪄 High Alch" else 0,
+                    "tag": tag,
+                    "best_rev": itm["best_rev"],
+                    "target_margin": target_margin,
+                    "diff_vs_bar": diff_bar,
+                    "chain_profit": chain_prof
+                })
+
+                # Grandchildren: Expand to see individual ingredients & buy ceilings
+                # 1. Bar buy ceiling
+                bar_bid, bar_ask = self.api.get_bid_ask(str(bar_id), basis=basis)
+                self.tree_guide.insert(itm_iid, "end", iid=f"{itm_iid}_mat_bar", text=f"        ↳ {bars_cnt}x {bar_name} (Anvil Bar)", values=(
+                    "--",
+                    "--",
+                    f"{bars_cnt}x {bar_name}",
+                    f"{bars_cnt}x {bar_name}",
+                    f"{bars_cnt}x",
+                    max_bar_str,
+                    f"Offer: {bar_bid:,}" if bar_bid > 0 else "--",
+                    f"Ask: {bar_ask:,}" if bar_ask > 0 else "--",
+                    f"Cost: {format_gp(bars_cnt * bar_buy)}",
+                    "🏪 GE Buy Bar",
+                    "--",
+                    "--",
+                    f"🎯 Buy {bar_name} ≤ {tb_b if target_margin > 0 else be_b:,} gp to profit directly from anvil"
+                ), tags=("child_row",))
+
+                # 2. Raw Primary Ore buy ceiling
+                other_sub = (bars_cnt * coal_qty * coal_price) if tier_name != "Bronze" else (bars_cnt * second_p)
+                nat_sub = nat_price if act_rec == "🪄 High Alch" else 0
+                net_alloc_ore = itm["best_rev"] - other_sub - nat_sub
+                be_ore = math.floor(net_alloc_ore / bars_cnt) if bars_cnt > 0 else 0
+                tb_ore = math.floor((net_alloc_ore - target_margin) / bars_cnt) if bars_cnt > 0 else 0
+                ore_bid, ore_ask = self.api.get_bid_ask(str(ore_id), basis=basis)
+
+                self.tree_guide.insert(itm_iid, "end", iid=f"{itm_iid}_mat_ore", text=f"        ↳ {bars_cnt}x {ore_name} (Raw Ore Smelt)", values=(
+                    "--",
+                    "--",
+                    f"{bars_cnt}x {ore_name}",
+                    f"{bars_cnt}x {ore_name}",
+                    f"{bars_cnt}x",
+                    f"≤ {tb_ore if target_margin > 0 else be_ore:,} gp",
+                    f"Offer: {ore_bid:,}" if ore_bid > 0 else "--",
+                    f"Ask: {ore_ask:,}" if ore_ask > 0 else "--",
+                    f"Cost: {format_gp(bars_cnt * ore_p)}",
+                    "⛏️ Raw Ore",
+                    "--",
+                    "--",
+                    f"🎯 Buy {ore_name} ≤ {tb_ore if target_margin > 0 else be_ore:,} gp to profit from full smelting + smithing chain"
+                ), tags=("child_row",))
+
+                # 3. Coal or Secondary Fuel (if applicable)
+                if coal_qty > 0 and tier_name != "Bronze":
+                    tot_coal = bars_cnt * coal_qty
+                    net_alloc_coal = itm["best_rev"] - (bars_cnt * ore_p) - nat_sub
+                    be_coal = math.floor(net_alloc_coal / tot_coal) if tot_coal > 0 else 0
+                    tb_coal = math.floor((net_alloc_coal - target_margin) / tot_coal) if tot_coal > 0 else 0
+                    coal_bid, coal_ask = self.api.get_bid_ask(str(coal_id), basis=basis)
+
+                    self.tree_guide.insert(itm_iid, "end", iid=f"{itm_iid}_mat_coal", text=f"        ↳ {tot_coal}x Coal (Smelting Fuel)", values=(
+                        "--",
+                        "--",
+                        f"{tot_coal}x Coal",
+                        f"{tot_coal}x Coal",
+                        f"{tot_coal}x",
+                        f"≤ {tb_coal if target_margin > 0 else be_coal:,} gp",
+                        f"Offer: {coal_bid:,}" if coal_bid > 0 else "--",
+                        f"Ask: {coal_ask:,}" if coal_ask > 0 else "--",
+                        f"Cost: {format_gp(tot_coal * coal_price)}",
+                        "🔥 Smelt Fuel",
+                        "--",
+                        "--",
+                        f"🎯 Buy Coal ≤ {tb_coal if target_margin > 0 else be_coal:,} gp to preserve chain profit"
+                    ), tags=("child_row",))
+
+                # 4. Nature rune if alching
+                if act_rec == "🪄 High Alch" and itm["alch_val"] > 0:
+                    nat_bid, nat_ask = self.api.get_bid_ask(str(NATURE_RUNE_ID), basis=basis)
+                    self.tree_guide.insert(itm_iid, "end", iid=f"{itm_iid}_mat_nat", text=f"        ↳ 1x Nature rune (High Alchemy)", values=(
+                        "--",
+                        "--",
+                        "1x Nature rune",
+                        "1x Nature rune",
+                        "1x",
+                        f"≤ {itm['alch_val'] - itm['item_ore_cost']:,} gp",
+                        f"Offer: {nat_bid:,}" if nat_bid > 0 else "--",
+                        f"Ask: {nat_ask:,}" if nat_ask > 0 else "--",
+                        f"Cost: {format_gp(nat_price)}",
+                        "🪄 Alch Rune",
+                        "--",
+                        "--",
+                        f"High Alch gives {itm['alch_val']:,} gp gross revenue"
+                    ), tags=("child_row",))
+
+                if itm_iid in prev_open:
+                    self.tree_guide.item(itm_iid, open=True)
+
+            # Open root tiers by default on first load or if previously open
+            if first_load or tier_iid in prev_open:
+                self.tree_guide.item(tier_iid, open=True)
+
     def recalculate_guide_table(self):
         if not hasattr(self, "tree_guide"):
             return
@@ -1997,6 +2523,11 @@ class OSRSAlchDashboard(tk.Tk):
 
         strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
         nat_price = self.get_effective_nature_price()
+
+        guide_view = self.var_guide_view.get() if hasattr(self, "var_guide_view") else "🌲 Material Chain Tree"
+        if active_skill == "Smithing" and guide_view == "🌲 Material Chain Tree":
+            self._render_smithing_material_tree(cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open)
+            return
 
         current_step_found = False
 
@@ -2652,6 +3183,12 @@ class OSRSAlchDashboard(tk.Tk):
                 m_ea = row.get("margin_ea", 0)
                 m_col = "#2ecc71" if m_ea >= 0 else "#e74c3c"
                 rows.append(("Margin at Market:", f"{m_ea:+,} gp ea", m_col))
+
+        if row.get("diff_vs_bar") is not None:
+            c_prof = row.get("chain_profit", 0)
+            d_bar = row.get("diff_vs_bar", 0)
+            rows.append(("Chain Net Profit (from Ores):", f"{c_prof:+,} gp", "#2ecc71" if c_prof >= 0 else "#e74c3c"))
+            rows.append(("Comparison vs Selling Bars on GE:", f"{d_bar:+,} gp", "#2ecc71" if d_bar >= 0 else ("#f1c40f" if c_prof > 0 else "#e74c3c")))
 
         rows.extend([
             ("Live GP / XP:", row.get("gp_xp", "--"), "#2ecc71" if "+" in row.get("gp_xp", "") else ("#f1c40f" if "-0." in row.get("gp_xp", "") else "#e74c3c")),

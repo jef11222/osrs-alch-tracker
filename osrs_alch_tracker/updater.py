@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.35"
+APP_VERSION = "1.3.36"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 
 
@@ -323,20 +323,20 @@ class WhatsNewDialog(tk.Toplevel):
 
         features = (
             f"✨ WHAT'S NEW IN v{version_str} 🎉:\n\n"
-            "• 💰 New Dedicated 'Craft & Sell GE' Tab:\n"
-            "  Pure Grand Exchange production moneymaking tab featuring 122+ profitable processing and manufacturing recipes across Herblore, Crafting, Fletching, Smithing, Cooking, and Magic.\n\n"
-            "• ▶️ Expandable Hierarchical Ingredient Trees:\n"
-            "  Click ▶ next to any item to expand and reveal its exact raw materials indented underneath with individual quantity requirements and pricing.\n\n"
-            "• 🎯 Best Buy Ceilings & Breakeven Pricing:\n"
-            "  Ingredient rows show the exact maximum price you can pay for raw materials on the GE while still maintaining your target profit margin or breaking even.\n\n"
-            "• 📋 1-Click Clipboard Price & Name Copy:\n"
-            "  Click any Target Offer (Bid), Instant Buy (Ask), or Best Buy price cell to instantly copy the exact integer price to clipboard for lightning-fast trading in-game.\n\n"
-            "• 🔍 Universal Real-Time Search Across All Tabs:\n"
-            "  Search instantly filters across High Alch, Smart Recommendations, Craft & Alch, Craft & Sell GE, Skilling Guide, 4h Timers, Session History, and Alerts.\n\n"
-            "• 🛡️ Strict F2P vs Members Isolation:\n"
-            "  When F2P Only is checked, 100% of Members-only skills (Herblore, Fletching), recipes, quests, and member items are completely hidden.\n\n"
-            "• 📊 Exact Level Requirements & Total Materials Needed:\n"
-            "  Full recipe accuracy, including true smithing, crafting, and fletching level requirements and total raw ingredient counts.\n"
+            "• 🌲 Smithing Material Family Tree View:\n"
+            "  Revolutionary hierarchical training mode in the Skilling Guide! Compares raw ore smelting directly against smithing finished weapons and armor across all 6 metal tiers (Bronze through Rune).\n\n"
+            "• 🏷️ Baseline Benchmark Comparison ('Sell Bar on GE'):\n"
+            "  Each metal tier features an instant benchmark row showing exact gold profit from smelting the bar and selling it directly on the Grand Exchange.\n\n"
+            "• 🎯 Chain Verdict Badges & Opportunity Cost Analysis:\n"
+            "  - 🟢 ⭐ Beats Bar: Smithing the item yields MORE net cash profit than selling the raw bars on GE!\n"
+            "  - 🟡 ⚡ Subsidized XP: Whole chain yields net positive cash from raw ores, trading a portion of bar profit for ultra-cheap anvil XP!\n"
+            "  - 🔴 ⛔ Sell Bar on GE: Making the item loses money from raw ores; stick to selling bars on GE!\n\n"
+            "• ⚔️ 157 Comprehensive Items & Multi-Level Dropdowns:\n"
+            "  Every single craftable item (weapons, armor, dart tips, arrowtips, bolts, knives, cannonballs). Click ▶ on any item to unfold its exact raw ingredients with individual buy ceilings!\n\n"
+            "• 🛡️ Adaptive Blast Furnace (P2P) vs Regular Furnace (F2P):\n"
+            "  Toggling P2P Methods automatically recalculates coal requirements: Blast Furnace coal counts for P2P vs full coal counts for F2P.\n\n"
+            "• 🔄 One-Click View Selector & Recursive Expand/Collapse:\n"
+            "  Toggle seamlessly between '🌲 Material Chain Tree' and '📈 Level Progression (1-99)'. 'Expand All' and 'Collapse All' now work recursively across all tiers and ingredients.\n"
         )
         txt.insert("1.0", features)
         txt.config(state="disabled")

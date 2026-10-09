@@ -8,6 +8,17 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🌲 Smithing Material Family Tree & Opportunity Profit Analysis (v1.3.36):**
+  - **Comprehensive Hierarchical Tree Mode:** Switch between `🌲 Material Chain Tree` and `📈 Level Progression (1-99)` in the Skilling Guide toolbar. The Material Chain Tree visualizes the complete production pipeline from raw ores to finished weapons and armor across all 6 metal tiers (Bronze, Iron, Steel, Mithril, Adamant, and Rune).
+  - **🏷️ Instant Baseline Benchmark (`↳ 🏷️ Sell Bar on GE`):** Every metal tier unfolds with a dedicated benchmark row displaying the exact baseline profit of smelting the bar from raw ores and selling it directly on the Grand Exchange.
+  - **🎯 Chain Verdict Badges & Opportunity Cost Analysis:**
+    - 🟢 **`⭐ Beats Bar (+{diff} gp vs GE)`:** Smithing this equipment yields MORE gold profit than selling the raw bars on GE, while giving full Smithing XP!
+    - 🟡 **`⚡ Subsidized XP ({cost} gp/xp)`:** Whole chain from raw ores yields net positive gold in your pocket, trading a portion of bar profit to buy ultra-cheap anvil XP!
+    - 🔴 **`⛔ Sell Bar on GE ({diff} gp vs bar)`:** Making this item results in net loss or high opportunity loss from raw ores; sell bars on GE instead!
+  - **⚔️ 157 Comprehensive Items & Multi-Level Dropdowns:** Includes all 157 craftable weapons, armor, dart tips, arrowtips, unfinished bolts, knives, nails, and cannonballs. Clicking `▶` on any item expands into its exact ingredients (`↳ 5x Mithril bar`, `↳ 5x Mithril ore`, `↳ 10x Coal`, `↳ 1x Nature rune`) with individual buy ceilings!
+  - **🛡️ Adaptive Blast Furnace (P2P) vs Standard Furnace (F2P):** Toggling "P2P Methods" dynamically recalculates coal fuel requirements—halved coal for Blast Furnace vs full coal for Free-to-Play furnaces.
+  - **🔄 Recursive Expand All / Collapse All:** `➕ Expand All` and `➖ Collapse All` recursively expand and collapse all tiers and ingredient depths simultaneously.
+
 - **⚔️ Complete Tier Smithing, Crafting & Fletching Recipe Suite (v1.3.35):**
   - **Full Rune, Adamant, Mithril & Steel Smithing Coverage:** Expanded the Skilling Guide database to **76 detailed brackets**, including all craftable weapons, armor, dart tips, arrowtips, unfinished bolts, knives, and cannonballs across Rune (levels 85–99), Adamant (levels 70–88), Mithril (levels 50–68), and Steel (levels 30–48).
   - **Comprehensive Leveling Guides for Crafting & Fletching:** Expanded Crafting to **24 brackets** (including gem cutting, all elemental battlestaves, blue/black d'hide bodies, and high-level Amethyst crafting) and Fletching to **18 brackets** (including full dart progression from Bronze to Dragon, broad ammunition, and bow cutting/stringing).
