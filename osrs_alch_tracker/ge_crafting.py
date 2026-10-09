@@ -6,10 +6,6 @@ products back onto the Grand Exchange for pure gold profit.
 """
 
 GE_PROFIT_RECIPES = [
-    # =========================================================================
-    # 🌿 HERBLORE (Potion Brewing, Herb Cleaning, Secondary Processing)
-    # =========================================================================
-    # --- Potion Brewing (3-dose & 4-dose) ---
     {
         "name": "Prayer potion(3)",
         "skill": "Herblore",
@@ -20,8 +16,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Ranarr potion (unf)", "id": 99, "qty": 1},
-            {"name": "Snape grass", "id": 231, "qty": 1}
+            {
+                "name": "Ranarr potion (unf)",
+                "id": 99,
+                "qty": 1
+            },
+            {
+                "name": "Snape grass",
+                "id": 231,
+                "qty": 1
+            }
         ]
     },
     {
@@ -34,8 +38,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Snapdragon potion (unf)", "id": 3004, "qty": 1},
-            {"name": "Red spiders' eggs", "id": 223, "qty": 1}
+            {
+                "name": "Snapdragon potion (unf)",
+                "id": 3004,
+                "qty": 1
+            },
+            {
+                "name": "Red spiders' eggs",
+                "id": 223,
+                "qty": 1
+            }
         ]
     },
     {
@@ -48,8 +60,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Toadflax potion (unf)", "id": 3002, "qty": 1},
-            {"name": "Crushed nest", "id": 6693, "qty": 1}
+            {
+                "name": "Toadflax potion (unf)",
+                "id": 3002,
+                "qty": 1
+            },
+            {
+                "name": "Crushed nest",
+                "id": 6693,
+                "qty": 1
+            }
         ]
     },
     {
@@ -62,10 +82,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Super attack(4)", "id": 2436, "qty": 1},
-            {"name": "Super strength(4)", "id": 2440, "qty": 1},
-            {"name": "Super defence(4)", "id": 2442, "qty": 1},
-            {"name": "Torstol", "id": 269, "qty": 1}
+            {
+                "name": "Super attack(4)",
+                "id": 2436,
+                "qty": 1
+            },
+            {
+                "name": "Super strength(4)",
+                "id": 2440,
+                "qty": 1
+            },
+            {
+                "name": "Super defence(4)",
+                "id": 2442,
+                "qty": 1
+            },
+            {
+                "name": "Torstol",
+                "id": 269,
+                "qty": 1
+            }
         ]
     },
     {
@@ -78,8 +114,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Super energy(4)", "id": 3016, "qty": 1},
-            {"name": "Amylase crystal", "id": 12640, "qty": 4}
+            {
+                "name": "Super energy(4)",
+                "id": 3016,
+                "qty": 1
+            },
+            {
+                "name": "Amylase crystal",
+                "id": 12640,
+                "qty": 4
+            }
         ]
     },
     {
@@ -92,8 +136,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Antifire potion(4)", "id": 2452, "qty": 1},
-            {"name": "Lava scale shard", "id": 11994, "qty": 4}
+            {
+                "name": "Antifire potion(4)",
+                "id": 2452,
+                "qty": 1
+            },
+            {
+                "name": "Lava scale shard",
+                "id": 11994,
+                "qty": 4
+            }
         ]
     },
     {
@@ -106,9 +158,21 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Cadantine potion (unf)", "id": 107, "qty": 1},
-            {"name": "Vial of blood", "id": 22446, "qty": 1},
-            {"name": "Wine of zamorak", "id": 245, "qty": 1}
+            {
+                "name": "Cadantine potion (unf)",
+                "id": 107,
+                "qty": 1
+            },
+            {
+                "name": "Vial of blood",
+                "id": 22446,
+                "qty": 1
+            },
+            {
+                "name": "Wine of zamorak",
+                "id": 245,
+                "qty": 1
+            }
         ]
     },
     {
@@ -121,8 +185,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Irit potion (unf)", "id": 101, "qty": 1},
-            {"name": "Eye of newt", "id": 221, "qty": 1}
+            {
+                "name": "Irit potion (unf)",
+                "id": 101,
+                "qty": 1
+            },
+            {
+                "name": "Eye of newt",
+                "id": 221,
+                "qty": 1
+            }
         ]
     },
     {
@@ -135,8 +207,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Kwuarm potion (unf)", "id": 103, "qty": 1},
-            {"name": "Limpwurt root", "id": 225, "qty": 1}
+            {
+                "name": "Kwuarm potion (unf)",
+                "id": 103,
+                "qty": 1
+            },
+            {
+                "name": "Limpwurt root",
+                "id": 225,
+                "qty": 1
+            }
         ]
     },
     {
@@ -149,8 +229,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Cadantine potion (unf)", "id": 107, "qty": 1},
-            {"name": "White berries", "id": 239, "qty": 1}
+            {
+                "name": "Cadantine potion (unf)",
+                "id": 107,
+                "qty": 1
+            },
+            {
+                "name": "White berries",
+                "id": 239,
+                "qty": 1
+            }
         ]
     },
     {
@@ -163,8 +251,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Dwarf weed potion (unf)", "id": 109, "qty": 1},
-            {"name": "Wine of zamorak", "id": 245, "qty": 1}
+            {
+                "name": "Dwarf weed potion (unf)",
+                "id": 109,
+                "qty": 1
+            },
+            {
+                "name": "Wine of zamorak",
+                "id": 245,
+                "qty": 1
+            }
         ]
     },
     {
@@ -177,8 +273,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Lantadyme potion (unf)", "id": 2483, "qty": 1},
-            {"name": "Potato cactus", "id": 3138, "qty": 1}
+            {
+                "name": "Lantadyme potion (unf)",
+                "id": 2483,
+                "qty": 1
+            },
+            {
+                "name": "Potato cactus",
+                "id": 3138,
+                "qty": 1
+            }
         ]
     },
     {
@@ -191,8 +295,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Lantadyme potion (unf)", "id": 2483, "qty": 1},
-            {"name": "Dragon scale dust", "id": 241, "qty": 1}
+            {
+                "name": "Lantadyme potion (unf)",
+                "id": 2483,
+                "qty": 1
+            },
+            {
+                "name": "Dragon scale dust",
+                "id": 241,
+                "qty": 1
+            }
         ]
     },
     {
@@ -205,11 +317,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2200,
         "materials": [
-            {"name": "Harralander potion (unf)", "id": 97, "qty": 1},
-            {"name": "Chocolate dust", "id": 1975, "qty": 1}
+            {
+                "name": "Harralander potion (unf)",
+                "id": 97,
+                "qty": 1
+            },
+            {
+                "name": "Chocolate dust",
+                "id": 1975,
+                "qty": 1
+            }
         ]
     },
-    # --- Unfinished Potions (Herb + Vial of water) ---
     {
         "name": "Ranarr potion (unf)",
         "skill": "Herblore",
@@ -220,8 +339,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean ranarr weed", "id": 257, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean ranarr weed",
+                "id": 257,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
     {
@@ -234,8 +361,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean snapdragon", "id": 3000, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean snapdragon",
+                "id": 3000,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
     {
@@ -248,8 +383,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean toadflax", "id": 2998, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean toadflax",
+                "id": 2998,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
     {
@@ -262,8 +405,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean torstol", "id": 269, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean torstol",
+                "id": 269,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
     {
@@ -276,8 +427,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean avantoe", "id": 261, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean avantoe",
+                "id": 261,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
     {
@@ -290,8 +449,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean kwuarm", "id": 263, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean kwuarm",
+                "id": 263,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
     {
@@ -304,11 +471,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2800,
         "materials": [
-            {"name": "Clean cadantine", "id": 265, "qty": 1},
-            {"name": "Vial of water", "id": 227, "qty": 1}
+            {
+                "name": "Clean cadantine",
+                "id": 265,
+                "qty": 1
+            },
+            {
+                "name": "Vial of water",
+                "id": 227,
+                "qty": 1
+            }
         ]
     },
-    # --- Herb Cleaning ---
     {
         "name": "Clean ranarr weed",
         "skill": "Herblore",
@@ -318,7 +492,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy ranarr weed", "id": 207, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy ranarr weed",
+                "id": 207,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Clean snapdragon",
@@ -329,7 +509,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy snapdragon", "id": 3051, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy snapdragon",
+                "id": 3051,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Clean torstol",
@@ -340,7 +526,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy torstol", "id": 219, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy torstol",
+                "id": 219,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Clean avantoe",
@@ -351,7 +543,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy avantoe", "id": 211, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy avantoe",
+                "id": 211,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Clean kwuarm",
@@ -362,7 +560,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy kwuarm", "id": 213, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy kwuarm",
+                "id": 213,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Clean cadantine",
@@ -373,7 +577,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy cadantine", "id": 215, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy cadantine",
+                "id": 215,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Clean toadflax",
@@ -384,9 +594,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 4500,
-        "materials": [{"name": "Grimy toadflax", "id": 3049, "qty": 1}]
+        "materials": [
+            {
+                "name": "Grimy toadflax",
+                "id": 3049,
+                "qty": 1
+            }
+        ]
     },
-    # --- Secondary Crushing ---
     {
         "name": "Crushed nest",
         "skill": "Herblore",
@@ -396,7 +611,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Bird nest", "id": 5075, "qty": 1}]
+        "materials": [
+            {
+                "name": "Bird nest",
+                "id": 5075,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Dragon scale dust",
@@ -407,7 +628,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Blue dragon scale", "id": 243, "qty": 1}]
+        "materials": [
+            {
+                "name": "Blue dragon scale",
+                "id": 243,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Desert goat horn dust",
@@ -418,7 +645,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Desert goat horn", "id": 9735, "qty": 1}]
+        "materials": [
+            {
+                "name": "Desert goat horn",
+                "id": 9735,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Chocolate dust",
@@ -429,13 +662,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Chocolate bar", "id": 1973, "qty": 1}]
+        "materials": [
+            {
+                "name": "Chocolate bar",
+                "id": 1973,
+                "qty": 1
+            }
+        ]
     },
-
-    # =========================================================================
-    # 🏹 FLETCHING (Bow Stringing, Darts, Bolts, Crossbow Assembly)
-    # =========================================================================
-    # --- Bow Stringing ---
     {
         "name": "Magic longbow",
         "skill": "Fletching",
@@ -446,8 +680,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Magic longbow (u)", "id": 70, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Magic longbow (u)",
+                "id": 70,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
     {
@@ -460,8 +702,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Magic shortbow (u)", "id": 72, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Magic shortbow (u)",
+                "id": 72,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
     {
@@ -474,8 +724,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Yew longbow (u)", "id": 66, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Yew longbow (u)",
+                "id": 66,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
     {
@@ -488,8 +746,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Yew shortbow (u)", "id": 68, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Yew shortbow (u)",
+                "id": 68,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
     {
@@ -502,8 +768,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Maple longbow (u)", "id": 62, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Maple longbow (u)",
+                "id": 62,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
     {
@@ -516,8 +790,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Maple shortbow (u)", "id": 64, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Maple shortbow (u)",
+                "id": 64,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
     {
@@ -530,11 +812,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1500,
         "materials": [
-            {"name": "Willow longbow (u)", "id": 58, "qty": 1},
-            {"name": "Bow string", "id": 1777, "qty": 1}
+            {
+                "name": "Willow longbow (u)",
+                "id": 58,
+                "qty": 1
+            },
+            {
+                "name": "Bow string",
+                "id": 1777,
+                "qty": 1
+            }
         ]
     },
-    # --- Darts (10x sets) ---
     {
         "name": "Dragon dart (10x)",
         "skill": "Fletching",
@@ -545,8 +834,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 15000,
         "materials": [
-            {"name": "Dragon dart tip", "id": 11232, "qty": 10},
-            {"name": "Feather", "id": 314, "qty": 10}
+            {
+                "name": "Dragon dart tip",
+                "id": 11232,
+                "qty": 10
+            },
+            {
+                "name": "Feather",
+                "id": 314,
+                "qty": 10
+            }
         ]
     },
     {
@@ -559,8 +856,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 15000,
         "materials": [
-            {"name": "Amethyst dart tip", "id": 25853, "qty": 10},
-            {"name": "Feather", "id": 314, "qty": 10}
+            {
+                "name": "Amethyst dart tip",
+                "id": 25853,
+                "qty": 10
+            },
+            {
+                "name": "Feather",
+                "id": 314,
+                "qty": 10
+            }
         ]
     },
     {
@@ -573,8 +878,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 15000,
         "materials": [
-            {"name": "Rune dart tip", "id": 824, "qty": 10},
-            {"name": "Feather", "id": 314, "qty": 10}
+            {
+                "name": "Rune dart tip",
+                "id": 824,
+                "qty": 10
+            },
+            {
+                "name": "Feather",
+                "id": 314,
+                "qty": 10
+            }
         ]
     },
     {
@@ -587,8 +900,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 15000,
         "materials": [
-            {"name": "Adamant dart tip", "id": 823, "qty": 10},
-            {"name": "Feather", "id": 314, "qty": 10}
+            {
+                "name": "Adamant dart tip",
+                "id": 823,
+                "qty": 10
+            },
+            {
+                "name": "Feather",
+                "id": 314,
+                "qty": 10
+            }
         ]
     },
     {
@@ -601,11 +922,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 15000,
         "materials": [
-            {"name": "Mithril dart tip", "id": 822, "qty": 10},
-            {"name": "Feather", "id": 314, "qty": 10}
+            {
+                "name": "Mithril dart tip",
+                "id": 822,
+                "qty": 10
+            },
+            {
+                "name": "Feather",
+                "id": 314,
+                "qty": 10
+            }
         ]
     },
-    # --- Gem-Tipped Bolts (10x sets) ---
     {
         "name": "Ruby bolts (10x)",
         "skill": "Fletching",
@@ -616,8 +944,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Adamant bolts", "id": 9143, "qty": 10},
-            {"name": "Ruby bolt tips", "id": 9191, "qty": 10}
+            {
+                "name": "Adamant bolts",
+                "id": 9143,
+                "qty": 10
+            },
+            {
+                "name": "Ruby bolt tips",
+                "id": 9191,
+                "qty": 10
+            }
         ]
     },
     {
@@ -630,8 +966,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Adamant bolts", "id": 9143, "qty": 10},
-            {"name": "Diamond bolt tips", "id": 9192, "qty": 10}
+            {
+                "name": "Adamant bolts",
+                "id": 9143,
+                "qty": 10
+            },
+            {
+                "name": "Diamond bolt tips",
+                "id": 9192,
+                "qty": 10
+            }
         ]
     },
     {
@@ -644,8 +988,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Runite bolts", "id": 9144, "qty": 10},
-            {"name": "Dragonstone bolt tips", "id": 9193, "qty": 10}
+            {
+                "name": "Runite bolts",
+                "id": 9144,
+                "qty": 10
+            },
+            {
+                "name": "Dragonstone bolt tips",
+                "id": 9193,
+                "qty": 10
+            }
         ]
     },
     {
@@ -658,11 +1010,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Runite bolts", "id": 9144, "qty": 10},
-            {"name": "Onyx bolt tips", "id": 9194, "qty": 10}
+            {
+                "name": "Runite bolts",
+                "id": 9144,
+                "qty": 10
+            },
+            {
+                "name": "Onyx bolt tips",
+                "id": 9194,
+                "qty": 10
+            }
         ]
     },
-    # --- Crossbow Stringing ---
     {
         "name": "Dragon crossbow",
         "skill": "Fletching",
@@ -673,8 +1032,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Dragon crossbow (u)", "id": 21921, "qty": 1},
-            {"name": "Crossbow string", "id": 9438, "qty": 1}
+            {
+                "name": "Dragon crossbow (u)",
+                "id": 21921,
+                "qty": 1
+            },
+            {
+                "name": "Crossbow string",
+                "id": 9438,
+                "qty": 1
+            }
         ]
     },
     {
@@ -687,8 +1054,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Runite crossbow (u)", "id": 9465, "qty": 1},
-            {"name": "Crossbow string", "id": 9438, "qty": 1}
+            {
+                "name": "Runite crossbow (u)",
+                "id": 9465,
+                "qty": 1
+            },
+            {
+                "name": "Crossbow string",
+                "id": 9438,
+                "qty": 1
+            }
         ]
     },
     {
@@ -701,15 +1076,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Adamant crossbow (u)", "id": 9463, "qty": 1},
-            {"name": "Crossbow string", "id": 9438, "qty": 1}
+            {
+                "name": "Adamant crossbow (u)",
+                "id": 9463,
+                "qty": 1
+            },
+            {
+                "name": "Crossbow string",
+                "id": 9438,
+                "qty": 1
+            }
         ]
     },
-
-    # =========================================================================
-    # ⚒️ SMITHING (Cannonballs, Dart Tips, Bars, Finished Weapons/Armour)
-    # =========================================================================
-    # --- Cannonballs (Ammo Mould / Double Ammo Mould) ---
     {
         "name": "Cannonball (4x)",
         "skill": "Smithing",
@@ -719,9 +1097,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 4,
         "members": True,
         "hourly_actions": 2000,
-        "materials": [{"name": "Steel bar", "id": 2353, "qty": 1}]
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 1
+            }
+        ]
     },
-    # --- Dart Tips (10x per bar) ---
     {
         "name": "Rune dart tip (10x)",
         "skill": "Smithing",
@@ -731,7 +1114,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 10,
         "members": True,
         "hourly_actions": 1000,
-        "materials": [{"name": "Runite bar", "id": 2363, "qty": 1}]
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Adamant dart tip (10x)",
@@ -742,7 +1131,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 10,
         "members": True,
         "hourly_actions": 1000,
-        "materials": [{"name": "Adamantite bar", "id": 2361, "qty": 1}]
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Mithril dart tip (10x)",
@@ -753,9 +1148,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 10,
         "members": True,
         "hourly_actions": 1000,
-        "materials": [{"name": "Mithril bar", "id": 2359, "qty": 1}]
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 1
+            }
+        ]
     },
-    # --- Smelting Bars (Blast Furnace Rates) ---
     {
         "name": "Runite bar (Blast Furnace)",
         "skill": "Smithing",
@@ -766,8 +1166,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2500,
         "materials": [
-            {"name": "Runite ore", "id": 451, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 4}
+            {
+                "name": "Runite ore",
+                "id": 451,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 4
+            }
         ]
     },
     {
@@ -780,8 +1188,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 3000,
         "materials": [
-            {"name": "Adamantite ore", "id": 449, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 3}
+            {
+                "name": "Adamantite ore",
+                "id": 449,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 3
+            }
         ]
     },
     {
@@ -794,8 +1210,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 3500,
         "materials": [
-            {"name": "Mithril ore", "id": 447, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 2}
+            {
+                "name": "Mithril ore",
+                "id": 447,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 2
+            }
         ]
     },
     {
@@ -808,8 +1232,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 4000,
         "materials": [
-            {"name": "Iron ore", "id": 440, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 1}
+            {
+                "name": "Iron ore",
+                "id": 440,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 1
+            }
         ]
     },
     {
@@ -822,7 +1254,11 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 5000,
         "materials": [
-            {"name": "Gold ore", "id": 444, "qty": 1}
+            {
+                "name": "Gold ore",
+                "id": 444,
+                "qty": 1
+            }
         ]
     },
     {
@@ -835,8 +1271,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1300,
         "materials": [
-            {"name": "Iron ore", "id": 440, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 2}
+            {
+                "name": "Iron ore",
+                "id": 440,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 2
+            }
         ]
     },
     {
@@ -849,7 +1293,11 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Silver ore", "id": 442, "qty": 1}
+            {
+                "name": "Silver ore",
+                "id": 442,
+                "qty": 1
+            }
         ]
     },
     {
@@ -862,7 +1310,11 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Gold ore", "id": 444, "qty": 1}
+            {
+                "name": "Gold ore",
+                "id": 444,
+                "qty": 1
+            }
         ]
     },
     {
@@ -875,8 +1327,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 900,
         "materials": [
-            {"name": "Mithril ore", "id": 447, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 4}
+            {
+                "name": "Mithril ore",
+                "id": 447,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 4
+            }
         ]
     },
     {
@@ -889,8 +1349,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 700,
         "materials": [
-            {"name": "Adamantite ore", "id": 449, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 6}
+            {
+                "name": "Adamantite ore",
+                "id": 449,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 6
+            }
         ]
     },
     {
@@ -903,8 +1371,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 500,
         "materials": [
-            {"name": "Runite ore", "id": 451, "qty": 1},
-            {"name": "Coal", "id": 453, "qty": 8}
+            {
+                "name": "Runite ore",
+                "id": 451,
+                "qty": 1
+            },
+            {
+                "name": "Coal",
+                "id": 453,
+                "qty": 8
+            }
         ]
     },
     {
@@ -917,11 +1393,18 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1300,
         "materials": [
-            {"name": "Copper ore", "id": 436, "qty": 1},
-            {"name": "Tin ore", "id": 438, "qty": 1}
+            {
+                "name": "Copper ore",
+                "id": 436,
+                "qty": 1
+            },
+            {
+                "name": "Tin ore",
+                "id": 438,
+                "qty": 1
+            }
         ]
     },
-    # --- High Demand Finished GE Weapons / Armour (F2P & P2P) ---
     {
         "name": "Rune pickaxe",
         "skill": "Smithing",
@@ -931,7 +1414,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 900,
-        "materials": [{"name": "Runite bar", "id": 2363, "qty": 1}]
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Rune scimitar",
@@ -942,7 +1431,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 850,
-        "materials": [{"name": "Runite bar", "id": 2363, "qty": 2}]
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 2
+            }
+        ]
     },
     {
         "name": "Rune 2h sword",
@@ -953,7 +1448,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 800,
-        "materials": [{"name": "Runite bar", "id": 2363, "qty": 3}]
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
     },
     {
         "name": "Rune platebody",
@@ -964,7 +1465,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 750,
-        "materials": [{"name": "Runite bar", "id": 2363, "qty": 5}]
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 5
+            }
+        ]
     },
     {
         "name": "Rune platelegs",
@@ -975,7 +1482,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 800,
-        "materials": [{"name": "Runite bar", "id": 2363, "qty": 3}]
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
     },
     {
         "name": "Adamant platebody",
@@ -986,7 +1499,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 750,
-        "materials": [{"name": "Adamantite bar", "id": 2361, "qty": 5}]
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 5
+            }
+        ]
     },
     {
         "name": "Adamant 2h sword",
@@ -997,7 +1516,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 800,
-        "materials": [{"name": "Adamantite bar", "id": 2361, "qty": 3}]
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
     },
     {
         "name": "Adamant scimitar",
@@ -1008,7 +1533,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 850,
-        "materials": [{"name": "Adamantite bar", "id": 2361, "qty": 2}]
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 2
+            }
+        ]
     },
     {
         "name": "Steel platebody",
@@ -1019,7 +1550,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 750,
-        "materials": [{"name": "Steel bar", "id": 2353, "qty": 5}]
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 5
+            }
+        ]
     },
     {
         "name": "Steel 2h sword",
@@ -1030,7 +1567,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 800,
-        "materials": [{"name": "Steel bar", "id": 2353, "qty": 3}]
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 3
+            }
+        ]
     },
     {
         "name": "Iron platebody",
@@ -1041,7 +1584,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 750,
-        "materials": [{"name": "Iron bar", "id": 2351, "qty": 5}]
+        "materials": [
+            {
+                "name": "Iron bar",
+                "id": 2351,
+                "qty": 5
+            }
+        ]
     },
     {
         "name": "Bronze platebody",
@@ -1052,13 +1601,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 750,
-        "materials": [{"name": "Bronze bar", "id": 2349, "qty": 5}]
+        "materials": [
+            {
+                "name": "Bronze bar",
+                "id": 2349,
+                "qty": 5
+            }
+        ]
     },
-
-    # =========================================================================
-    # 🔨 CRAFTING (Glassblowing, Gem Cutting, Dragonhide, Battlestaves, Jewellery)
-    # =========================================================================
-    # --- Glassblowing ---
     {
         "name": "Unpowered orb",
         "skill": "Crafting",
@@ -1068,7 +1618,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1800,
-        "materials": [{"name": "Molten glass", "id": 1775, "qty": 1}]
+        "materials": [
+            {
+                "name": "Molten glass",
+                "id": 1775,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Lantern lens",
@@ -1079,7 +1635,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1800,
-        "materials": [{"name": "Molten glass", "id": 1775, "qty": 1}]
+        "materials": [
+            {
+                "name": "Molten glass",
+                "id": 1775,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Light orb",
@@ -1090,7 +1652,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1800,
-        "materials": [{"name": "Molten glass", "id": 1775, "qty": 1}]
+        "materials": [
+            {
+                "name": "Molten glass",
+                "id": 1775,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Beer glass",
@@ -1101,7 +1669,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 1800,
-        "materials": [{"name": "Molten glass", "id": 1775, "qty": 1}]
+        "materials": [
+            {
+                "name": "Molten glass",
+                "id": 1775,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Vial",
@@ -1112,9 +1686,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 1800,
-        "materials": [{"name": "Molten glass", "id": 1775, "qty": 1}]
+        "materials": [
+            {
+                "name": "Molten glass",
+                "id": 1775,
+                "qty": 1
+            }
+        ]
     },
-    # --- Gem Cutting (F2P up to Diamond, P2P for Dragonstone/Onyx/Zenyte) ---
     {
         "name": "Cut Zenyte",
         "skill": "Crafting",
@@ -1124,7 +1703,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut zenyte", "id": 19496, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut zenyte",
+                "id": 19496,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cut Onyx",
@@ -1135,7 +1720,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut onyx", "id": 6571, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut onyx",
+                "id": 6571,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cut Dragonstone",
@@ -1146,7 +1737,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut dragonstone", "id": 1615, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut dragonstone",
+                "id": 1615,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cut Diamond",
@@ -1157,7 +1754,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut diamond", "id": 1617, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut diamond",
+                "id": 1617,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cut Ruby",
@@ -1168,7 +1771,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut ruby", "id": 1619, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut ruby",
+                "id": 1619,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cut Emerald",
@@ -1179,7 +1788,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut emerald", "id": 1621, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut emerald",
+                "id": 1621,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cut Sapphire",
@@ -1190,9 +1805,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 3500,
-        "materials": [{"name": "Uncut sapphire", "id": 1623, "qty": 1}]
+        "materials": [
+            {
+                "name": "Uncut sapphire",
+                "id": 1623,
+                "qty": 1
+            }
+        ]
     },
-    # --- Battlestaves ---
     {
         "name": "Air battlestaff",
         "skill": "Crafting",
@@ -1203,8 +1823,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2300,
         "materials": [
-            {"name": "Battlestaff", "id": 1391, "qty": 1},
-            {"name": "Air orb", "id": 573, "qty": 1}
+            {
+                "name": "Battlestaff",
+                "id": 1391,
+                "qty": 1
+            },
+            {
+                "name": "Air orb",
+                "id": 573,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1217,8 +1845,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2300,
         "materials": [
-            {"name": "Battlestaff", "id": 1391, "qty": 1},
-            {"name": "Fire orb", "id": 569, "qty": 1}
+            {
+                "name": "Battlestaff",
+                "id": 1391,
+                "qty": 1
+            },
+            {
+                "name": "Fire orb",
+                "id": 569,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1231,8 +1867,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2300,
         "materials": [
-            {"name": "Battlestaff", "id": 1391, "qty": 1},
-            {"name": "Water orb", "id": 571, "qty": 1}
+            {
+                "name": "Battlestaff",
+                "id": 1391,
+                "qty": 1
+            },
+            {
+                "name": "Water orb",
+                "id": 571,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1245,11 +1889,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2300,
         "materials": [
-            {"name": "Battlestaff", "id": 1391, "qty": 1},
-            {"name": "Earth orb", "id": 575, "qty": 1}
+            {
+                "name": "Battlestaff",
+                "id": 1391,
+                "qty": 1
+            },
+            {
+                "name": "Earth orb",
+                "id": 575,
+                "qty": 1
+            }
         ]
     },
-    # --- Dragonhide Armour ---
     {
         "name": "Black d'hide body",
         "skill": "Crafting",
@@ -1260,8 +1911,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1200,
         "materials": [
-            {"name": "Black dragon leather", "id": 2509, "qty": 3},
-            {"name": "Thread", "id": 1734, "qty": 1}
+            {
+                "name": "Black dragon leather",
+                "id": 2509,
+                "qty": 3
+            },
+            {
+                "name": "Thread",
+                "id": 1734,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1274,8 +1933,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1200,
         "materials": [
-            {"name": "Black dragon leather", "id": 2509, "qty": 2},
-            {"name": "Thread", "id": 1734, "qty": 1}
+            {
+                "name": "Black dragon leather",
+                "id": 2509,
+                "qty": 2
+            },
+            {
+                "name": "Thread",
+                "id": 1734,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1288,8 +1955,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1200,
         "materials": [
-            {"name": "Red dragon leather", "id": 2507, "qty": 3},
-            {"name": "Thread", "id": 1734, "qty": 1}
+            {
+                "name": "Red dragon leather",
+                "id": 2507,
+                "qty": 3
+            },
+            {
+                "name": "Thread",
+                "id": 1734,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1302,8 +1977,16 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1200,
         "materials": [
-            {"name": "Blue dragon leather", "id": 2505, "qty": 3},
-            {"name": "Thread", "id": 1734, "qty": 1}
+            {
+                "name": "Blue dragon leather",
+                "id": 2505,
+                "qty": 3
+            },
+            {
+                "name": "Thread",
+                "id": 1734,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1316,11 +1999,18 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1200,
         "materials": [
-            {"name": "Green dragon leather", "id": 1745, "qty": 3},
-            {"name": "Thread", "id": 1734, "qty": 1}
+            {
+                "name": "Green dragon leather",
+                "id": 1745,
+                "qty": 3
+            },
+            {
+                "name": "Thread",
+                "id": 1734,
+                "qty": 1
+            }
         ]
     },
-    # --- Gold & Silver Jewellery ---
     {
         "name": "Diamond amulet (u)",
         "skill": "Crafting",
@@ -1331,8 +2021,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Gold bar", "id": 2357, "qty": 1},
-            {"name": "Diamond", "id": 1601, "qty": 1}
+            {
+                "name": "Gold bar",
+                "id": 2357,
+                "qty": 1
+            },
+            {
+                "name": "Diamond",
+                "id": 1601,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1345,8 +2043,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Gold bar", "id": 2357, "qty": 1},
-            {"name": "Ruby", "id": 1603, "qty": 1}
+            {
+                "name": "Gold bar",
+                "id": 2357,
+                "qty": 1
+            },
+            {
+                "name": "Ruby",
+                "id": 1603,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1359,8 +2065,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Gold bar", "id": 2357, "qty": 1},
-            {"name": "Emerald", "id": 1605, "qty": 1}
+            {
+                "name": "Gold bar",
+                "id": 2357,
+                "qty": 1
+            },
+            {
+                "name": "Emerald",
+                "id": 1605,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1373,8 +2087,16 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Gold bar", "id": 2357, "qty": 1},
-            {"name": "Sapphire", "id": 1607, "qty": 1}
+            {
+                "name": "Gold bar",
+                "id": 2357,
+                "qty": 1
+            },
+            {
+                "name": "Sapphire",
+                "id": 1607,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1386,7 +2108,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 1400,
-        "materials": [{"name": "Gold bar", "id": 2357, "qty": 1}]
+        "materials": [
+            {
+                "name": "Gold bar",
+                "id": 2357,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Bow string (Spinning)",
@@ -1397,12 +2125,14 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 1400,
-        "materials": [{"name": "Flax", "id": 1779, "qty": 1}]
+        "materials": [
+            {
+                "name": "Flax",
+                "id": 1779,
+                "qty": 1
+            }
+        ]
     },
-
-    # =========================================================================
-    # 🍳 COOKING (Fish, Wine, Pizzas, Baking)
-    # =========================================================================
     {
         "name": "Cooked shark",
         "skill": "Cooking",
@@ -1412,7 +2142,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1300,
-        "materials": [{"name": "Raw shark", "id": 383, "qty": 1}]
+        "materials": [
+            {
+                "name": "Raw shark",
+                "id": 383,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cooked karambwan",
@@ -1422,8 +2158,14 @@ GE_PROFIT_RECIPES = [
         "output_id": 3144,
         "output_qty": 1,
         "members": True,
-        "hourly_actions": 4000, # 1-tick cooking
-        "materials": [{"name": "Raw karambwan", "id": 3142, "qty": 1}]
+        "hourly_actions": 4000,
+        "materials": [
+            {
+                "name": "Raw karambwan",
+                "id": 3142,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cooked anglerfish",
@@ -1434,7 +2176,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1300,
-        "materials": [{"name": "Raw anglerfish", "id": 13439, "qty": 1}]
+        "materials": [
+            {
+                "name": "Raw anglerfish",
+                "id": 13439,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cooked monkfish",
@@ -1445,7 +2193,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1300,
-        "materials": [{"name": "Raw monkfish", "id": 7944, "qty": 1}]
+        "materials": [
+            {
+                "name": "Raw monkfish",
+                "id": 7944,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cooked manta ray",
@@ -1456,7 +2210,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": True,
         "hourly_actions": 1300,
-        "materials": [{"name": "Raw manta ray", "id": 389, "qty": 1}]
+        "materials": [
+            {
+                "name": "Raw manta ray",
+                "id": 389,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cooked swordfish",
@@ -1467,7 +2227,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 1300,
-        "materials": [{"name": "Raw swordfish", "id": 371, "qty": 1}]
+        "materials": [
+            {
+                "name": "Raw swordfish",
+                "id": 371,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Cooked lobster",
@@ -1478,7 +2244,13 @@ GE_PROFIT_RECIPES = [
         "output_qty": 1,
         "members": False,
         "hourly_actions": 1300,
-        "materials": [{"name": "Raw lobster", "id": 377, "qty": 1}]
+        "materials": [
+            {
+                "name": "Raw lobster",
+                "id": 377,
+                "qty": 1
+            }
+        ]
     },
     {
         "name": "Jug of wine",
@@ -1490,15 +2262,18 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 2500,
         "materials": [
-            {"name": "Grapes", "id": 1987, "qty": 1},
-            {"name": "Jug of water", "id": 1937, "qty": 1}
+            {
+                "name": "Grapes",
+                "id": 1987,
+                "qty": 1
+            },
+            {
+                "name": "Jug of water",
+                "id": 1937,
+                "qty": 1
+            }
         ]
     },
-
-    # =========================================================================
-    # ✨ MAGIC (Jewellery Enchanting, Enchanted Bolts, Lunar Processing)
-    # =========================================================================
-    # --- Jewellery Enchanting ---
     {
         "name": "Ring of recoil",
         "skill": "Magic",
@@ -1509,9 +2284,21 @@ GE_PROFIT_RECIPES = [
         "members": False,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Sapphire ring", "id": 1637, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Water rune", "id": 555, "qty": 1}
+            {
+                "name": "Sapphire ring",
+                "id": 1637,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Water rune",
+                "id": 555,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1524,9 +2311,21 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Sapphire necklace", "id": 1656, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Water rune", "id": 555, "qty": 1}
+            {
+                "name": "Sapphire necklace",
+                "id": 1656,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Water rune",
+                "id": 555,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1539,9 +2338,21 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Emerald ring", "id": 1639, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Air rune", "id": 556, "qty": 3}
+            {
+                "name": "Emerald ring",
+                "id": 1639,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Air rune",
+                "id": 556,
+                "qty": 3
+            }
         ]
     },
     {
@@ -1554,10 +2365,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Dragonstone bracelet", "id": 11118, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Earth rune", "id": 557, "qty": 15},
-            {"name": "Water rune", "id": 555, "qty": 15}
+            {
+                "name": "Dragonstone bracelet",
+                "id": 11118,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Earth rune",
+                "id": 557,
+                "qty": 15
+            },
+            {
+                "name": "Water rune",
+                "id": 555,
+                "qty": 15
+            }
         ]
     },
     {
@@ -1570,10 +2397,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Dragonstone necklace", "id": 1664, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Earth rune", "id": 557, "qty": 15},
-            {"name": "Water rune", "id": 555, "qty": 15}
+            {
+                "name": "Dragonstone necklace",
+                "id": 1664,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Earth rune",
+                "id": 557,
+                "qty": 15
+            },
+            {
+                "name": "Water rune",
+                "id": 555,
+                "qty": 15
+            }
         ]
     },
     {
@@ -1586,10 +2429,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Onyx amulet", "id": 6581, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Earth rune", "id": 557, "qty": 20},
-            {"name": "Fire rune", "id": 554, "qty": 20}
+            {
+                "name": "Onyx amulet",
+                "id": 6581,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Earth rune",
+                "id": 557,
+                "qty": 20
+            },
+            {
+                "name": "Fire rune",
+                "id": 554,
+                "qty": 20
+            }
         ]
     },
     {
@@ -1602,10 +2461,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Zenyte ring", "id": 19538, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Soul rune", "id": 566, "qty": 20},
-            {"name": "Blood rune", "id": 565, "qty": 20}
+            {
+                "name": "Zenyte ring",
+                "id": 19538,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Soul rune",
+                "id": 566,
+                "qty": 20
+            },
+            {
+                "name": "Blood rune",
+                "id": 565,
+                "qty": 20
+            }
         ]
     },
     {
@@ -1618,10 +2493,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Zenyte amulet", "id": 19541, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Soul rune", "id": 566, "qty": 20},
-            {"name": "Blood rune", "id": 565, "qty": 20}
+            {
+                "name": "Zenyte amulet",
+                "id": 19541,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Soul rune",
+                "id": 566,
+                "qty": 20
+            },
+            {
+                "name": "Blood rune",
+                "id": 565,
+                "qty": 20
+            }
         ]
     },
     {
@@ -1634,10 +2525,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Zenyte necklace", "id": 19535, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Soul rune", "id": 566, "qty": 20},
-            {"name": "Blood rune", "id": 565, "qty": 20}
+            {
+                "name": "Zenyte necklace",
+                "id": 19535,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Soul rune",
+                "id": 566,
+                "qty": 20
+            },
+            {
+                "name": "Blood rune",
+                "id": 565,
+                "qty": 20
+            }
         ]
     },
     {
@@ -1650,13 +2557,28 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 2000,
         "materials": [
-            {"name": "Zenyte bracelet", "id": 19532, "qty": 1},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Soul rune", "id": 566, "qty": 20},
-            {"name": "Blood rune", "id": 565, "qty": 20}
+            {
+                "name": "Zenyte bracelet",
+                "id": 19532,
+                "qty": 1
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Soul rune",
+                "id": 566,
+                "qty": 20
+            },
+            {
+                "name": "Blood rune",
+                "id": 565,
+                "qty": 20
+            }
         ]
     },
-    # --- Enchanted Bolts (10x per cast) ---
     {
         "name": "Onyx bolts (e) (10x)",
         "skill": "Magic",
@@ -1667,10 +2589,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Onyx bolts", "id": 9342, "qty": 10},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Death rune", "id": 560, "qty": 1},
-            {"name": "Fire rune", "id": 554, "qty": 1}
+            {
+                "name": "Onyx bolts",
+                "id": 9342,
+                "qty": 10
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Death rune",
+                "id": 560,
+                "qty": 1
+            },
+            {
+                "name": "Fire rune",
+                "id": 554,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1683,10 +2621,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Dragonstone bolts", "id": 9341, "qty": 10},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Soul rune", "id": 566, "qty": 2},
-            {"name": "Earth rune", "id": 557, "qty": 2}
+            {
+                "name": "Dragonstone bolts",
+                "id": 9341,
+                "qty": 10
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Soul rune",
+                "id": 566,
+                "qty": 2
+            },
+            {
+                "name": "Earth rune",
+                "id": 557,
+                "qty": 2
+            }
         ]
     },
     {
@@ -1699,10 +2653,26 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Diamond bolts", "id": 9340, "qty": 10},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Law rune", "id": 563, "qty": 2},
-            {"name": "Earth rune", "id": 557, "qty": 1}
+            {
+                "name": "Diamond bolts",
+                "id": 9340,
+                "qty": 10
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Law rune",
+                "id": 563,
+                "qty": 2
+            },
+            {
+                "name": "Earth rune",
+                "id": 557,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1715,13 +2685,28 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 12000,
         "materials": [
-            {"name": "Ruby bolts", "id": 9339, "qty": 10},
-            {"name": "Cosmic rune", "id": 564, "qty": 1},
-            {"name": "Blood rune", "id": 565, "qty": 1},
-            {"name": "Fire rune", "id": 554, "qty": 5}
+            {
+                "name": "Ruby bolts",
+                "id": 9339,
+                "qty": 10
+            },
+            {
+                "name": "Cosmic rune",
+                "id": 564,
+                "qty": 1
+            },
+            {
+                "name": "Blood rune",
+                "id": 565,
+                "qty": 1
+            },
+            {
+                "name": "Fire rune",
+                "id": 554,
+                "qty": 5
+            }
         ]
     },
-    # --- Lunar Spells (Plank Make, Tan Leather) ---
     {
         "name": "Mahogany plank (Plank Make)",
         "skill": "Magic",
@@ -1732,9 +2717,21 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Mahogany logs", "id": 6332, "qty": 1},
-            {"name": "Astral rune", "id": 9075, "qty": 2},
-            {"name": "Nature rune", "id": 561, "qty": 1}
+            {
+                "name": "Mahogany logs",
+                "id": 6332,
+                "qty": 1
+            },
+            {
+                "name": "Astral rune",
+                "id": 9075,
+                "qty": 2
+            },
+            {
+                "name": "Nature rune",
+                "id": 561,
+                "qty": 1
+            }
         ]
     },
     {
@@ -1747,9 +2744,655 @@ GE_PROFIT_RECIPES = [
         "members": True,
         "hourly_actions": 1400,
         "materials": [
-            {"name": "Teak logs", "id": 6333, "qty": 1},
-            {"name": "Astral rune", "id": 9075, "qty": 2},
-            {"name": "Nature rune", "id": 561, "qty": 1}
+            {
+                "name": "Teak logs",
+                "id": 6333,
+                "qty": 1
+            },
+            {
+                "name": "Astral rune",
+                "id": 9075,
+                "qty": 2
+            },
+            {
+                "name": "Nature rune",
+                "id": 561,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune arrowtips (15x)",
+        "skill": "Smithing",
+        "level": 90,
+        "xp": 75.0,
+        "output_id": 44,
+        "output_qty": 15,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Runite bolts (unf) (10x)",
+        "skill": "Smithing",
+        "level": 88,
+        "xp": 75.0,
+        "output_id": 9381,
+        "output_qty": 10,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune knife (5x)",
+        "skill": "Smithing",
+        "level": 92,
+        "xp": 75.0,
+        "output_id": 868,
+        "output_qty": 5,
+        "members": True,
+        "hourly_actions": 900,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune cannonball (4x)",
+        "skill": "Smithing",
+        "level": 90,
+        "xp": 50.5,
+        "output_id": 31914,
+        "output_qty": 4,
+        "members": True,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune sword",
+        "skill": "Smithing",
+        "level": 89,
+        "xp": 75.0,
+        "output_id": 1289,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 900,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune med helm",
+        "skill": "Smithing",
+        "level": 88,
+        "xp": 75.0,
+        "output_id": 1147,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 900,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune full helm",
+        "skill": "Smithing",
+        "level": 92,
+        "xp": 150.0,
+        "output_id": 1163,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 850,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Rune sq shield",
+        "skill": "Smithing",
+        "level": 93,
+        "xp": 150.0,
+        "output_id": 1185,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 850,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Rune warhammer",
+        "skill": "Smithing",
+        "level": 94,
+        "xp": 225.0,
+        "output_id": 1347,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Rune battleaxe",
+        "skill": "Smithing",
+        "level": 95,
+        "xp": 225.0,
+        "output_id": 1373,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Rune chainbody",
+        "skill": "Smithing",
+        "level": 96,
+        "xp": 225.0,
+        "output_id": 1113,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Rune kiteshield",
+        "skill": "Smithing",
+        "level": 97,
+        "xp": 225.0,
+        "output_id": 1201,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Rune plateskirt",
+        "skill": "Smithing",
+        "level": 99,
+        "xp": 225.0,
+        "output_id": 1093,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Runite bar",
+                "id": 2363,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Adamant arrowtips (15x)",
+        "skill": "Smithing",
+        "level": 75,
+        "xp": 62.5,
+        "output_id": 43,
+        "output_qty": 15,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant bolts(unf) (10x)",
+        "skill": "Smithing",
+        "level": 73,
+        "xp": 62.5,
+        "output_id": 9380,
+        "output_qty": 10,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant knife (5x)",
+        "skill": "Smithing",
+        "level": 77,
+        "xp": 62.5,
+        "output_id": 867,
+        "output_qty": 5,
+        "members": True,
+        "hourly_actions": 900,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant warhammer",
+        "skill": "Smithing",
+        "level": 79,
+        "xp": 187.5,
+        "output_id": 1345,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Adamant battleaxe",
+        "skill": "Smithing",
+        "level": 80,
+        "xp": 187.5,
+        "output_id": 1371,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Adamant chainbody",
+        "skill": "Smithing",
+        "level": 81,
+        "xp": 187.5,
+        "output_id": 1111,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Adamant kiteshield",
+        "skill": "Smithing",
+        "level": 82,
+        "xp": 187.5,
+        "output_id": 1199,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Adamant platelegs",
+        "skill": "Smithing",
+        "level": 86,
+        "xp": 187.5,
+        "output_id": 1073,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Adamant plateskirt",
+        "skill": "Smithing",
+        "level": 86,
+        "xp": 187.5,
+        "output_id": 1091,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Adamantite bar",
+                "id": 2361,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Mithril arrowtips (15x)",
+        "skill": "Smithing",
+        "level": 55,
+        "xp": 50.0,
+        "output_id": 42,
+        "output_qty": 15,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril bolts (unf) (10x)",
+        "skill": "Smithing",
+        "level": 53,
+        "xp": 50.0,
+        "output_id": 9379,
+        "output_qty": 10,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril knife (5x)",
+        "skill": "Smithing",
+        "level": 57,
+        "xp": 50.0,
+        "output_id": 866,
+        "output_qty": 5,
+        "members": True,
+        "hourly_actions": 900,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril scimitar",
+        "skill": "Smithing",
+        "level": 55,
+        "xp": 100.0,
+        "output_id": 1329,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 850,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Mithril 2h sword",
+        "skill": "Smithing",
+        "level": 64,
+        "xp": 150.0,
+        "output_id": 1315,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Mithril platelegs",
+        "skill": "Smithing",
+        "level": 66,
+        "xp": 150.0,
+        "output_id": 1071,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Mithril plateskirt",
+        "skill": "Smithing",
+        "level": 66,
+        "xp": 150.0,
+        "output_id": 1085,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 800,
+        "materials": [
+            {
+                "name": "Mithril bar",
+                "id": 2359,
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Steel arrowtips (15x)",
+        "skill": "Smithing",
+        "level": 35,
+        "xp": 37.5,
+        "output_id": 41,
+        "output_qty": 15,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel bolts (unf) (10x)",
+        "skill": "Smithing",
+        "level": 33,
+        "xp": 37.5,
+        "output_id": 9378,
+        "output_qty": 10,
+        "members": True,
+        "hourly_actions": 950,
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel knife (5x)",
+        "skill": "Smithing",
+        "level": 37,
+        "xp": 37.5,
+        "output_id": 865,
+        "output_qty": 5,
+        "members": True,
+        "hourly_actions": 900,
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel scimitar",
+        "skill": "Smithing",
+        "level": 35,
+        "xp": 75.0,
+        "output_id": 1325,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 850,
+        "materials": [
+            {
+                "name": "Steel bar",
+                "id": 2353,
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Steel dart (10x)",
+        "skill": "Fletching",
+        "level": 34,
+        "xp": 75.0,
+        "output_id": 808,
+        "output_qty": 10,
+        "members": True,
+        "hourly_actions": 2500,
+        "materials": [
+            {
+                "name": "Steel dart tip",
+                "id": 821,
+                "qty": 10
+            },
+            {
+                "name": "Feather",
+                "id": 314,
+                "qty": 10
+            }
+        ]
+    },
+    {
+        "name": "Amethyst bolt tips (8x)",
+        "skill": "Crafting",
+        "level": 83,
+        "xp": 60.0,
+        "output_id": 21338,
+        "output_qty": 8,
+        "members": True,
+        "hourly_actions": 1200,
+        "materials": [
+            {
+                "name": "Amethyst",
+                "id": 21347,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Amethyst arrowtips (15x)",
+        "skill": "Crafting",
+        "level": 85,
+        "xp": 60.0,
+        "output_id": 21332,
+        "output_qty": 15,
+        "members": True,
+        "hourly_actions": 1200,
+        "materials": [
+            {
+                "name": "Amethyst",
+                "id": 21347,
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Amethyst dart tips (8x)",
+        "skill": "Crafting",
+        "level": 89,
+        "xp": 60.0,
+        "output_id": 25853,
+        "output_qty": 8,
+        "members": True,
+        "hourly_actions": 1200,
+        "materials": [
+            {
+                "name": "Amethyst",
+                "id": 21347,
+                "qty": 1
+            }
         ]
     }
 ]

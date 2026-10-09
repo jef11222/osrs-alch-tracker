@@ -2080,13 +2080,14 @@ class OSRSAlchDashboard(tk.Tk):
 
             # Output valuation & disposal recommendation
             out_id = b.get("output_id", 0)
+            out_qty = b.get("output_qty", 1)
             alch_val = self.api.mapping.get(str(out_id), {}).get("highalch", 0) if b.get("can_alch") else 0
             nat_cost = nat_price if b.get("nature_cost", 0) > 0 else 0
             total_act_cost = mat_cost_ea + nat_cost
 
-            profit_alch = (alch_val - total_act_cost) if b.get("can_alch") else -99999999
+            profit_alch = ((alch_val * out_qty) - total_act_cost) if b.get("can_alch") else -99999999
             ge_sell = self.api.get_price(out_id, "instasell") if b.get("can_sell_ge") and out_id > 0 else 0
-            profit_ge = (int(ge_sell * 0.99) - mat_cost_ea) if b.get("can_sell_ge") and out_id > 0 else -99999999
+            profit_ge = ((int(ge_sell * 0.99) * out_qty) - mat_cost_ea) if b.get("can_sell_ge") and out_id > 0 else -99999999
 
             if b_style == "quest":
                 action_rec = "📜 Quest Turn-in"
@@ -2125,8 +2126,7 @@ class OSRSAlchDashboard(tk.Tk):
                 except Exception:
                     target_margin = 0
 
-            out_qty = b.get("output_qty", 1)
-            eff_alch_rev = (alch_val - nat_cost) if (b.get("can_alch") and alch_val > 0) else -99999999
+            eff_alch_rev = ((alch_val * out_qty) - nat_cost) if (b.get("can_alch") and alch_val > 0) else -99999999
             eff_ge_rev = (int(ge_sell * 0.99) * out_qty) if (b.get("can_sell_ge") and out_id > 0) else -99999999
             best_rev = max(eff_alch_rev, eff_ge_rev)
 

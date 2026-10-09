@@ -1,16 +1,8 @@
 """
 Craft & Alch recipes database with materials, required skills, and output items.
-Includes comprehensive coverage of:
-- Gold Rings, Necklaces, Bracelets, and Amulets
-- Amulet Stringing
-- Battlestaves
-- Dragonhide Bodies, Chaps, and Vambraces
-- Bow & Crossbow Fletching
-- Silver Jewellery
 """
 
 CRAFTING_RECIPES = [
-    # ------------------ GOLD RINGS ------------------
     {
         "name": "Diamond ring",
         "output_id": 1643,
@@ -19,8 +11,16 @@ CRAFTING_RECIPES = [
         "xp": 85.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1601, "name": "Diamond", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1601,
+                "name": "Diamond",
+                "qty": 1
+            }
         ]
     },
     {
@@ -31,8 +31,16 @@ CRAFTING_RECIPES = [
         "xp": 70.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1603, "name": "Ruby", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1603,
+                "name": "Ruby",
+                "qty": 1
+            }
         ]
     },
     {
@@ -43,8 +51,16 @@ CRAFTING_RECIPES = [
         "xp": 55.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1605, "name": "Emerald", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1605,
+                "name": "Emerald",
+                "qty": 1
+            }
         ]
     },
     {
@@ -55,8 +71,16 @@ CRAFTING_RECIPES = [
         "xp": 40.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1607, "name": "Sapphire", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1607,
+                "name": "Sapphire",
+                "qty": 1
+            }
         ]
     },
     {
@@ -67,7 +91,11 @@ CRAFTING_RECIPES = [
         "xp": 15.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -78,8 +106,16 @@ CRAFTING_RECIPES = [
         "xp": 100.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1615, "name": "Dragonstone", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1615,
+                "name": "Dragonstone",
+                "qty": 1
+            }
         ]
     },
     {
@@ -90,12 +126,18 @@ CRAFTING_RECIPES = [
         "xp": 115.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 6573, "name": "Onyx", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 6573,
+                "name": "Onyx",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ GOLD NECKLACES ------------------
     {
         "name": "Diamond necklace",
         "output_id": 1662,
@@ -104,8 +146,16 @@ CRAFTING_RECIPES = [
         "xp": 90.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1601, "name": "Diamond", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1601,
+                "name": "Diamond",
+                "qty": 1
+            }
         ]
     },
     {
@@ -116,8 +166,16 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1603, "name": "Ruby", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1603,
+                "name": "Ruby",
+                "qty": 1
+            }
         ]
     },
     {
@@ -128,8 +186,16 @@ CRAFTING_RECIPES = [
         "xp": 60.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1605, "name": "Emerald", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1605,
+                "name": "Emerald",
+                "qty": 1
+            }
         ]
     },
     {
@@ -140,8 +206,16 @@ CRAFTING_RECIPES = [
         "xp": 55.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1607, "name": "Sapphire", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1607,
+                "name": "Sapphire",
+                "qty": 1
+            }
         ]
     },
     {
@@ -152,7 +226,11 @@ CRAFTING_RECIPES = [
         "xp": 20.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -163,8 +241,16 @@ CRAFTING_RECIPES = [
         "xp": 105.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1615, "name": "Dragonstone", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1615,
+                "name": "Dragonstone",
+                "qty": 1
+            }
         ]
     },
     {
@@ -175,12 +261,18 @@ CRAFTING_RECIPES = [
         "xp": 120.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 6573, "name": "Onyx", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 6573,
+                "name": "Onyx",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ GOLD BRACELETS ------------------
     {
         "name": "Dragonstone bracelet",
         "output_id": 11115,
@@ -189,8 +281,16 @@ CRAFTING_RECIPES = [
         "xp": 110.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1615, "name": "Dragonstone", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1615,
+                "name": "Dragonstone",
+                "qty": 1
+            }
         ]
     },
     {
@@ -201,8 +301,16 @@ CRAFTING_RECIPES = [
         "xp": 95.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1601, "name": "Diamond", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1601,
+                "name": "Diamond",
+                "qty": 1
+            }
         ]
     },
     {
@@ -213,8 +321,16 @@ CRAFTING_RECIPES = [
         "xp": 80.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1603, "name": "Ruby", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1603,
+                "name": "Ruby",
+                "qty": 1
+            }
         ]
     },
     {
@@ -225,8 +341,16 @@ CRAFTING_RECIPES = [
         "xp": 65.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1605, "name": "Emerald", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1605,
+                "name": "Emerald",
+                "qty": 1
+            }
         ]
     },
     {
@@ -237,8 +361,16 @@ CRAFTING_RECIPES = [
         "xp": 60.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1607, "name": "Sapphire", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1607,
+                "name": "Sapphire",
+                "qty": 1
+            }
         ]
     },
     {
@@ -249,7 +381,11 @@ CRAFTING_RECIPES = [
         "xp": 25.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -260,12 +396,18 @@ CRAFTING_RECIPES = [
         "xp": 125.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 6573, "name": "Onyx", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 6573,
+                "name": "Onyx",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ AMULETS (CRAFT & STRING) ------------------
     {
         "name": "Diamond amulet",
         "output_id": 1700,
@@ -274,9 +416,21 @@ CRAFTING_RECIPES = [
         "xp": 104.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1601, "name": "Diamond", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1601,
+                "name": "Diamond",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -287,9 +441,21 @@ CRAFTING_RECIPES = [
         "xp": 89.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1603, "name": "Ruby", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1603,
+                "name": "Ruby",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -300,9 +466,21 @@ CRAFTING_RECIPES = [
         "xp": 74.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1605, "name": "Emerald", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1605,
+                "name": "Emerald",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -313,9 +491,21 @@ CRAFTING_RECIPES = [
         "xp": 69.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1607, "name": "Sapphire", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1607,
+                "name": "Sapphire",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -326,8 +516,16 @@ CRAFTING_RECIPES = [
         "xp": 34.0,
         "members": False,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -338,9 +536,21 @@ CRAFTING_RECIPES = [
         "xp": 154.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 1615, "name": "Dragonstone", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 1615,
+                "name": "Dragonstone",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -351,13 +561,23 @@ CRAFTING_RECIPES = [
         "xp": 169.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 6573, "name": "Onyx", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 6573,
+                "name": "Onyx",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ AMULETS (STRINGING ONLY) ------------------
     {
         "name": "Diamond amulet (string)",
         "output_id": 1700,
@@ -366,8 +586,16 @@ CRAFTING_RECIPES = [
         "xp": 4.0,
         "members": False,
         "materials": [
-            {"id": 1681, "name": "Diamond amulet (u)", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 1681,
+                "name": "Diamond amulet (u)",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -378,8 +606,16 @@ CRAFTING_RECIPES = [
         "xp": 4.0,
         "members": False,
         "materials": [
-            {"id": 1679, "name": "Ruby amulet (u)", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 1679,
+                "name": "Ruby amulet (u)",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -390,8 +626,16 @@ CRAFTING_RECIPES = [
         "xp": 4.0,
         "members": False,
         "materials": [
-            {"id": 1677, "name": "Emerald amulet (u)", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 1677,
+                "name": "Emerald amulet (u)",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -402,8 +646,16 @@ CRAFTING_RECIPES = [
         "xp": 4.0,
         "members": False,
         "materials": [
-            {"id": 1675, "name": "Sapphire amulet (u)", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 1675,
+                "name": "Sapphire amulet (u)",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
     {
@@ -414,12 +666,18 @@ CRAFTING_RECIPES = [
         "xp": 4.0,
         "members": True,
         "materials": [
-            {"id": 1683, "name": "Dragonstone amulet (u)", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 1683,
+                "name": "Dragonstone amulet (u)",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ BATTLESTAVES ------------------
     {
         "name": "Air battlestaff",
         "output_id": 1397,
@@ -428,8 +686,16 @@ CRAFTING_RECIPES = [
         "xp": 137.5,
         "members": True,
         "materials": [
-            {"id": 1391, "name": "Battlestaff", "qty": 1},
-            {"id": 573, "name": "Air orb", "qty": 1}
+            {
+                "id": 1391,
+                "name": "Battlestaff",
+                "qty": 1
+            },
+            {
+                "id": 573,
+                "name": "Air orb",
+                "qty": 1
+            }
         ]
     },
     {
@@ -440,8 +706,16 @@ CRAFTING_RECIPES = [
         "xp": 125.0,
         "members": True,
         "materials": [
-            {"id": 1391, "name": "Battlestaff", "qty": 1},
-            {"id": 569, "name": "Fire orb", "qty": 1}
+            {
+                "id": 1391,
+                "name": "Battlestaff",
+                "qty": 1
+            },
+            {
+                "id": 569,
+                "name": "Fire orb",
+                "qty": 1
+            }
         ]
     },
     {
@@ -452,8 +726,16 @@ CRAFTING_RECIPES = [
         "xp": 100.0,
         "members": True,
         "materials": [
-            {"id": 1391, "name": "Battlestaff", "qty": 1},
-            {"id": 571, "name": "Water orb", "qty": 1}
+            {
+                "id": 1391,
+                "name": "Battlestaff",
+                "qty": 1
+            },
+            {
+                "id": 571,
+                "name": "Water orb",
+                "qty": 1
+            }
         ]
     },
     {
@@ -464,12 +746,18 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": True,
         "materials": [
-            {"id": 1391, "name": "Battlestaff", "qty": 1},
-            {"id": 575, "name": "Earth orb", "qty": 1}
+            {
+                "id": 1391,
+                "name": "Battlestaff",
+                "qty": 1
+            },
+            {
+                "id": 575,
+                "name": "Earth orb",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ DRAGONHIDE BODIES, CHAPS & VAMBRACES ------------------
     {
         "name": "Black d'hide body",
         "output_id": 2503,
@@ -478,7 +766,11 @@ CRAFTING_RECIPES = [
         "xp": 258.0,
         "members": True,
         "materials": [
-            {"id": 2509, "name": "Black dragon leather", "qty": 3}
+            {
+                "id": 2509,
+                "name": "Black dragon leather",
+                "qty": 3
+            }
         ]
     },
     {
@@ -489,7 +781,11 @@ CRAFTING_RECIPES = [
         "xp": 172.0,
         "members": True,
         "materials": [
-            {"id": 2509, "name": "Black dragon leather", "qty": 2}
+            {
+                "id": 2509,
+                "name": "Black dragon leather",
+                "qty": 2
+            }
         ]
     },
     {
@@ -500,7 +796,11 @@ CRAFTING_RECIPES = [
         "xp": 86.0,
         "members": True,
         "materials": [
-            {"id": 2509, "name": "Black dragon leather", "qty": 1}
+            {
+                "id": 2509,
+                "name": "Black dragon leather",
+                "qty": 1
+            }
         ]
     },
     {
@@ -511,7 +811,11 @@ CRAFTING_RECIPES = [
         "xp": 234.0,
         "members": True,
         "materials": [
-            {"id": 2507, "name": "Red dragon leather", "qty": 3}
+            {
+                "id": 2507,
+                "name": "Red dragon leather",
+                "qty": 3
+            }
         ]
     },
     {
@@ -522,7 +826,11 @@ CRAFTING_RECIPES = [
         "xp": 156.0,
         "members": True,
         "materials": [
-            {"id": 2507, "name": "Red dragon leather", "qty": 2}
+            {
+                "id": 2507,
+                "name": "Red dragon leather",
+                "qty": 2
+            }
         ]
     },
     {
@@ -533,7 +841,11 @@ CRAFTING_RECIPES = [
         "xp": 78.0,
         "members": True,
         "materials": [
-            {"id": 2507, "name": "Red dragon leather", "qty": 1}
+            {
+                "id": 2507,
+                "name": "Red dragon leather",
+                "qty": 1
+            }
         ]
     },
     {
@@ -544,7 +856,11 @@ CRAFTING_RECIPES = [
         "xp": 210.0,
         "members": True,
         "materials": [
-            {"id": 2505, "name": "Blue dragon leather", "qty": 3}
+            {
+                "id": 2505,
+                "name": "Blue dragon leather",
+                "qty": 3
+            }
         ]
     },
     {
@@ -555,7 +871,11 @@ CRAFTING_RECIPES = [
         "xp": 140.0,
         "members": True,
         "materials": [
-            {"id": 2505, "name": "Blue dragon leather", "qty": 2}
+            {
+                "id": 2505,
+                "name": "Blue dragon leather",
+                "qty": 2
+            }
         ]
     },
     {
@@ -566,7 +886,11 @@ CRAFTING_RECIPES = [
         "xp": 70.0,
         "members": True,
         "materials": [
-            {"id": 2505, "name": "Blue dragon leather", "qty": 1}
+            {
+                "id": 2505,
+                "name": "Blue dragon leather",
+                "qty": 1
+            }
         ]
     },
     {
@@ -577,7 +901,11 @@ CRAFTING_RECIPES = [
         "xp": 186.0,
         "members": True,
         "materials": [
-            {"id": 1745, "name": "Green dragon leather", "qty": 3}
+            {
+                "id": 1745,
+                "name": "Green dragon leather",
+                "qty": 3
+            }
         ]
     },
     {
@@ -588,7 +916,11 @@ CRAFTING_RECIPES = [
         "xp": 124.0,
         "members": True,
         "materials": [
-            {"id": 1745, "name": "Green dragon leather", "qty": 2}
+            {
+                "id": 1745,
+                "name": "Green dragon leather",
+                "qty": 2
+            }
         ]
     },
     {
@@ -599,11 +931,13 @@ CRAFTING_RECIPES = [
         "xp": 62.0,
         "members": True,
         "materials": [
-            {"id": 1745, "name": "Green dragon leather", "qty": 1}
+            {
+                "id": 1745,
+                "name": "Green dragon leather",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ FLETCHING (STRINGING BOWS) ------------------
     {
         "name": "Magic longbow (strung)",
         "output_id": 859,
@@ -612,8 +946,16 @@ CRAFTING_RECIPES = [
         "xp": 91.5,
         "members": True,
         "materials": [
-            {"id": 70, "name": "Magic longbow (u)", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 70,
+                "name": "Magic longbow (u)",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -624,8 +966,16 @@ CRAFTING_RECIPES = [
         "xp": 83.3,
         "members": True,
         "materials": [
-            {"id": 72, "name": "Magic shortbow (u)", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 72,
+                "name": "Magic shortbow (u)",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -636,8 +986,16 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": True,
         "materials": [
-            {"id": 66, "name": "Yew longbow (u)", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 66,
+                "name": "Yew longbow (u)",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -648,8 +1006,16 @@ CRAFTING_RECIPES = [
         "xp": 67.5,
         "members": True,
         "materials": [
-            {"id": 68, "name": "Yew shortbow (u)", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 68,
+                "name": "Yew shortbow (u)",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -660,8 +1026,16 @@ CRAFTING_RECIPES = [
         "xp": 58.2,
         "members": True,
         "materials": [
-            {"id": 62, "name": "Maple longbow (u)", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 62,
+                "name": "Maple longbow (u)",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -672,12 +1046,18 @@ CRAFTING_RECIPES = [
         "xp": 50.0,
         "members": True,
         "materials": [
-            {"id": 64, "name": "Maple shortbow (u)", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 64,
+                "name": "Maple shortbow (u)",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ FLETCHING (CROSSBOWS) ------------------
     {
         "name": "Rune crossbow",
         "output_id": 9185,
@@ -686,13 +1066,23 @@ CRAFTING_RECIPES = [
         "xp": 100.0,
         "members": True,
         "materials": [
-            {"id": 9431, "name": "Runite limbs", "qty": 1},
-            {"id": 9452, "name": "Yew stock", "qty": 1},
-            {"id": 9438, "name": "Crossbow string", "qty": 1}
+            {
+                "id": 9431,
+                "name": "Runite limbs",
+                "qty": 1
+            },
+            {
+                "id": 9452,
+                "name": "Yew stock",
+                "qty": 1
+            },
+            {
+                "id": 9438,
+                "name": "Crossbow string",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ SILVER JEWELLERY ------------------
     {
         "name": "Tiara",
         "output_id": 5525,
@@ -701,7 +1091,11 @@ CRAFTING_RECIPES = [
         "xp": 52.5,
         "members": False,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -712,7 +1106,11 @@ CRAFTING_RECIPES = [
         "xp": 50.0,
         "members": False,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -723,7 +1121,11 @@ CRAFTING_RECIPES = [
         "xp": 50.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -734,8 +1136,16 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1613, "name": "Red topaz", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1613,
+                "name": "Red topaz",
+                "qty": 1
+            }
         ]
     },
     {
@@ -746,8 +1156,16 @@ CRAFTING_RECIPES = [
         "xp": 60.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1611, "name": "Jade", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1611,
+                "name": "Jade",
+                "qty": 1
+            }
         ]
     },
     {
@@ -758,12 +1176,18 @@ CRAFTING_RECIPES = [
         "xp": 45.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1609, "name": "Opal", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1609,
+                "name": "Opal",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ SMITHING (RUNITE) ------------------
     {
         "name": "Rune platebody",
         "output_id": 1127,
@@ -772,7 +1196,11 @@ CRAFTING_RECIPES = [
         "xp": 375.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 5}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 5
+            }
         ]
     },
     {
@@ -783,7 +1211,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -794,7 +1226,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -805,7 +1241,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -816,7 +1256,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -827,7 +1271,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -838,7 +1286,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -849,7 +1301,11 @@ CRAFTING_RECIPES = [
         "xp": 225.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 3}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -860,7 +1316,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 2}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -871,7 +1331,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 2}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -881,7 +1345,11 @@ CRAFTING_RECIPES = [
         "level": 91,
         "xp": 150.0,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 2}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -892,7 +1360,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 2}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -903,7 +1375,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 1}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -914,7 +1390,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 1}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -925,7 +1405,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 1}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -936,7 +1420,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 1}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -947,7 +1435,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 1}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 1
+            }
         ]
     },
     {
@@ -958,11 +1450,13 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2363, "name": "Runite bar", "qty": 1}
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ SMITHING (ADAMANTITE) ------------------
     {
         "name": "Adamant platebody",
         "output_id": 1123,
@@ -971,7 +1465,11 @@ CRAFTING_RECIPES = [
         "xp": 312.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 5}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 5
+            }
         ]
     },
     {
@@ -982,7 +1480,11 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -993,7 +1495,11 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1004,7 +1510,11 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1015,7 +1525,11 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1026,7 +1540,11 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1037,11 +1555,13 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
-
-    # ------------------ SMITHING (MITHRIL & STEEL) ------------------
     {
         "name": "Mithril platebody",
         "output_id": 1121,
@@ -1050,7 +1570,11 @@ CRAFTING_RECIPES = [
         "xp": 250.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 5}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 5
+            }
         ]
     },
     {
@@ -1061,11 +1585,13 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 5}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 5
+            }
         ]
     },
-
-    # ------------------ MAGIC (JEWELLERY ENCHANTING) ------------------
     {
         "name": "Amulet of glory",
         "output_id": 1704,
@@ -1074,8 +1600,16 @@ CRAFTING_RECIPES = [
         "xp": 78.0,
         "members": True,
         "materials": [
-            {"id": 1662, "name": "Dragonstone amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1662,
+                "name": "Dragonstone amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1086,8 +1620,16 @@ CRAFTING_RECIPES = [
         "xp": 67.0,
         "members": False,
         "materials": [
-            {"id": 1660, "name": "Diamond amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1660,
+                "name": "Diamond amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1098,8 +1640,16 @@ CRAFTING_RECIPES = [
         "xp": 59.0,
         "members": False,
         "materials": [
-            {"id": 1658, "name": "Ruby amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1658,
+                "name": "Ruby amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1110,8 +1660,16 @@ CRAFTING_RECIPES = [
         "xp": 37.0,
         "members": False,
         "materials": [
-            {"id": 1656, "name": "Emerald amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1656,
+                "name": "Emerald amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1122,8 +1680,16 @@ CRAFTING_RECIPES = [
         "xp": 17.5,
         "members": False,
         "materials": [
-            {"id": 1654, "name": "Sapphire amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1654,
+                "name": "Sapphire amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1134,8 +1700,16 @@ CRAFTING_RECIPES = [
         "xp": 78.0,
         "members": True,
         "materials": [
-            {"id": 1645, "name": "Dragonstone ring", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1645,
+                "name": "Dragonstone ring",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1146,8 +1720,16 @@ CRAFTING_RECIPES = [
         "xp": 67.0,
         "members": True,
         "materials": [
-            {"id": 1643, "name": "Diamond ring", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1643,
+                "name": "Diamond ring",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1158,8 +1740,16 @@ CRAFTING_RECIPES = [
         "xp": 37.0,
         "members": True,
         "materials": [
-            {"id": 1639, "name": "Emerald ring", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1639,
+                "name": "Emerald ring",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1170,8 +1760,16 @@ CRAFTING_RECIPES = [
         "xp": 17.5,
         "members": True,
         "materials": [
-            {"id": 1654, "name": "Sapphire necklace", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1654,
+                "name": "Sapphire necklace",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1182,12 +1780,18 @@ CRAFTING_RECIPES = [
         "xp": 78.0,
         "members": True,
         "materials": [
-            {"id": 11115, "name": "Dragonstone bracelet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 11115,
+                "name": "Dragonstone bracelet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ FLETCHING (SHIELDS) ------------------
     {
         "name": "Magic shield",
         "output_id": 22263,
@@ -1196,7 +1800,11 @@ CRAFTING_RECIPES = [
         "xp": 183.0,
         "members": True,
         "materials": [
-            {"id": 1513, "name": "Magic logs", "qty": 2}
+            {
+                "id": 1513,
+                "name": "Magic logs",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1207,7 +1815,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": True,
         "materials": [
-            {"id": 1515, "name": "Yew logs", "qty": 2}
+            {
+                "id": 1515,
+                "name": "Yew logs",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1218,11 +1830,13 @@ CRAFTING_RECIPES = [
         "xp": 116.5,
         "members": True,
         "materials": [
-            {"id": 1517, "name": "Maple logs", "qty": 2}
+            {
+                "id": 1517,
+                "name": "Maple logs",
+                "qty": 2
+            }
         ]
     },
-
-    # ------------------ SMITHING (STEEL, MITHRIL & ADAMANT EXPANSION) ------------------
     {
         "name": "Steel warhammer",
         "output_id": 1339,
@@ -1231,7 +1845,11 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 3}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1242,7 +1860,11 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 3}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1253,7 +1875,11 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 3}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1264,7 +1890,11 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 3}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1275,7 +1905,11 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 3}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1286,7 +1920,11 @@ CRAFTING_RECIPES = [
         "xp": 112.5,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 3}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1297,7 +1935,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": False,
         "materials": [
-            {"id": 2353, "name": "Steel bar", "qty": 2}
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1308,7 +1950,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1319,7 +1965,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1329,7 +1979,11 @@ CRAFTING_RECIPES = [
         "level": 66,
         "xp": 150.0,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1340,7 +1994,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1351,7 +2009,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1362,7 +2024,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1373,7 +2039,11 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 3}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1384,7 +2054,11 @@ CRAFTING_RECIPES = [
         "xp": 100.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 2}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1395,7 +2069,11 @@ CRAFTING_RECIPES = [
         "xp": 100.0,
         "members": False,
         "materials": [
-            {"id": 2359, "name": "Mithril bar", "qty": 2}
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1406,7 +2084,11 @@ CRAFTING_RECIPES = [
         "xp": 187.5,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 3
+            }
         ]
     },
     {
@@ -1417,7 +2099,11 @@ CRAFTING_RECIPES = [
         "xp": 125.0,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 2}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1428,7 +2114,11 @@ CRAFTING_RECIPES = [
         "xp": 125.0,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 2}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1439,7 +2129,11 @@ CRAFTING_RECIPES = [
         "xp": 125.0,
         "members": False,
         "materials": [
-            {"id": 2361, "name": "Adamantite bar", "qty": 2}
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 2
+            }
         ]
     },
     {
@@ -1450,7 +2144,11 @@ CRAFTING_RECIPES = [
         "xp": 125.0,
         "members": False,
         "materials": [
-            {"id": 2351, "name": "Iron bar", "qty": 5}
+            {
+                "id": 2351,
+                "name": "Iron bar",
+                "qty": 5
+            }
         ]
     },
     {
@@ -1461,11 +2159,13 @@ CRAFTING_RECIPES = [
         "xp": 62.5,
         "members": False,
         "materials": [
-            {"id": 2349, "name": "Bronze bar", "qty": 5}
+            {
+                "id": 2349,
+                "name": "Bronze bar",
+                "qty": 5
+            }
         ]
     },
-
-    # ------------------ CRAFTING (ZENYTE END-GAME JEWELLERY) ------------------
     {
         "name": "Zenyte ring",
         "output_id": 19538,
@@ -1474,8 +2174,16 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 19493, "name": "Zenyte", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 19493,
+                "name": "Zenyte",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1486,8 +2194,16 @@ CRAFTING_RECIPES = [
         "xp": 165.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 19493, "name": "Zenyte", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 19493,
+                "name": "Zenyte",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1498,8 +2214,16 @@ CRAFTING_RECIPES = [
         "xp": 180.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 19493, "name": "Zenyte", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 19493,
+                "name": "Zenyte",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1510,13 +2234,23 @@ CRAFTING_RECIPES = [
         "xp": 200.0,
         "members": True,
         "materials": [
-            {"id": 2357, "name": "Gold bar", "qty": 1},
-            {"id": 19493, "name": "Zenyte", "qty": 1},
-            {"id": 1759, "name": "Ball of wool", "qty": 1}
+            {
+                "id": 2357,
+                "name": "Gold bar",
+                "qty": 1
+            },
+            {
+                "id": 19493,
+                "name": "Zenyte",
+                "qty": 1
+            },
+            {
+                "id": 1759,
+                "name": "Ball of wool",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ CRAFTING (SILVER JEWELLERY & LEATHER) ------------------
     {
         "name": "Opal ring",
         "output_id": 21081,
@@ -1525,8 +2259,16 @@ CRAFTING_RECIPES = [
         "xp": 10.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1609, "name": "Opal", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1609,
+                "name": "Opal",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1537,8 +2279,16 @@ CRAFTING_RECIPES = [
         "xp": 35.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1609, "name": "Opal", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1609,
+                "name": "Opal",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1549,8 +2299,16 @@ CRAFTING_RECIPES = [
         "xp": 32.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1611, "name": "Jade", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1611,
+                "name": "Jade",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1561,8 +2319,16 @@ CRAFTING_RECIPES = [
         "xp": 54.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1611, "name": "Jade", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1611,
+                "name": "Jade",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1573,8 +2339,16 @@ CRAFTING_RECIPES = [
         "xp": 35.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1613, "name": "Red topaz", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1613,
+                "name": "Red topaz",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1585,8 +2359,16 @@ CRAFTING_RECIPES = [
         "xp": 70.0,
         "members": True,
         "materials": [
-            {"id": 2355, "name": "Silver bar", "qty": 1},
-            {"id": 1613, "name": "Red topaz", "qty": 1}
+            {
+                "id": 2355,
+                "name": "Silver bar",
+                "qty": 1
+            },
+            {
+                "id": 1613,
+                "name": "Red topaz",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1597,7 +2379,11 @@ CRAFTING_RECIPES = [
         "xp": 25.0,
         "members": False,
         "materials": [
-            {"id": 1741, "name": "Leather", "qty": 1}
+            {
+                "id": 1741,
+                "name": "Leather",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1608,11 +2394,13 @@ CRAFTING_RECIPES = [
         "xp": 35.0,
         "members": False,
         "materials": [
-            {"id": 1743, "name": "Hard leather", "qty": 1}
+            {
+                "id": 1743,
+                "name": "Hard leather",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ FLETCHING (FULL BOW CRAFTING FROM LOGS) ------------------
     {
         "name": "Magic longbow (from log)",
         "output_id": 859,
@@ -1621,8 +2409,16 @@ CRAFTING_RECIPES = [
         "xp": 183.0,
         "members": True,
         "materials": [
-            {"id": 1513, "name": "Magic logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1513,
+                "name": "Magic logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1633,8 +2429,16 @@ CRAFTING_RECIPES = [
         "xp": 166.5,
         "members": True,
         "materials": [
-            {"id": 1513, "name": "Magic logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1513,
+                "name": "Magic logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1645,8 +2449,16 @@ CRAFTING_RECIPES = [
         "xp": 150.0,
         "members": True,
         "materials": [
-            {"id": 1515, "name": "Yew logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1515,
+                "name": "Yew logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1657,8 +2469,16 @@ CRAFTING_RECIPES = [
         "xp": 135.0,
         "members": True,
         "materials": [
-            {"id": 1515, "name": "Yew logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1515,
+                "name": "Yew logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1669,8 +2489,16 @@ CRAFTING_RECIPES = [
         "xp": 116.5,
         "members": True,
         "materials": [
-            {"id": 1517, "name": "Maple logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1517,
+                "name": "Maple logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1681,8 +2509,16 @@ CRAFTING_RECIPES = [
         "xp": 100.0,
         "members": True,
         "materials": [
-            {"id": 1517, "name": "Maple logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1517,
+                "name": "Maple logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1693,8 +2529,16 @@ CRAFTING_RECIPES = [
         "xp": 83.0,
         "members": True,
         "materials": [
-            {"id": 1519, "name": "Willow logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1519,
+                "name": "Willow logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1705,12 +2549,18 @@ CRAFTING_RECIPES = [
         "xp": 50.0,
         "members": True,
         "materials": [
-            {"id": 1521, "name": "Oak logs", "qty": 1},
-            {"id": 1777, "name": "Bow string", "qty": 1}
+            {
+                "id": 1521,
+                "name": "Oak logs",
+                "qty": 1
+            },
+            {
+                "id": 1777,
+                "name": "Bow string",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ FLETCHING (UNSTRUNG BOW CUTTING) ------------------
     {
         "name": "Magic longbow (u)",
         "output_id": 70,
@@ -1719,7 +2569,11 @@ CRAFTING_RECIPES = [
         "xp": 91.5,
         "members": True,
         "materials": [
-            {"id": 1513, "name": "Magic logs", "qty": 1}
+            {
+                "id": 1513,
+                "name": "Magic logs",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1730,7 +2584,11 @@ CRAFTING_RECIPES = [
         "xp": 83.3,
         "members": True,
         "materials": [
-            {"id": 1513, "name": "Magic logs", "qty": 1}
+            {
+                "id": 1513,
+                "name": "Magic logs",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1741,7 +2599,11 @@ CRAFTING_RECIPES = [
         "xp": 75.0,
         "members": True,
         "materials": [
-            {"id": 1515, "name": "Yew logs", "qty": 1}
+            {
+                "id": 1515,
+                "name": "Yew logs",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1752,7 +2614,11 @@ CRAFTING_RECIPES = [
         "xp": 67.5,
         "members": True,
         "materials": [
-            {"id": 1515, "name": "Yew logs", "qty": 1}
+            {
+                "id": 1515,
+                "name": "Yew logs",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1763,11 +2629,13 @@ CRAFTING_RECIPES = [
         "xp": 58.2,
         "members": True,
         "materials": [
-            {"id": 1517, "name": "Maple logs", "qty": 1}
+            {
+                "id": 1517,
+                "name": "Maple logs",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ FLETCHING (CROSSBOW EXPANSION) ------------------
     {
         "name": "Dragon crossbow",
         "output_id": 21902,
@@ -1776,9 +2644,21 @@ CRAFTING_RECIPES = [
         "xp": 135.0,
         "members": True,
         "materials": [
-            {"id": 21918, "name": "Dragon limbs", "qty": 1},
-            {"id": 9454, "name": "Magic stock", "qty": 1},
-            {"id": 9438, "name": "Crossbow string", "qty": 1}
+            {
+                "id": 21918,
+                "name": "Dragon limbs",
+                "qty": 1
+            },
+            {
+                "id": 9454,
+                "name": "Magic stock",
+                "qty": 1
+            },
+            {
+                "id": 9438,
+                "name": "Crossbow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1789,9 +2669,21 @@ CRAFTING_RECIPES = [
         "xp": 82.0,
         "members": True,
         "materials": [
-            {"id": 9429, "name": "Adamantite limbs", "qty": 1},
-            {"id": 9450, "name": "Maple stock", "qty": 1},
-            {"id": 9438, "name": "Crossbow string", "qty": 1}
+            {
+                "id": 9429,
+                "name": "Adamantite limbs",
+                "qty": 1
+            },
+            {
+                "id": 9450,
+                "name": "Maple stock",
+                "qty": 1
+            },
+            {
+                "id": 9438,
+                "name": "Crossbow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1802,9 +2694,21 @@ CRAFTING_RECIPES = [
         "xp": 64.0,
         "members": True,
         "materials": [
-            {"id": 9427, "name": "Mithril limbs", "qty": 1},
-            {"id": 9448, "name": "Willow stock", "qty": 1},
-            {"id": 9438, "name": "Crossbow string", "qty": 1}
+            {
+                "id": 9427,
+                "name": "Mithril limbs",
+                "qty": 1
+            },
+            {
+                "id": 9448,
+                "name": "Willow stock",
+                "qty": 1
+            },
+            {
+                "id": 9438,
+                "name": "Crossbow string",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1815,13 +2719,23 @@ CRAFTING_RECIPES = [
         "xp": 54.0,
         "members": True,
         "materials": [
-            {"id": 9425, "name": "Steel limbs", "qty": 1},
-            {"id": 9446, "name": "Oak stock", "qty": 1},
-            {"id": 9438, "name": "Crossbow string", "qty": 1}
+            {
+                "id": 9425,
+                "name": "Steel limbs",
+                "qty": 1
+            },
+            {
+                "id": 9446,
+                "name": "Oak stock",
+                "qty": 1
+            },
+            {
+                "id": 9438,
+                "name": "Crossbow string",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ MAGIC (ZENYTE & ONYX ENCHANTMENTS) ------------------
     {
         "name": "Amulet of torture (enchant)",
         "output_id": 19553,
@@ -1830,9 +2744,21 @@ CRAFTING_RECIPES = [
         "xp": 110.0,
         "members": True,
         "materials": [
-            {"id": 19541, "name": "Zenyte amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1},
-            {"id": 565, "name": "Blood rune", "qty": 20}
+            {
+                "id": 19541,
+                "name": "Zenyte amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            },
+            {
+                "id": 565,
+                "name": "Blood rune",
+                "qty": 20
+            }
         ]
     },
     {
@@ -1843,9 +2769,21 @@ CRAFTING_RECIPES = [
         "xp": 110.0,
         "members": True,
         "materials": [
-            {"id": 19535, "name": "Zenyte necklace", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1},
-            {"id": 565, "name": "Blood rune", "qty": 20}
+            {
+                "id": 19535,
+                "name": "Zenyte necklace",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            },
+            {
+                "id": 565,
+                "name": "Blood rune",
+                "qty": 20
+            }
         ]
     },
     {
@@ -1856,9 +2794,21 @@ CRAFTING_RECIPES = [
         "xp": 110.0,
         "members": True,
         "materials": [
-            {"id": 19532, "name": "Zenyte bracelet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1},
-            {"id": 565, "name": "Blood rune", "qty": 20}
+            {
+                "id": 19532,
+                "name": "Zenyte bracelet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            },
+            {
+                "id": 565,
+                "name": "Blood rune",
+                "qty": 20
+            }
         ]
     },
     {
@@ -1869,9 +2819,21 @@ CRAFTING_RECIPES = [
         "xp": 110.0,
         "members": True,
         "materials": [
-            {"id": 19538, "name": "Zenyte ring", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1},
-            {"id": 565, "name": "Blood rune", "qty": 20}
+            {
+                "id": 19538,
+                "name": "Zenyte ring",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            },
+            {
+                "id": 565,
+                "name": "Blood rune",
+                "qty": 20
+            }
         ]
     },
     {
@@ -1882,8 +2844,16 @@ CRAFTING_RECIPES = [
         "xp": 97.0,
         "members": True,
         "materials": [
-            {"id": 6581, "name": "Onyx amulet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 6581,
+                "name": "Onyx amulet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1894,8 +2864,16 @@ CRAFTING_RECIPES = [
         "xp": 97.0,
         "members": True,
         "materials": [
-            {"id": 6577, "name": "Onyx necklace", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 6577,
+                "name": "Onyx necklace",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1906,8 +2884,16 @@ CRAFTING_RECIPES = [
         "xp": 97.0,
         "members": True,
         "materials": [
-            {"id": 11130, "name": "Onyx bracelet", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 11130,
+                "name": "Onyx bracelet",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1918,8 +2904,16 @@ CRAFTING_RECIPES = [
         "xp": 97.0,
         "members": True,
         "materials": [
-            {"id": 6575, "name": "Onyx ring", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 6575,
+                "name": "Onyx ring",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1930,8 +2924,16 @@ CRAFTING_RECIPES = [
         "xp": 17.5,
         "members": False,
         "materials": [
-            {"id": 1637, "name": "Sapphire ring", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1637,
+                "name": "Sapphire ring",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1942,12 +2944,18 @@ CRAFTING_RECIPES = [
         "xp": 78.0,
         "members": True,
         "materials": [
-            {"id": 1664, "name": "Dragon necklace", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 1664,
+                "name": "Dragon necklace",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
-
-    # ------------------ MAGIC (ENCHANTED CROSSBOW BOLTS) ------------------
     {
         "name": "Onyx bolts (e)",
         "output_id": 9245,
@@ -1956,8 +2964,16 @@ CRAFTING_RECIPES = [
         "xp": 97.0,
         "members": True,
         "materials": [
-            {"id": 9342, "name": "Onyx bolts", "qty": 1},
-            {"id": 560, "name": "Death rune", "qty": 1}
+            {
+                "id": 9342,
+                "name": "Onyx bolts",
+                "qty": 1
+            },
+            {
+                "id": 560,
+                "name": "Death rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1968,8 +2984,16 @@ CRAFTING_RECIPES = [
         "xp": 78.0,
         "members": True,
         "materials": [
-            {"id": 9341, "name": "Dragonstone bolts", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 9341,
+                "name": "Dragonstone bolts",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1980,8 +3004,16 @@ CRAFTING_RECIPES = [
         "xp": 67.0,
         "members": True,
         "materials": [
-            {"id": 9340, "name": "Diamond bolts", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 9340,
+                "name": "Diamond bolts",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
         ]
     },
     {
@@ -1992,8 +3024,446 @@ CRAFTING_RECIPES = [
         "xp": 59.0,
         "members": True,
         "materials": [
-            {"id": 9339, "name": "Ruby bolts", "qty": 1},
-            {"id": 564, "name": "Cosmic rune", "qty": 1}
+            {
+                "id": 9339,
+                "name": "Ruby bolts",
+                "qty": 1
+            },
+            {
+                "id": 564,
+                "name": "Cosmic rune",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Rune claws",
+        "output_id": 3101,
+        "skill": "Smithing",
+        "level": 98,
+        "xp": 150.0,
+        "members": True,
+        "materials": [
+            {
+                "id": 2363,
+                "name": "Runite bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Adamant longsword",
+        "output_id": 1301,
+        "skill": "Smithing",
+        "level": 76,
+        "xp": 125.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Adamant sword",
+        "output_id": 1287,
+        "skill": "Smithing",
+        "level": 74,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant axe",
+        "output_id": 1357,
+        "skill": "Smithing",
+        "level": 71,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant pickaxe",
+        "output_id": 1271,
+        "skill": "Smithing",
+        "level": 71,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant dagger",
+        "output_id": 1211,
+        "skill": "Smithing",
+        "level": 70,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant med helm",
+        "output_id": 1145,
+        "skill": "Smithing",
+        "level": 73,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Adamant mace",
+        "output_id": 1430,
+        "skill": "Smithing",
+        "level": 72,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2361,
+                "name": "Adamantite bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril sq shield",
+        "output_id": 1181,
+        "skill": "Smithing",
+        "level": 58,
+        "xp": 100.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Mithril longsword",
+        "output_id": 1299,
+        "skill": "Smithing",
+        "level": 56,
+        "xp": 100.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Mithril sword",
+        "output_id": 1285,
+        "skill": "Smithing",
+        "level": 54,
+        "xp": 50.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril med helm",
+        "output_id": 1143,
+        "skill": "Smithing",
+        "level": 53,
+        "xp": 50.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril mace",
+        "output_id": 1428,
+        "skill": "Smithing",
+        "level": 52,
+        "xp": 50.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril axe",
+        "output_id": 1355,
+        "skill": "Smithing",
+        "level": 51,
+        "xp": 50.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril pickaxe",
+        "output_id": 1273,
+        "skill": "Smithing",
+        "level": 51,
+        "xp": 50.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Mithril dagger",
+        "output_id": 1209,
+        "skill": "Smithing",
+        "level": 50,
+        "xp": 50.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2359,
+                "name": "Mithril bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel chainbody",
+        "output_id": 1105,
+        "skill": "Smithing",
+        "level": 41,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 3
+            }
+        ]
+    },
+    {
+        "name": "Steel sq shield",
+        "output_id": 1179,
+        "skill": "Smithing",
+        "level": 38,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Steel full helm",
+        "output_id": 1157,
+        "skill": "Smithing",
+        "level": 37,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Steel longsword",
+        "output_id": 1295,
+        "skill": "Smithing",
+        "level": 36,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 2
+            }
+        ]
+    },
+    {
+        "name": "Steel sword",
+        "output_id": 1281,
+        "skill": "Smithing",
+        "level": 34,
+        "xp": 37.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel med helm",
+        "output_id": 1141,
+        "skill": "Smithing",
+        "level": 33,
+        "xp": 37.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel mace",
+        "output_id": 1424,
+        "skill": "Smithing",
+        "level": 32,
+        "xp": 37.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel axe",
+        "output_id": 1353,
+        "skill": "Smithing",
+        "level": 31,
+        "xp": 37.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel pickaxe",
+        "output_id": 1269,
+        "skill": "Smithing",
+        "level": 31,
+        "xp": 37.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Steel dagger",
+        "output_id": 1207,
+        "skill": "Smithing",
+        "level": 30,
+        "xp": 37.5,
+        "members": False,
+        "materials": [
+            {
+                "id": 2353,
+                "name": "Steel bar",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Blue d'hide vamb",
+        "output_id": 2487,
+        "skill": "Crafting",
+        "level": 66,
+        "xp": 70.0,
+        "members": True,
+        "materials": [
+            {
+                "id": 2505,
+                "name": "Blue dragon leather",
+                "qty": 1
+            },
+            {
+                "id": 1734,
+                "name": "Thread",
+                "qty": 1
+            }
+        ]
+    },
+    {
+        "name": "Black d'hide vamb",
+        "output_id": 2491,
+        "skill": "Crafting",
+        "level": 79,
+        "xp": 86.0,
+        "members": True,
+        "materials": [
+            {
+                "id": 2509,
+                "name": "Black dragon leather",
+                "qty": 1
+            },
+            {
+                "id": 1734,
+                "name": "Thread",
+                "qty": 1
+            }
         ]
     }
 ]

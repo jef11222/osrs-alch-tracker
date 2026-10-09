@@ -8,6 +8,12 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **⚔️ Complete Tier Smithing, Crafting & Fletching Recipe Suite (v1.3.35):**
+  - **Full Rune, Adamant, Mithril & Steel Smithing Coverage:** Expanded the Skilling Guide database to **76 detailed brackets**, including all craftable weapons, armor, dart tips, arrowtips, unfinished bolts, knives, and cannonballs across Rune (levels 85–99), Adamant (levels 70–88), Mithril (levels 50–68), and Steel (levels 30–48).
+  - **Comprehensive Leveling Guides for Crafting & Fletching:** Expanded Crafting to **24 brackets** (including gem cutting, all elemental battlestaves, blue/black d'hide bodies, and high-level Amethyst crafting) and Fletching to **18 brackets** (including full dart progression from Bronze to Dragon, broad ammunition, and bow cutting/stringing).
+  - **Multi-Output Quantity Precision:** Fixed revenue and profit calculation in `recalculate_guide_table()` for recipes that yield multiple outputs per bar (e.g., 10x dart tips, 15x arrowtips, 4x cannonballs, 5x knives, 10x bolts, 15x nails), ensuring 100% accurate GP/XP, total batch revenue, and breakeven ceilings.
+  - **Massive Recipe Expansion Across Craft & Alch & GE Moneymaking:** Expanded `💰 Craft & Sell GE` to **167 production recipes** and `🔨 Craft & Alch` to **195 recipes**, adding all high-volume ammunition, weapons, and armor components.
+
 - **📂 Expandable Ingredient Dropdown Trees in Skilling Guide (v1.3.34):**
   - **Hierarchical Ingredient Tree (`▶` / `▼`):** The Skilling Guide is now an interactive dropdown tree! Click `▶` on any method (such as bar smelting, bows, potions, or jewellery) to expand and reveal its exact raw materials indented underneath (`↳ 1x Iron ore`, `↳ 2x Coal`).
   - **Individual Buy Ceilings for Each Ore & Material:** Each individual ingredient row calculates and displays its own dedicated **`🎯 Max Mat Buy` ceiling** (`target_buy_p`) and breakeven ceiling, telling you the exact ceiling price to pay for each component to maintain your profit margin.
