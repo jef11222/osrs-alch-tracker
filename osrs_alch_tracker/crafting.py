@@ -1220,5 +1220,780 @@ CRAFTING_RECIPES = [
         "materials": [
             {"id": 1517, "name": "Maple logs", "qty": 2}
         ]
+    },
+
+    # ------------------ SMITHING (STEEL, MITHRIL & ADAMANT EXPANSION) ------------------
+    {
+        "name": "Steel warhammer",
+        "output_id": 1339,
+        "skill": "Smithing",
+        "level": 35,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Steel 2h sword",
+        "output_id": 1311,
+        "skill": "Smithing",
+        "level": 44,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Steel battleaxe",
+        "output_id": 1365,
+        "skill": "Smithing",
+        "level": 40,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Steel platelegs",
+        "output_id": 1069,
+        "skill": "Smithing",
+        "level": 46,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Steel plateskirt",
+        "output_id": 1083,
+        "skill": "Smithing",
+        "level": 46,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Steel kiteshield",
+        "output_id": 1193,
+        "skill": "Smithing",
+        "level": 42,
+        "xp": 112.5,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Steel scimitar",
+        "output_id": 1325,
+        "skill": "Smithing",
+        "level": 35,
+        "xp": 75.0,
+        "members": False,
+        "materials": [
+            {"id": 2353, "name": "Steel bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Mithril 2h sword",
+        "output_id": 1315,
+        "skill": "Smithing",
+        "level": 69,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril platelegs",
+        "output_id": 1071,
+        "skill": "Smithing",
+        "level": 66,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril plateskirt",
+        "output_id": 1085,
+        "skill": "Smithing",
+        "level": 66,
+        "xp": 150.0,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril kiteshield",
+        "output_id": 1197,
+        "skill": "Smithing",
+        "level": 67,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril battleaxe",
+        "output_id": 1369,
+        "skill": "Smithing",
+        "level": 65,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril warhammer",
+        "output_id": 1343,
+        "skill": "Smithing",
+        "level": 64,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril chainbody",
+        "output_id": 1109,
+        "skill": "Smithing",
+        "level": 61,
+        "xp": 150.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Mithril full helm",
+        "output_id": 1159,
+        "skill": "Smithing",
+        "level": 62,
+        "xp": 100.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Mithril scimitar",
+        "output_id": 1329,
+        "skill": "Smithing",
+        "level": 60,
+        "xp": 100.0,
+        "members": False,
+        "materials": [
+            {"id": 2359, "name": "Mithril bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Adamant warhammer",
+        "output_id": 1345,
+        "skill": "Smithing",
+        "level": 84,
+        "xp": 187.5,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 3}
+        ]
+    },
+    {
+        "name": "Adamant sq shield",
+        "output_id": 1183,
+        "skill": "Smithing",
+        "level": 83,
+        "xp": 125.0,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Adamant full helm",
+        "output_id": 1161,
+        "skill": "Smithing",
+        "level": 82,
+        "xp": 125.0,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Adamant scimitar",
+        "output_id": 1331,
+        "skill": "Smithing",
+        "level": 80,
+        "xp": 125.0,
+        "members": False,
+        "materials": [
+            {"id": 2361, "name": "Adamantite bar", "qty": 2}
+        ]
+    },
+    {
+        "name": "Iron platebody",
+        "output_id": 1115,
+        "skill": "Smithing",
+        "level": 33,
+        "xp": 125.0,
+        "members": False,
+        "materials": [
+            {"id": 2351, "name": "Iron bar", "qty": 5}
+        ]
+    },
+    {
+        "name": "Bronze platebody",
+        "output_id": 1117,
+        "skill": "Smithing",
+        "level": 18,
+        "xp": 62.5,
+        "members": False,
+        "materials": [
+            {"id": 2349, "name": "Bronze bar", "qty": 5}
+        ]
+    },
+
+    # ------------------ CRAFTING (ZENYTE END-GAME JEWELLERY) ------------------
+    {
+        "name": "Zenyte ring",
+        "output_id": 19538,
+        "skill": "Crafting",
+        "level": 89,
+        "xp": 150.0,
+        "members": True,
+        "materials": [
+            {"id": 2357, "name": "Gold bar", "qty": 1},
+            {"id": 19493, "name": "Zenyte", "qty": 1}
+        ]
+    },
+    {
+        "name": "Zenyte necklace",
+        "output_id": 19535,
+        "skill": "Crafting",
+        "level": 92,
+        "xp": 165.0,
+        "members": True,
+        "materials": [
+            {"id": 2357, "name": "Gold bar", "qty": 1},
+            {"id": 19493, "name": "Zenyte", "qty": 1}
+        ]
+    },
+    {
+        "name": "Zenyte bracelet",
+        "output_id": 19532,
+        "skill": "Crafting",
+        "level": 95,
+        "xp": 180.0,
+        "members": True,
+        "materials": [
+            {"id": 2357, "name": "Gold bar", "qty": 1},
+            {"id": 19493, "name": "Zenyte", "qty": 1}
+        ]
+    },
+    {
+        "name": "Zenyte amulet",
+        "output_id": 19541,
+        "skill": "Crafting",
+        "level": 98,
+        "xp": 200.0,
+        "members": True,
+        "materials": [
+            {"id": 2357, "name": "Gold bar", "qty": 1},
+            {"id": 19493, "name": "Zenyte", "qty": 1},
+            {"id": 1759, "name": "Ball of wool", "qty": 1}
+        ]
+    },
+
+    # ------------------ CRAFTING (SILVER JEWELLERY & LEATHER) ------------------
+    {
+        "name": "Opal ring",
+        "output_id": 21081,
+        "skill": "Crafting",
+        "level": 1,
+        "xp": 10.0,
+        "members": True,
+        "materials": [
+            {"id": 2355, "name": "Silver bar", "qty": 1},
+            {"id": 1609, "name": "Opal", "qty": 1}
+        ]
+    },
+    {
+        "name": "Opal necklace",
+        "output_id": 21090,
+        "skill": "Crafting",
+        "level": 16,
+        "xp": 35.0,
+        "members": True,
+        "materials": [
+            {"id": 2355, "name": "Silver bar", "qty": 1},
+            {"id": 1609, "name": "Opal", "qty": 1}
+        ]
+    },
+    {
+        "name": "Jade ring",
+        "output_id": 21084,
+        "skill": "Crafting",
+        "level": 13,
+        "xp": 32.0,
+        "members": True,
+        "materials": [
+            {"id": 2355, "name": "Silver bar", "qty": 1},
+            {"id": 1611, "name": "Jade", "qty": 1}
+        ]
+    },
+    {
+        "name": "Jade necklace",
+        "output_id": 21093,
+        "skill": "Crafting",
+        "level": 25,
+        "xp": 54.0,
+        "members": True,
+        "materials": [
+            {"id": 2355, "name": "Silver bar", "qty": 1},
+            {"id": 1611, "name": "Jade", "qty": 1}
+        ]
+    },
+    {
+        "name": "Topaz ring",
+        "output_id": 21087,
+        "skill": "Crafting",
+        "level": 16,
+        "xp": 35.0,
+        "members": True,
+        "materials": [
+            {"id": 2355, "name": "Silver bar", "qty": 1},
+            {"id": 1613, "name": "Red topaz", "qty": 1}
+        ]
+    },
+    {
+        "name": "Topaz necklace",
+        "output_id": 21096,
+        "skill": "Crafting",
+        "level": 32,
+        "xp": 70.0,
+        "members": True,
+        "materials": [
+            {"id": 2355, "name": "Silver bar", "qty": 1},
+            {"id": 1613, "name": "Red topaz", "qty": 1}
+        ]
+    },
+    {
+        "name": "Leather body",
+        "output_id": 1129,
+        "skill": "Crafting",
+        "level": 14,
+        "xp": 25.0,
+        "members": False,
+        "materials": [
+            {"id": 1741, "name": "Leather", "qty": 1}
+        ]
+    },
+    {
+        "name": "Hardleather body",
+        "output_id": 1131,
+        "skill": "Crafting",
+        "level": 28,
+        "xp": 35.0,
+        "members": False,
+        "materials": [
+            {"id": 1743, "name": "Hard leather", "qty": 1}
+        ]
+    },
+
+    # ------------------ FLETCHING (FULL BOW CRAFTING FROM LOGS) ------------------
+    {
+        "name": "Magic longbow (from log)",
+        "output_id": 859,
+        "skill": "Fletching",
+        "level": 85,
+        "xp": 183.0,
+        "members": True,
+        "materials": [
+            {"id": 1513, "name": "Magic logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Magic shortbow (from log)",
+        "output_id": 861,
+        "skill": "Fletching",
+        "level": 80,
+        "xp": 166.5,
+        "members": True,
+        "materials": [
+            {"id": 1513, "name": "Magic logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Yew longbow (from log)",
+        "output_id": 855,
+        "skill": "Fletching",
+        "level": 70,
+        "xp": 150.0,
+        "members": True,
+        "materials": [
+            {"id": 1515, "name": "Yew logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Yew shortbow (from log)",
+        "output_id": 857,
+        "skill": "Fletching",
+        "level": 65,
+        "xp": 135.0,
+        "members": True,
+        "materials": [
+            {"id": 1515, "name": "Yew logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Maple longbow (from log)",
+        "output_id": 851,
+        "skill": "Fletching",
+        "level": 55,
+        "xp": 116.5,
+        "members": True,
+        "materials": [
+            {"id": 1517, "name": "Maple logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Maple shortbow (from log)",
+        "output_id": 853,
+        "skill": "Fletching",
+        "level": 50,
+        "xp": 100.0,
+        "members": True,
+        "materials": [
+            {"id": 1517, "name": "Maple logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Willow longbow (from log)",
+        "output_id": 847,
+        "skill": "Fletching",
+        "level": 40,
+        "xp": 83.0,
+        "members": True,
+        "materials": [
+            {"id": 1519, "name": "Willow logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Oak longbow (from log)",
+        "output_id": 845,
+        "skill": "Fletching",
+        "level": 25,
+        "xp": 50.0,
+        "members": True,
+        "materials": [
+            {"id": 1521, "name": "Oak logs", "qty": 1},
+            {"id": 1777, "name": "Bow string", "qty": 1}
+        ]
+    },
+
+    # ------------------ FLETCHING (UNSTRUNG BOW CUTTING) ------------------
+    {
+        "name": "Magic longbow (u)",
+        "output_id": 70,
+        "skill": "Fletching",
+        "level": 85,
+        "xp": 91.5,
+        "members": True,
+        "materials": [
+            {"id": 1513, "name": "Magic logs", "qty": 1}
+        ]
+    },
+    {
+        "name": "Magic shortbow (u)",
+        "output_id": 72,
+        "skill": "Fletching",
+        "level": 80,
+        "xp": 83.3,
+        "members": True,
+        "materials": [
+            {"id": 1513, "name": "Magic logs", "qty": 1}
+        ]
+    },
+    {
+        "name": "Yew longbow (u)",
+        "output_id": 66,
+        "skill": "Fletching",
+        "level": 70,
+        "xp": 75.0,
+        "members": True,
+        "materials": [
+            {"id": 1515, "name": "Yew logs", "qty": 1}
+        ]
+    },
+    {
+        "name": "Yew shortbow (u)",
+        "output_id": 68,
+        "skill": "Fletching",
+        "level": 65,
+        "xp": 67.5,
+        "members": True,
+        "materials": [
+            {"id": 1515, "name": "Yew logs", "qty": 1}
+        ]
+    },
+    {
+        "name": "Maple longbow (u)",
+        "output_id": 62,
+        "skill": "Fletching",
+        "level": 55,
+        "xp": 58.2,
+        "members": True,
+        "materials": [
+            {"id": 1517, "name": "Maple logs", "qty": 1}
+        ]
+    },
+
+    # ------------------ FLETCHING (CROSSBOW EXPANSION) ------------------
+    {
+        "name": "Dragon crossbow",
+        "output_id": 21902,
+        "skill": "Fletching",
+        "level": 78,
+        "xp": 135.0,
+        "members": True,
+        "materials": [
+            {"id": 21918, "name": "Dragon limbs", "qty": 1},
+            {"id": 9454, "name": "Magic stock", "qty": 1},
+            {"id": 9438, "name": "Crossbow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Adamant crossbow",
+        "output_id": 9183,
+        "skill": "Fletching",
+        "level": 61,
+        "xp": 82.0,
+        "members": True,
+        "materials": [
+            {"id": 9429, "name": "Adamantite limbs", "qty": 1},
+            {"id": 9450, "name": "Maple stock", "qty": 1},
+            {"id": 9438, "name": "Crossbow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Mithril crossbow",
+        "output_id": 9181,
+        "skill": "Fletching",
+        "level": 54,
+        "xp": 64.0,
+        "members": True,
+        "materials": [
+            {"id": 9427, "name": "Mithril limbs", "qty": 1},
+            {"id": 9448, "name": "Willow stock", "qty": 1},
+            {"id": 9438, "name": "Crossbow string", "qty": 1}
+        ]
+    },
+    {
+        "name": "Steel crossbow",
+        "output_id": 9179,
+        "skill": "Fletching",
+        "level": 46,
+        "xp": 54.0,
+        "members": True,
+        "materials": [
+            {"id": 9425, "name": "Steel limbs", "qty": 1},
+            {"id": 9446, "name": "Oak stock", "qty": 1},
+            {"id": 9438, "name": "Crossbow string", "qty": 1}
+        ]
+    },
+
+    # ------------------ MAGIC (ZENYTE & ONYX ENCHANTMENTS) ------------------
+    {
+        "name": "Amulet of torture (enchant)",
+        "output_id": 19553,
+        "skill": "Magic",
+        "level": 93,
+        "xp": 110.0,
+        "members": True,
+        "materials": [
+            {"id": 19541, "name": "Zenyte amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1},
+            {"id": 565, "name": "Blood rune", "qty": 20}
+        ]
+    },
+    {
+        "name": "Necklace of anguish (enchant)",
+        "output_id": 19547,
+        "skill": "Magic",
+        "level": 93,
+        "xp": 110.0,
+        "members": True,
+        "materials": [
+            {"id": 19535, "name": "Zenyte necklace", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1},
+            {"id": 565, "name": "Blood rune", "qty": 20}
+        ]
+    },
+    {
+        "name": "Tormented bracelet (enchant)",
+        "output_id": 19544,
+        "skill": "Magic",
+        "level": 93,
+        "xp": 110.0,
+        "members": True,
+        "materials": [
+            {"id": 19532, "name": "Zenyte bracelet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1},
+            {"id": 565, "name": "Blood rune", "qty": 20}
+        ]
+    },
+    {
+        "name": "Ring of suffering (enchant)",
+        "output_id": 19550,
+        "skill": "Magic",
+        "level": 93,
+        "xp": 110.0,
+        "members": True,
+        "materials": [
+            {"id": 19538, "name": "Zenyte ring", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1},
+            {"id": 565, "name": "Blood rune", "qty": 20}
+        ]
+    },
+    {
+        "name": "Amulet of fury",
+        "output_id": 6585,
+        "skill": "Magic",
+        "level": 87,
+        "xp": 97.0,
+        "members": True,
+        "materials": [
+            {"id": 6581, "name": "Onyx amulet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Berserker necklace",
+        "output_id": 11128,
+        "skill": "Magic",
+        "level": 87,
+        "xp": 97.0,
+        "members": True,
+        "materials": [
+            {"id": 6577, "name": "Onyx necklace", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Regen bracelet",
+        "output_id": 11133,
+        "skill": "Magic",
+        "level": 87,
+        "xp": 97.0,
+        "members": True,
+        "materials": [
+            {"id": 11130, "name": "Onyx bracelet", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Ring of stone",
+        "output_id": 6583,
+        "skill": "Magic",
+        "level": 87,
+        "xp": 97.0,
+        "members": True,
+        "materials": [
+            {"id": 6575, "name": "Onyx ring", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Ring of recoil",
+        "output_id": 2550,
+        "skill": "Magic",
+        "level": 7,
+        "xp": 17.5,
+        "members": False,
+        "materials": [
+            {"id": 1637, "name": "Sapphire ring", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Skills necklace(4)",
+        "output_id": 11105,
+        "skill": "Magic",
+        "level": 68,
+        "xp": 78.0,
+        "members": True,
+        "materials": [
+            {"id": 1664, "name": "Dragon necklace", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+
+    # ------------------ MAGIC (ENCHANTED CROSSBOW BOLTS) ------------------
+    {
+        "name": "Onyx bolts (e)",
+        "output_id": 9245,
+        "skill": "Magic",
+        "level": 87,
+        "xp": 97.0,
+        "members": True,
+        "materials": [
+            {"id": 9342, "name": "Onyx bolts", "qty": 1},
+            {"id": 560, "name": "Death rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Dragonstone bolts (e)",
+        "output_id": 9244,
+        "skill": "Magic",
+        "level": 68,
+        "xp": 78.0,
+        "members": True,
+        "materials": [
+            {"id": 9341, "name": "Dragonstone bolts", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Diamond bolts (e)",
+        "output_id": 9243,
+        "skill": "Magic",
+        "level": 57,
+        "xp": 67.0,
+        "members": True,
+        "materials": [
+            {"id": 9340, "name": "Diamond bolts", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
+    },
+    {
+        "name": "Ruby bolts (e)",
+        "output_id": 9242,
+        "skill": "Magic",
+        "level": 49,
+        "xp": 59.0,
+        "members": True,
+        "materials": [
+            {"id": 9339, "name": "Ruby bolts", "qty": 1},
+            {"id": 564, "name": "Cosmic rune", "qty": 1}
+        ]
     }
 ]

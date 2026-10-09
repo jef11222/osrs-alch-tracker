@@ -721,6 +721,7 @@ class OSRSAlchDashboard(tk.Tk):
         # Keyboard shortcuts
         self.bind("<F5>", lambda e: self.trigger_refresh())
         self.bind("<Control-f>", lambda e: self.focus_search())
+        self.bind("<Control-F>", lambda e: self.focus_search())
 
         # Start timer tick
         self.after(1000, self.timer_tick)
@@ -860,6 +861,7 @@ class OSRSAlchDashboard(tk.Tk):
         # 3. Main Notebook (Tabs)
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=5)
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
         # Tab 1: Pure High Alch
         self.tab_alch = ttk.Frame(self.notebook)
@@ -964,13 +966,13 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_min_profit.bind("<KeyRelease>", lambda e: self.recalculate_alch_table())
         ToolTip(self.ent_min_profit, "Minimum GP profit per alch. Leave blank to show all items (even 0 or negative for XP).")
 
-        # Live Search Bar
+        # Live Search Bar (Universal across ALL tabs)
         tk.Label(p1, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 1))
-        self.ent_search = tk.Entry(p1, width=9, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
+        self.ent_search = tk.Entry(p1, width=13, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
         self.ent_search.pack(side="left", padx=(1, 8))
-        self.ent_search.bind("<KeyRelease>", lambda e: self.recalculate_alch_table())
+        self.ent_search.bind("<KeyRelease>", self.on_global_search_changed)
         self.ent_search.bind("<Escape>", lambda e: self.clear_search())
-        ToolTip(self.ent_search, "Live search by item name (e.g. 'rune', 'bow'). Press Esc to clear, Ctrl+F to focus.")
+        ToolTip(self.ent_search, "Universal search across ALL tabs (Alch, Smart Picks, Craft, Guide, Timers, History). Press Esc to clear, Ctrl+F to focus.")
 
         # Strategy Combobox
         lbl_strat = tk.Label(p1, text="Strategy:", fg="#cccccc", bg="#252528")
@@ -1379,8 +1381,8 @@ class OSRSAlchDashboard(tk.Tk):
         tk.Label(sub_top, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(12, 2))
         self.ent_craft_search = tk.Entry(sub_top, width=14, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
         self.ent_craft_search.pack(side="left", padx=(0, 6))
-        self.ent_craft_search.bind("<KeyRelease>", lambda e: self.recalculate_craft_table())
-        ToolTip(self.ent_craft_search, "Filter recipes by name (e.g. 'rune', 'diamond', 'ring', 'body', 'bow').")
+        self.ent_craft_search.bind("<KeyRelease>", self.on_craft_search_changed)
+        ToolTip(self.ent_craft_search, "Filter recipes by name or ingredients (e.g. 'rune', 'diamond', 'ring', 'body', 'bow', 'cosmic').")
 
         # Category Skill Toggle Buttons Row
         sub_filters = tk.Frame(self.tab_craft, bg="#202023")
@@ -1798,6 +1800,7 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.tree_guide.delete(*self.tree_guide.get_children())
         self.guide_rows = []
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
 
         sdata = SKILLING_GUIDES.get(active_skill, {})
         brackets = sdata.get("brackets", [])
@@ -2057,6 +2060,15 @@ class OSRSAlchDashboard(tk.Tk):
                 "max_lvl": max_l,
                 "wiki_slug": b.get("wiki_slug", "")
             }
+
+            if search_query:
+                name_match = search_query in b["name"].lower()
+                mat_match = search_query in materials_str.lower()
+                verdict_match = search_query in verdict_text.lower()
+                action_match = search_query in action_rec.lower()
+                if not (name_match or mat_match or verdict_match or action_match):
+                    continue
+
             self.guide_rows.append(row_obj)
 
         for r in self.guide_rows:
@@ -2761,14 +2773,48 @@ class OSRSAlchDashboard(tk.Tk):
         self.update_owned_nat_display()
 
     def focus_search(self):
-        self.notebook.select(self.tab_alch)
         self.ent_search.focus_set()
         self.ent_search.select_range(0, tk.END)
         return "break"
 
     def clear_search(self):
         self.ent_search.delete(0, tk.END)
+        if hasattr(self, "ent_craft_search"):
+            self.ent_craft_search.delete(0, tk.END)
+        self.on_global_search_changed()
+
+    def on_global_search_changed(self, event=None):
+        if hasattr(self, "ent_craft_search") and hasattr(self, "ent_search"):
+            val = self.ent_search.get()
+            if self.ent_craft_search.get() != val:
+                self.ent_craft_search.delete(0, tk.END)
+                self.ent_craft_search.insert(0, val)
         self.recalculate_alch_table()
+        if hasattr(self, "recalculate_rec_table"):
+            self.recalculate_rec_table()
+        if hasattr(self, "recalculate_craft_table"):
+            self.recalculate_craft_table()
+        if hasattr(self, "recalculate_guide_table"):
+            self.recalculate_guide_table()
+        if hasattr(self, "update_timers_display"):
+            self.update_timers_display()
+        if hasattr(self, "update_session_display"):
+            self.update_session_display()
+        if hasattr(self, "update_alerts_display"):
+            self.update_alerts_display()
+
+    def on_craft_search_changed(self, event=None):
+        if hasattr(self, "ent_craft_search") and hasattr(self, "ent_search"):
+            val = self.ent_craft_search.get()
+            if self.ent_search.get() != val:
+                self.ent_search.delete(0, tk.END)
+                self.ent_search.insert(0, val)
+        self.on_global_search_changed()
+
+    def on_tab_changed(self, event=None):
+        search_query = self.ent_search.get().strip() if hasattr(self, "ent_search") else ""
+        if search_query:
+            self.on_global_search_changed()
 
     def recalculate_alch_table(self):
         nat_cost = self.get_effective_nature_price()
@@ -3079,6 +3125,7 @@ class OSRSAlchDashboard(tk.Tk):
         f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
 
         basis = "5m" if hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get() else self.state.config.get("price_basis", "5m")
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
 
         rows = []
 
@@ -3086,6 +3133,13 @@ class OSRSAlchDashboard(tk.Tk):
             for spec in WORKHORSE_ITEMS:
                 iid_str = str(spec["id"])
                 mdata = self.api.mapping.get(iid_str, {})
+                item_name = mdata.get("name", spec["name"])
+                if search_query:
+                    if (search_query not in item_name.lower() and
+                        search_query not in spec.get("verdict", "").lower() and
+                        search_query not in "workhorse"):
+                        continue
+
                 high_alch = mdata.get("highalch", 0)
                 if not high_alch or high_alch <= 10:
                     continue
@@ -3210,6 +3264,12 @@ class OSRSAlchDashboard(tk.Tk):
                     cat_label = "Smart Pick"
                     verdict = "Solid alch margin."
 
+                if search_query:
+                    if (search_query not in mdata["name"].lower() and
+                        search_query not in cat_label.lower() and
+                        search_query not in verdict.lower()):
+                        continue
+
                 rows.append({
                     "id": mdata["id"],
                     "name": mdata["name"],
@@ -3292,6 +3352,8 @@ class OSRSAlchDashboard(tk.Tk):
         levels = self.state.config.get("player_levels", {})
         only_usable = self.var_only_usable.get()
         craft_query = self.ent_craft_search.get().strip().lower() if hasattr(self, "ent_craft_search") else ""
+        if not craft_query and hasattr(self, "ent_search"):
+            craft_query = self.ent_search.get().strip().lower()
         mem_ok = self.var_members.get() if hasattr(self, "var_members") else True
         f2p_ok = self.var_f2p.get() if hasattr(self, "var_f2p") else False
 
@@ -3299,8 +3361,12 @@ class OSRSAlchDashboard(tk.Tk):
         rows = []
 
         for r in CRAFTING_RECIPES:
-            if craft_query and craft_query not in r["name"].lower():
-                continue
+            if craft_query:
+                name_match = craft_query in r["name"].lower()
+                mat_match = any(craft_query in m["name"].lower() for m in r.get("materials", []))
+                skill_match = craft_query in r.get("skill", "").lower()
+                if not name_match and not mat_match and not skill_match:
+                    continue
 
             is_mem = r.get("members", True)
             if f2p_ok and not mem_ok and is_mem:
@@ -3540,6 +3606,7 @@ class OSRSAlchDashboard(tk.Tk):
     def update_session_display(self):
         history = self.state.session.get("history", [])
         curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
 
         if curr_sel != "All Accounts":
             filtered = [h for h in history if h.get("account", "Default") == curr_sel]
@@ -3558,7 +3625,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.card_nats.config(text=f"{total_alchs:,}")
 
         self.tree_session.delete(*self.tree_session.get_children())
-        for h in filtered:
+        table_rows = [h for h in filtered if not search_query or (search_query in h.get("item", "").lower() or search_query in h.get("account", "").lower())]
+        for h in table_rows:
             prof = h.get('profit', 0)
             prof_str = f"+{format_gp(prof)}" if prof >= 0 else f"-{format_gp(abs(prof))}"
             self.tree_session.insert("", "end", iid=h.get("id"), values=(
@@ -3576,6 +3644,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_timers.delete(*self.tree_timers.get_children())
         now = time.time()
         curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
 
         expired_keys = []
         for iid, tinfo in list(self.state.timers.items()):
@@ -3588,6 +3657,10 @@ class OSRSAlchDashboard(tk.Tk):
             if curr_sel != "All Accounts" and acc != curr_sel:
                 continue
 
+            item_name = tinfo.get("name", "Item")
+            if search_query and search_query not in item_name.lower() and search_query not in acc.lower():
+                continue
+
             left = max(0, 14400 - elapsed)
             hours = int(left // 3600)
             mins = int((left % 3600) // 60)
@@ -3596,7 +3669,7 @@ class OSRSAlchDashboard(tk.Tk):
 
             self.tree_timers.insert("", "end", iid=iid, values=(
                 acc,
-                tinfo.get("name", "Item"),
+                item_name,
                 f"{tinfo.get('qty', 0):,}",
                 time_left_str,
                 "Cooldown Active"
@@ -3611,7 +3684,10 @@ class OSRSAlchDashboard(tk.Tk):
 
     def update_alerts_display(self):
         self.lst_alerts.delete(0, tk.END)
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
         for a in self.state.alert_history:
+            if search_query and search_query not in a.lower():
+                continue
             self.lst_alerts.insert(tk.END, a)
 
     # ------------------ HOVER ROW TOOLTIPS (QuantScapers Inspired) ------------------

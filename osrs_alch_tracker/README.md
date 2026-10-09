@@ -10,6 +10,17 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🌐 Universal Search Across ALL Tabs & 57 New Recipes (v1.3.29):**
+  - **Universal Instant Search:** The top search bar (`self.ent_search`) now dynamically filters live data across **EVERY single tab**: *Pure High Alch*, *Smart Picks*, *Craft & Alch*, *Level Guide*, *4h GE Timers*, *Session Tracker*, and *Alert Feed*.
+  - **Dual Field Sync:** Typing in either the global search bar or the Craft & Alch search bar instantly keeps both fields in sync.
+  - **Material & Ingredient Search:** Search recipes not just by finished item name, but also by component materials (e.g. typing `mithril bar`, `yew logs`, `cosmic rune`, or `ruby` instantly shows all relevant crafts).
+  - **Non-Intrusive Ctrl+F:** Pressing `Ctrl+F` focuses the search bar on whichever tab you are currently viewing without jarringly switching tabs. Pressing `Esc` clears all filters instantly.
+  - **Massive Recipe Expansion (+57 Recipes):** Added full coverage across all 4 skilling categories:
+    - *Smithing:* Added Steel, Mithril, Adamant, Iron, and Bronze 2h swords, battleaxes, platelegs, plateskirts, warhammers, and scimitars.
+    - *Crafting:* Added Zenyte jewellery (ring, necklace, bracelet, amulet), Silver jewellery (Opal, Jade, Topaz), and Leather / Hardleather bodies.
+    - *Fletching:* Added full bow crafting from logs + bow string (Magic, Yew, Maple, Willow, Oak shortbows & longbows), unstrung cutting recipes, and crossbows (Dragon, Adamant, Mithril, Steel).
+    - *Magic Enchanting:* Added Zenyte jewellery enchanting (Amulet of torture, Necklace of anguish, Tormented bracelet, Ring of suffering), Onyx jewellery (Fury, Berserker, Regen, Stone), Ring of recoil, and Enchanted bolts (Onyx, Dragonstone, Diamond, Ruby).
+
 - **🎯 Exact Level Requirements Accuracy (v1.3.28 Fix):**
   - **Smithing Levels Corrected:** Fixed **Iron platebody** requirement to **Level 33** (previously listed as 29). Added **Bronze platebody** for Levels 18–33 to cleanly bridge from Level 29 (*The Knight's Sword*) up to Level 33. Iron platebody now properly covers Level 33➔48 (until Steel platebodies unlock at 48).
   - **Fletching Bow Tiers Corrected:** Split Oak bows into **Oak shortbow** (Level 20) and **Oak longbow** (Level 25); updated **Willow longbow** to its true Level 40 requirement.
