@@ -1549,7 +1549,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_ge.heading("skill_lvl", text="Skill & Req", command=lambda: self.toggle_sort_ge("skill"))
         self.tree_ge.heading("offer_bid", text="Target Offer (Bid)", command=lambda: self.toggle_sort_ge("offer_bid"))
         self.tree_ge.heading("instant_ask", text="Instant Buy (Ask)", command=lambda: self.toggle_sort_ge("instant_ask"))
-        self.tree_ge.heading("sell_price", text="GE Sell (-1% Tax)", command=lambda: self.toggle_sort_ge("sell_price"))
+        self.tree_ge.heading("sell_price", text="Target Sell Price", command=lambda: self.toggle_sort_ge("sell_price"))
         self.tree_ge.heading("profit_ea", text="Profit ea ▼", command=lambda: self.toggle_sort_ge("profit_ea"))
         self.tree_ge.heading("roi", text="ROI %", command=lambda: self.toggle_sort_ge("roi"))
         self.tree_ge.heading("limit", text="4h Limit", command=lambda: self.toggle_sort_ge("limit"))
@@ -1595,7 +1595,7 @@ class OSRSAlchDashboard(tk.Tk):
             "#1": "Skill & Requirement:\nSkill category and minimum level required to craft or process this item.",
             "#2": "Target Offer (Bid):\nFor finished item: Total material cost if buying raw materials patiently on Bid.\nFor child ingredient: Exact buy bid to place on the Grand Exchange. Click cell to copy price!",
             "#3": "Instant Buy (Ask):\nFor finished item: Total material cost if buying materials instantly.\nFor child ingredient: Instant purchase price from active sellers. Click cell to copy!",
-            "#4": "GE Sell (-1% Tax) / 🎯 Best Buy:\nFor finished item: Net gold received from selling on the GE after 1% OSRS tax deduction.\nFor child ingredient: 🎯 Best Buy ceiling price (maximum to pay for this material to guarantee profit!). Click to copy!",
+            "#4": "Target Sell Price / 🎯 Best Buy:\nFor finished item: The exact price you should list this item for on the Grand Exchange (Net profit already deducts the 1% GE tax).\nFor child ingredient: 🎯 Best Buy ceiling price (maximum to pay for this material on the GE to guarantee profit!). Click to copy!",
             "#5": "Profit ea:\nNet gold profit per craft (Net GE Sale Revenue - Total Material Cost).\nClick header to sort.",
             "#6": "Return on Investment (ROI %):\nProfit margin percentage relative to total material cost.\nClick header to sort.",
             "#7": "4h GE Buy Limit:\nGrand Exchange buy limit of the limiting raw material.",
@@ -3911,7 +3911,7 @@ class OSRSAlchDashboard(tk.Tk):
                 p["skill_req"],
                 f"{p['bid_mat_cost']:,} gp",
                 f"{p['ask_mat_cost']:,} gp",
-                f"{p['net_sell']:,} gp",
+                f"{p['gross_sell']:,} gp",
                 prof_str,
                 roi_str,
                 f"{p['limit']:,}",
@@ -3963,7 +3963,7 @@ class OSRSAlchDashboard(tk.Tk):
             "skill": ("skill_lvl", "Skill & Req"),
             "offer_bid": ("offer_bid", "Target Offer (Bid)"),
             "instant_ask": ("instant_ask", "Instant Buy (Ask)"),
-            "sell_price": ("sell_price", "GE Sell (-1% Tax)"),
+            "sell_price": ("sell_price", "Target Sell Price"),
             "profit_ea": ("profit_ea", "Profit ea"),
             "roi": ("roi", "ROI %"),
             "limit": ("limit", "4h Limit"),
@@ -4027,7 +4027,7 @@ class OSRSAlchDashboard(tk.Tk):
             raw_val = self.tree_ge.set(item_id, "sell_price")
             clean_p = "".join(c for c in raw_val if c.isdigit())
             if clean_p:
-                label = "Best Buy Ceiling" if "≤" in raw_val else "GE Sell Price"
+                label = "Best Buy Ceiling" if "≤" in raw_val else "Target Sell Price"
                 self.copy_to_clipboard(clean_p, f"Copied {label}: {int(clean_p):,} gp to clipboard!")
             return
 
@@ -4062,8 +4062,8 @@ class OSRSAlchDashboard(tk.Tk):
         sell_str = self.tree_ge.set(item_id, "sell_price")
         clean_num = "".join(c for c in sell_str if c.isdigit())
         if clean_num:
-            lbl = f"🎯 Copy Best Buy Ceiling: {int(clean_num):,} gp" if "≤" in sell_str else f"🏪 Copy Net Sell Price: {int(clean_num):,} gp"
-            menu.add_command(label=lbl, command=lambda: self.copy_to_clipboard(clean_num, f"Copied {int(clean_num):,} gp"))
+            lbl = f"🎯 Copy Best Buy Ceiling: {int(clean_num):,} gp" if "≤" in sell_str else f"🏪 Copy Target Sell Price: {int(clean_num):,} gp"
+            menu.add_command(label=lbl, command=lambda: self.copy_to_clipboard(clean_num, f"Copied Target Sell Price: {int(clean_num):,} gp"))
 
         menu.add_separator()
         slug = clean_name.replace(" ", "_")
@@ -4107,7 +4107,7 @@ class OSRSAlchDashboard(tk.Tk):
                 ("Skill & Lvl:", f"{row['skill']} (Level {row['level']})", "#f1f1f1" if row["can_make"] else "#e74c3c"),
                 ("Total Mat Cost (Bid):", f"{row['bid_mat_cost']:,} gp", "#f1f1f1"),
                 ("Total Mat Cost (Ask):", f"{row['ask_mat_cost']:,} gp", "#f1f1f1"),
-                ("Gross GE Sell Price:", f"{row['gross_sell']:,} gp", "#f1c40f"),
+                ("Target Sell Price (List on GE):", f"{row['gross_sell']:,} gp", "#f1c40f"),
                 ("GE Tax Deduction (1%):", f"-{row['ge_tax']:,} gp", "#e74c3c"),
                 ("Net GE Revenue:", f"{row['net_revenue']:,} gp", "#2ecc71"),
                 ("Net Profit ea:", f"{p_ea:+,} gp ({row['roi']:+.1f}%)", "#2ecc71" if p_ea >= 0 else "#e74c3c"),

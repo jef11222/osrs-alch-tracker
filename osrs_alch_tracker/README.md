@@ -8,6 +8,11 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🏷️ Target Sell Price in Craft & Sell GE (v1.3.32):**
+  - **Accurate In-Game GE Listing Price:** The sell column now displays the exact **Target Sell Price** you should list the item for on the Grand Exchange (`gross_sell_ea`), rather than the net post-tax amount.
+  - **1-Click Copy Listing Price:** Clicking the cell copies the exact gross listing price to your clipboard so you can paste it directly into the in-game GE offer window without accidentally double-taxing your offer.
+  - **Transparent Tax Accounting:** The hover tooltip details the full breakdown: Target GE Listing Price, 1% Jagex tax deduction, and Net Revenue received. Net profit and ROI remain 100% tax-accurate.
+
 - **🛡️ Full-Stack Audit, Column Sorting & Clipboard Hardening (v1.3.31):**
   - **Comprehensive Production Stability Audit:** Performed deep audit across all 9 application modules, eliminating potential edge cases, crashes, and index mismatches.
   - **Column Sorting Corrections:** Fixed Treeview column index lookups across both *Craft & Alch* and *Craft & Sell GE* tabs, ensuring multi-direction sorting works flawlessly on every single column without exception.
