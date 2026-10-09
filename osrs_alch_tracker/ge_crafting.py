@@ -812,6 +812,115 @@ GE_PROFIT_RECIPES = [
             {"name": "Coal", "id": 453, "qty": 1}
         ]
     },
+    {
+        "name": "Gold bar (Blast Furnace)",
+        "skill": "Smithing",
+        "level": 40,
+        "xp": 56.2,
+        "output_id": 2357,
+        "output_qty": 1,
+        "members": True,
+        "hourly_actions": 5000,
+        "materials": [
+            {"name": "Gold ore", "id": 444, "qty": 1}
+        ]
+    },
+    {
+        "name": "Steel bar (Furnace)",
+        "skill": "Smithing",
+        "level": 30,
+        "xp": 17.5,
+        "output_id": 2353,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 1300,
+        "materials": [
+            {"name": "Iron ore", "id": 440, "qty": 1},
+            {"name": "Coal", "id": 453, "qty": 2}
+        ]
+    },
+    {
+        "name": "Silver bar (Furnace)",
+        "skill": "Smithing",
+        "level": 20,
+        "xp": 13.75,
+        "output_id": 2355,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 1400,
+        "materials": [
+            {"name": "Silver ore", "id": 442, "qty": 1}
+        ]
+    },
+    {
+        "name": "Gold bar (Furnace)",
+        "skill": "Smithing",
+        "level": 40,
+        "xp": 22.5,
+        "output_id": 2357,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 1400,
+        "materials": [
+            {"name": "Gold ore", "id": 444, "qty": 1}
+        ]
+    },
+    {
+        "name": "Mithril bar (Furnace)",
+        "skill": "Smithing",
+        "level": 50,
+        "xp": 30.0,
+        "output_id": 2359,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 900,
+        "materials": [
+            {"name": "Mithril ore", "id": 447, "qty": 1},
+            {"name": "Coal", "id": 453, "qty": 4}
+        ]
+    },
+    {
+        "name": "Adamantite bar (Furnace)",
+        "skill": "Smithing",
+        "level": 70,
+        "xp": 37.5,
+        "output_id": 2361,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 700,
+        "materials": [
+            {"name": "Adamantite ore", "id": 449, "qty": 1},
+            {"name": "Coal", "id": 453, "qty": 6}
+        ]
+    },
+    {
+        "name": "Runite bar (Furnace)",
+        "skill": "Smithing",
+        "level": 85,
+        "xp": 50.0,
+        "output_id": 2363,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 500,
+        "materials": [
+            {"name": "Runite ore", "id": 451, "qty": 1},
+            {"name": "Coal", "id": 453, "qty": 8}
+        ]
+    },
+    {
+        "name": "Bronze bar (Furnace)",
+        "skill": "Smithing",
+        "level": 1,
+        "xp": 6.25,
+        "output_id": 2349,
+        "output_qty": 1,
+        "members": False,
+        "hourly_actions": 1300,
+        "materials": [
+            {"name": "Copper ore", "id": 436, "qty": 1},
+            {"name": "Tin ore", "id": 438, "qty": 1}
+        ]
+    },
     # --- High Demand Finished GE Weapons / Armour (F2P & P2P) ---
     {
         "name": "Rune pickaxe",

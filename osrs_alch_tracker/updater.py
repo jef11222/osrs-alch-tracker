@@ -12,8 +12,9 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.32"
+APP_VERSION = "1.3.33"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
+
 RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
 def is_safe_https_url(url, allowed_domains=("github.com", "objects.githubusercontent.com", "api.github.com")):

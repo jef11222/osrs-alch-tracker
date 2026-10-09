@@ -8,6 +8,12 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **🔨 Comprehensive Bar Smelting & Blast Furnace Training (v1.3.33):**
+  - **Complete Bar Smelting in Skilling Guide:** Added mathematically exact training brackets for smelting **Bronze, Iron, Silver, Steel, Gold (with Goldsmith Gauntlets), Mithril, Adamantite, and Runite bars** into the Skilling Guide tab.
+  - **Blast Furnace vs. Standard Furnace Methods:** Full support for both premier Members Blast Furnace training (halved coal requirements, 110k+ XP/hr, and 1M+ GP/hr profit) and standard Furnace methods (Edgeville/Falador/Lumbridge) for Free-to-Play players.
+  - **Family Crest Quest Integration:** Added *Family Crest* to Smithing quest unlocks, highlighting Goldsmith Gauntlets (boosts Gold bar smelting from 22.5 ➔ 56.2 XP ea, unlocking 350k+ XP/hr at Blast Furnace).
+  - **Craft & Sell GE Expansion:** Added furnace smelting recipes for Bronze, Silver, Steel, Gold, Mithril, Adamantite, and Runite bars into `💰 Craft & Sell GE`, providing F2P production recipes alongside Blast Furnace.
+
 - **🏷️ Target Sell Price in Craft & Sell GE (v1.3.32):**
   - **Accurate In-Game GE Listing Price:** The sell column now displays the exact **Target Sell Price** you should list the item for on the Grand Exchange (`gross_sell_ea`), rather than the net post-tax amount.
   - **1-Click Copy Listing Price:** Clicking the cell copies the exact gross listing price to your clipboard so you can paste it directly into the in-game GE offer window without accidentally double-taxing your offer.
