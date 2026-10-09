@@ -1708,6 +1708,16 @@ class OSRSAlchDashboard(tk.Tk):
         btn_bank_tag.pack(side="right", padx=3)
         ToolTip(btn_bank_tag, "🏷️ Copy RuneLite Bank Tag:\nCopies a RuneLite Bank Tag Tab string to organize all training materials in your bank.")
 
+        btn_guide_collapse = tk.Button(guide_ctrl, text="➖ Collapse All", command=self.collapse_all_guide,
+                                       bg="#34495e", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_guide_collapse.pack(side="right", padx=3)
+        ToolTip(btn_guide_collapse, "➖ Collapse All Rows:\nCollapses all skilling brackets back to compact summary rows.")
+
+        btn_guide_expand = tk.Button(guide_ctrl, text="➕ Expand All", command=self.expand_all_guide,
+                                     bg="#34495e", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_guide_expand.pack(side="right", padx=3)
+        ToolTip(btn_guide_expand, "➕ Expand All Rows:\nExpands all skilling brackets to reveal individual raw ingredients and buy ceilings underneath.")
+
         # 2. Dynamic Progress & XP Summary Banner
         self.banner_guide_xp = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=8, pady=4)
         self.banner_guide_xp.pack(fill="x", pady=(0, 4))
@@ -1730,12 +1740,12 @@ class OSRSAlchDashboard(tk.Tk):
         tree_frame = ttk.Frame(container)
         tree_frame.pack(fill="both", expand=True)
 
-        cols = ("status", "level_range", "name", "materials", "tot_mats", "needed", "max_buy", "xp_ea", "gp_xp", "bracket_cost", "action_rec", "xp_rate", "time_est", "verdict")
-        self.tree_guide = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
+        cols = ("status", "level_range", "materials", "tot_mats", "needed", "max_buy", "xp_ea", "gp_xp", "bracket_cost", "action_rec", "xp_rate", "time_est", "verdict")
+        self.tree_guide = ttk.Treeview(tree_frame, columns=cols, show="tree headings", selectmode="browse")
 
+        self.tree_guide.heading("#0", text="Training Method (▶ Expand)", command=lambda: self.toggle_sort_guide("name"))
         self.tree_guide.heading("status", text="Status", command=lambda: self.toggle_sort_guide("status"))
         self.tree_guide.heading("level_range", text="Level Range", command=lambda: self.toggle_sort_guide("level_range"))
-        self.tree_guide.heading("name", text="Training Method", command=lambda: self.toggle_sort_guide("name"))
         self.tree_guide.heading("materials", text="Materials (ea)", command=lambda: self.toggle_sort_guide("materials"))
         self.tree_guide.heading("tot_mats", text="Total Mats Needed", command=lambda: self.toggle_sort_guide("tot_mats"))
         self.tree_guide.heading("needed", text="Units Needed", command=lambda: self.toggle_sort_guide("needed"))
@@ -1748,9 +1758,9 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_guide.heading("time_est", text="Est. Time", command=lambda: self.toggle_sort_guide("time_est"))
         self.tree_guide.heading("verdict", text="Strategy Tips / Verdict", command=lambda: self.toggle_sort_guide("verdict"))
 
+        self.tree_guide.column("#0", width=220, anchor="w")
         self.tree_guide.column("status", width=110, anchor="center")
         self.tree_guide.column("level_range", width=75, anchor="center")
-        self.tree_guide.column("name", width=175, anchor="w")
         self.tree_guide.column("materials", width=130, anchor="w")
         self.tree_guide.column("tot_mats", width=145, anchor="w")
         self.tree_guide.column("needed", width=85, anchor="e")
@@ -1778,26 +1788,27 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_guide.tag_configure("mild_loss", foreground="#f39c12")
         self.tree_guide.tag_configure("loss", foreground="#e74c3c")
         self.tree_guide.tag_configure("quest", foreground="#3498db", font=("Segoe UI", 9, "bold"))
+        self.tree_guide.tag_configure("child_row", foreground="#a0a0a5")
 
         self.tree_guide.bind("<Button-1>", self.on_guide_click)
         self.tree_guide.bind("<Double-1>", self.on_guide_double_click)
         self.tree_guide.bind("<Button-3>", self.on_guide_right_click)
 
         guide_col_tooltips = {
+            "#0": "Training Method / Breakdown:\nClick ▶ to expand into individual raw ingredients with individual buy ceilings.",
             "#1": "Status:\n📍 YOU ARE HERE (Current training step for your level)\n✅ Completed (Already passed this level)\n🔒 Locked (Requires higher level).",
             "#2": "Level Range:\nRecommended level bracket for this skilling method.",
-            "#3": "Training Method:\nSpecific item to smith/fletch/craft or quest to complete.",
-            "#4": "Materials Needed (ea):\nRaw ingredients required per single action.",
-            "#5": "Total Mats Needed:\nTotal raw materials / bars needed to complete this bracket (or remaining for your level goal).",
-            "#6": "Units Needed:\nNumber of actions required to complete this bracket (or reach your target goal).",
-            "#7": "🎯 Max Mat Buy:\nMaximum GE buy price to pay for raw materials to break even (or meet target margin).",
-            "#8": "XP / Act:\nExperience granted per single crafted/smithed item or cast.",
-            "#9": "Live GP/XP:\nNet gold profit/cost per experience point based on live Grand Exchange market prices.",
-            "#10": "Net Profit / Loss:\nTotal projected gold profit (+) or loss (-) to complete all needed units in this bracket.",
-            "#11": "Best Disposal:\nOptimal way to dispose of finished products: 🪄 High Alch vs 🏪 Sell on GE vs 📜 Quest Turn-in.",
-            "#12": "XP / Hour:\nRealistic hourly experience rate attainable with this method.",
-            "#13": "Est. Time:\nProjected grind time to finish this bracket at standard XP/hr rates.",
-            "#14": "Strategy Tips / Verdict:\nPro tips, quest skips, and strategy breakdown."
+            "#3": "Materials Needed (ea):\nRaw ingredients required per single action.",
+            "#4": "Total Mats Needed:\nTotal raw materials / bars needed to complete this bracket (or remaining for your level goal).",
+            "#5": "Units Needed:\nNumber of actions required to complete this bracket (or reach your target goal).",
+            "#6": "🎯 Max Mat Buy:\nMaximum GE buy price to pay for raw materials to break even (or meet target margin).",
+            "#7": "XP / Act:\nExperience granted per single crafted/smithed item or cast (or GE Bid Offer on ingredient rows).",
+            "#8": "Live GP/XP:\nNet gold profit/cost per experience point (or Instant Buy Ask on ingredient rows).",
+            "#9": "Net Profit / Loss:\nTotal projected gold profit (+) or loss (-) to complete all needed units in this bracket.",
+            "#10": "Best Disposal:\nOptimal way to dispose of finished products: 🪄 High Alch vs 🏪 Sell on GE vs 📜 Quest Turn-in.",
+            "#11": "XP / Hour:\nRealistic hourly experience rate attainable with this method.",
+            "#12": "Est. Time:\nProjected grind time to finish this bracket at standard XP/hr rates.",
+            "#13": "Strategy Tips / Verdict:\nPro tips, quest skips, and strategy breakdown."
         }
         HeadingToolTip(self.tree_guide, guide_col_tooltips)
         RowToolTip(self.tree_guide, self.get_guide_row_tooltip)
@@ -1806,6 +1817,15 @@ class OSRSAlchDashboard(tk.Tk):
         self.guide_sort_col = "level_range"
         self.guide_sort_asc = True
         self.update_guide_quests_card("Smithing")
+
+    def expand_all_guide(self):
+        for iid in self.tree_guide.get_children():
+            self.tree_guide.item(iid, open=True)
+
+    def collapse_all_guide(self):
+        for iid in self.tree_guide.get_children():
+            self.tree_guide.item(iid, open=False)
+
 
     def set_guide_skill(self, skill_name):
         self.var_guide_skill.set(skill_name)
@@ -1938,6 +1958,7 @@ class OSRSAlchDashboard(tk.Tk):
         if hasattr(self, "lbl_guide_xp_summary"):
             self.lbl_guide_xp_summary.config(text=summary_txt)
 
+        prev_open = {iid for iid in self.tree_guide.get_children() if self.tree_guide.item(iid, "open")}
         self.tree_guide.delete(*self.tree_guide.get_children())
         self.guide_rows = []
         search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
@@ -1956,13 +1977,13 @@ class OSRSAlchDashboard(tk.Tk):
         if active_skill == "Fletching" and not mem_ok:
             if hasattr(self, "lbl_guide_xp_summary"):
                 self.lbl_guide_xp_summary.config(text="⚠️ Fletching is a Members-only skill in Old School RuneScape. Enable P2P Methods to view recipes.")
-            self.tree_guide.insert("", "end", iid="fletch_p2p_warn", values=(
+            self.tree_guide.insert("", "end", iid="fletch_p2p_warn", text="🔒 Fletching is Members-only", values=(
                 "🔒 P2P Only",
                 "1 - 99",
-                "Fletching is Members-only",
                 "None (P2P)",
                 "--",
                 "0",
+                "--",
                 "--",
                 "0",
                 "--",
@@ -2198,7 +2219,10 @@ class OSRSAlchDashboard(tk.Tk):
                 "tag": final_tag,
                 "min_lvl": min_l,
                 "max_lvl": max_l,
-                "wiki_slug": b.get("wiki_slug", "")
+                "wiki_slug": b.get("wiki_slug", ""),
+                "display_actions": display_actions,
+                "best_rev": best_rev,
+                "target_margin": target_margin
             }
 
             if search_query:
@@ -2211,11 +2235,38 @@ class OSRSAlchDashboard(tk.Tk):
 
             self.guide_rows.append(row_obj)
 
+        # Sort guide rows according to active column
+        if getattr(self, "guide_sort_col", None):
+            col = self.guide_sort_col
+            asc = getattr(self, "guide_sort_asc", True)
+            if col == "level_range":
+                self.guide_rows.sort(key=lambda r: r["min_lvl"], reverse=not asc)
+            elif col == "tot_mats":
+                self.guide_rows.sort(key=lambda r: r.get("tot_mat_qty", 0), reverse=not asc)
+            elif col == "max_buy":
+                self.guide_rows.sort(key=lambda r: r.get("max_buy_val", 0), reverse=not asc)
+            elif col == "xp_ea":
+                self.guide_rows.sort(key=lambda r: r["xp_ea"], reverse=not asc)
+            elif col == "needed":
+                self.guide_rows.sort(key=lambda r: r["needed"], reverse=not asc)
+            elif col == "gp_xp":
+                self.guide_rows.sort(key=lambda r: r["gp_xp_val"], reverse=not asc)
+            elif col == "bracket_cost":
+                self.guide_rows.sort(key=lambda r: r["bracket_cost_val"], reverse=not asc)
+            elif col == "xp_rate":
+                self.guide_rows.sort(key=lambda r: r["xp_rate_val"], reverse=not asc)
+            elif col == "name":
+                self.guide_rows.sort(key=lambda r: r["name"], reverse=not asc)
+            else:
+                self.guide_rows.sort(key=lambda r: str(r.get(col, "")), reverse=not asc)
+
+        basis = "5m" if hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get() else self.state.config.get("price_basis", "5m")
+
         for r in self.guide_rows:
-            self.tree_guide.insert("", "end", iid=r["id"], values=(
+            p_id = r["id"]
+            self.tree_guide.insert("", "end", iid=p_id, text=f"  {r['name']}", values=(
                 r["status"],
                 r["level_range"],
-                r["name"],
                 r["materials"],
                 r["tot_mats"],
                 f"{r['needed']:,}",
@@ -2229,6 +2280,52 @@ class OSRSAlchDashboard(tk.Tk):
                 r["verdict"]
             ), tags=(r["tag"],))
 
+            # Insert child ingredient rows underneath if materials exist
+            mats = r.get("materials_raw", [])
+            if mats:
+                actions_cnt = r["needed"] if r["needed"] > 0 else r.get("display_actions", 0)
+                best_rev_val = r.get("best_rev", 0)
+                t_margin = r.get("target_margin", 0)
+
+                for idx, m in enumerate(mats):
+                    child_iid = f"{p_id}_mat_{m['id']}_{idx}"
+                    m_qty = m["qty"]
+
+                    # Calculate individual ceiling for this material assuming other materials at market price
+                    other_cost = sum(self.api.get_price(other["id"], strat) * other["qty"] for other_idx, other in enumerate(mats) if other_idx != idx)
+                    net_alloc_m = best_rev_val - other_cost
+                    be_m = math.floor(net_alloc_m / m_qty) if m_qty > 0 else 0
+                    tb_m = math.floor((net_alloc_m - t_margin) / m_qty) if m_qty > 0 else 0
+
+                    m_ceiling = f"🎯 ≤ {tb_m:,} gp" if tb_m > 0 else (f"≤ {be_m:,} gp" if be_m > 0 else "--")
+
+                    tot_m_qty = m_qty * actions_cnt
+                    tot_m_str = f"{tot_m_qty:,}x {m['name']}" if tot_m_qty > 0 else f"{m_qty}x {m['name']}"
+
+                    m_bid, m_ask = self.api.get_bid_ask(str(m["id"]), basis=basis)
+                    p_curr = self.api.get_price(m["id"], strat)
+                    sub_cost = p_curr * tot_m_qty
+
+                    self.tree_guide.insert(p_id, "end", iid=child_iid, text=f"    ↳ {m['qty']}x {m['name']}", values=(
+                        "--",
+                        "--",
+                        f"{m['qty']}x {m['name']}",
+                        tot_m_str,
+                        f"{tot_m_qty:,}" if tot_m_qty > 0 else f"{m_qty}x",
+                        m_ceiling,
+                        f"Offer: {m_bid:,}" if m_bid > 0 else "--",
+                        f"Ask: {m_ask:,}" if m_ask > 0 else "--",
+                        f"Cost: {format_gp(sub_cost)}" if sub_cost > 0 else "--",
+                        "🏪 GE Offer",
+                        "--",
+                        "--",
+                        f"🎯 Buy {m['name']} ≤ {tb_m if tb_m > 0 else be_m:,} gp to maintain margin"
+                    ), tags=("child_row",))
+
+            if p_id in prev_open:
+                self.tree_guide.item(p_id, open=True)
+
+
         # Append current step target buy info to XP summary banner if available
         curr_step = next((r for r in self.guide_rows if "YOU ARE HERE" in r.get("status", "")), None)
         if curr_step and curr_step.get("breakeven_ea", 0) > 0 and hasattr(self, "lbl_guide_xp_summary"):
@@ -2241,52 +2338,120 @@ class OSRSAlchDashboard(tk.Tk):
         if not sel:
             return None
         row_id = sel[0]
+        if "_mat_" in str(row_id):
+            parent_id = self.tree_guide.parent(row_id)
+            return next((r for r in self.guide_rows if r["id"] == parent_id), None)
         return next((r for r in self.guide_rows if r["id"] == row_id), None)
 
     def on_guide_click(self, event):
         row_id = self.tree_guide.identify_row(event.y)
         if not row_id:
             return
+        col_id = self.tree_guide.identify_column(event.x)
+
+        if col_id == "#0":
+            if self.tree_guide.get_children(row_id):
+                cur = self.tree_guide.item(row_id, "open")
+                self.tree_guide.item(row_id, open=not cur)
+            raw_text = self.tree_guide.item(row_id, "text")
+            clean_name = raw_text.replace("▶", "").replace("▼", "").replace("↳", "").strip()
+            if "x " in clean_name and clean_name[:3].replace("x", "").strip().isdigit():
+                clean_name = clean_name.split("x ", 1)[-1].strip()
+            self.copy_to_clipboard(clean_name, f"Copied '{clean_name}' to clipboard!")
+            return
+
+        if col_id == "#6":
+            raw_buy = self.tree_guide.set(row_id, "max_buy")
+            clean_p = "".join(c for c in raw_buy if c.isdigit())
+            if clean_p:
+                raw_text = self.tree_guide.item(row_id, "text").replace("↳", "").strip()
+                self.copy_to_clipboard(clean_p, f"📋 Copied Max Buy Price: {int(clean_p):,} gp ({raw_text}) to clipboard!")
+            return
+
+        if col_id in ("#4", "#5"):
+            raw_val = self.tree_guide.set(row_id, "needed") if col_id == "#5" else self.tree_guide.set(row_id, "tot_mats")
+            clean_qty = "".join(c for c in raw_val if c.isdigit())
+            if clean_qty:
+                self.copy_to_clipboard(clean_qty, f"📋 Copied Quantity: {int(clean_qty):,} to clipboard!")
+            return
+
+        if col_id == "#7":
+            raw_val = self.tree_guide.set(row_id, "xp_ea")
+            clean_num = "".join(c for c in raw_val if c.isdigit())
+            if clean_num and "Offer:" in raw_val:
+                self.copy_to_clipboard(clean_num, f"📋 Copied Target Offer (Bid): {int(clean_num):,} gp to clipboard!")
+            return
+
+        if col_id == "#8":
+            raw_val = self.tree_guide.set(row_id, "gp_xp")
+            clean_num = "".join(c for c in raw_val if c.isdigit())
+            if clean_num and "Ask:" in raw_val:
+                self.copy_to_clipboard(clean_num, f"📋 Copied Instant Buy (Ask): {int(clean_num):,} gp to clipboard!")
+            return
+
         row = next((r for r in self.guide_rows if r["id"] == row_id), None)
         if not row:
             return
-        col_id = self.tree_guide.identify_column(event.x)
+
         if col_id == "#3":
-            self.copy_to_clipboard(row["name"], f"Copied '{row['name']}' to clipboard!")
-        elif col_id == "#4":
             self.copy_to_clipboard(row["materials"], f"Copied materials for '{row['name']}' to clipboard!")
-        elif col_id == "#5":
-            qty = row.get("tot_mat_qty", 0)
-            if qty > 0:
-                mat_n = row.get("primary_mat_name", "materials")
-                self.copy_to_clipboard(str(qty), f"📋 Copied Total Material Quantity ({qty:,}) for {mat_n} to clipboard!")
-            elif row.get("tot_mats"):
-                self.copy_to_clipboard(row["tot_mats"], f"Copied '{row['tot_mats']}' to clipboard!")
-        elif col_id == "#6":
-            self.copy_to_clipboard(str(row["needed"]), f"Copied needed units ({row['needed']:,}) to clipboard!")
-        elif col_id == "#7":
-            p = row.get("target_buy_p", 0) or row.get("breakeven_ea", 0)
-            if p > 0:
-                mat_n = row.get("primary_mat_name", "materials")
-                self.copy_to_clipboard(str(p), f"📋 Copied Max Buy Price ({p:,} gp) for {mat_n} to clipboard!")
 
     def on_guide_double_click(self, event):
         row_id = self.tree_guide.identify_row(event.y)
         if not row_id:
             return
-        self.tree_guide.selection_set(row_id)
-        self.add_guide_batch_to_cart()
+        if self.tree_guide.get_children(row_id):
+            cur = self.tree_guide.item(row_id, "open")
+            self.tree_guide.item(row_id, open=not cur)
+        else:
+            self.tree_guide.selection_set(row_id)
+            self.add_guide_batch_to_cart()
 
     def on_guide_right_click(self, event):
         row_id = self.tree_guide.identify_row(event.y)
         if not row_id:
             return
         self.tree_guide.selection_set(row_id)
+
+        menu = tk.Menu(self, tearoff=0, bg="#2d2d30", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
+
+        if "_mat_" in str(row_id):
+            raw_text = self.tree_guide.item(row_id, "text").replace("↳", "").strip()
+            clean_name = raw_text.split("x ", 1)[-1].strip() if "x " in raw_text else raw_text
+            menu.add_command(label=f"📦 Copy Material Name: {clean_name}",
+                             command=lambda: self.copy_to_clipboard(clean_name, f"Copied '{clean_name}'"))
+
+            raw_buy = self.tree_guide.set(row_id, "max_buy")
+            clean_p = "".join(c for c in raw_buy if c.isdigit())
+            if clean_p:
+                menu.add_command(label=f"🎯 Copy Max Buy Price: {int(clean_p):,} gp",
+                                 command=lambda: self.copy_to_clipboard(clean_p, f"Copied {int(clean_p):,} gp for {clean_name}"))
+
+            raw_bid = self.tree_guide.set(row_id, "xp_ea")
+            clean_bid = "".join(c for c in raw_bid if c.isdigit())
+            if clean_bid and "Offer:" in raw_bid:
+                menu.add_command(label=f"💰 Copy Target Offer (Bid): {int(clean_bid):,} gp",
+                                 command=lambda: self.copy_to_clipboard(clean_bid, f"Copied {int(clean_bid):,} gp for {clean_name}"))
+
+            raw_ask = self.tree_guide.set(row_id, "gp_xp")
+            clean_ask = "".join(c for c in raw_ask if c.isdigit())
+            if clean_ask and "Ask:" in raw_ask:
+                menu.add_command(label=f"⚡ Copy Instant Buy (Ask): {int(clean_ask):,} gp",
+                                 command=lambda: self.copy_to_clipboard(clean_ask, f"Copied {int(clean_ask):,} gp for {clean_name}"))
+
+            raw_qty = self.tree_guide.set(row_id, "needed")
+            clean_qty = "".join(c for c in raw_qty if c.isdigit())
+            if clean_qty:
+                menu.add_command(label=f"📋 Copy Total Quantity: {int(clean_qty):,}x",
+                                 command=lambda: self.copy_to_clipboard(clean_qty, f"Copied {int(clean_qty):,} for {clean_name}"))
+
+            menu.post(event.x_root, event.y_root)
+            return
+
         row = next((r for r in self.guide_rows if r["id"] == row_id), None)
         if not row:
             return
 
-        menu = tk.Menu(self, tearoff=0, bg="#2d2d30", fg="#ffffff", activebackground="#f39c12", activeforeground="#000000")
         menu.add_command(label=f"🛒 Add Training Batch to Cart ({row['needed']:,} units)", command=self.add_guide_batch_to_cart)
         p_buy = row.get("target_buy_p", 0) or row.get("breakeven_ea", 0)
         if p_buy > 0:
@@ -2440,6 +2605,30 @@ class OSRSAlchDashboard(tk.Tk):
                 "hint": "Check 'P2P Methods' at the top to unlock Fletching guides."
             }
 
+        if "_mat_" in str(row_id):
+            raw_text = self.tree_guide.item(row_id, "text").replace("↳", "").strip()
+            clean_name = raw_text.split("x ", 1)[-1].strip() if "x " in raw_text else raw_text
+            max_buy_val = self.tree_guide.set(row_id, "max_buy")
+            tot_val = self.tree_guide.set(row_id, "tot_mats")
+            cost_val = self.tree_guide.set(row_id, "bracket_cost")
+            offer_val = self.tree_guide.set(row_id, "xp_ea").replace("Offer: ", "")
+            ask_val = self.tree_guide.set(row_id, "gp_xp").replace("Ask: ", "")
+            return {
+                "title": f"📦 Ingredient: {clean_name}",
+                "subtitle": "Raw Material Requirement",
+                "title_color": "#f39c12",
+                "rows": [
+                    ("Total Quantity Needed:", tot_val, "#f1c40f"),
+                    ("🎯 Target Buy Ceiling:", max_buy_val, "#2ecc71"),
+                    ("Current GE Offer (Bid):", f"{offer_val} gp" if offer_val != "--" else "--", "#3498db"),
+                    ("Current Instant Buy (Ask):", f"{ask_val} gp" if ask_val != "--" else "--", "#e67e22"),
+                    ("Total Batch Cost:", cost_val.replace("Cost: ", ""), "#f1f1f1"),
+                ],
+                "warnings": [f"Buy at or below {max_buy_val} to preserve target training margin."],
+                "has_warning": False,
+                "hint": "💡 Click cell to copy price or quantity directly to clipboard!"
+            }
+
         row = next((r for r in self.guide_rows if str(r.get("id")) == str(row_id)), None)
         if not row:
             return None
@@ -2487,49 +2676,34 @@ class OSRSAlchDashboard(tk.Tk):
         }
 
     def toggle_sort_guide(self, col):
-        if self.guide_sort_col == col:
+        if getattr(self, "guide_sort_col", "") == col:
             self.guide_sort_asc = not self.guide_sort_asc
         else:
             self.guide_sort_col = col
             self.guide_sort_asc = True
 
-        if col == "level_range":
-            self.guide_rows.sort(key=lambda r: r["min_lvl"], reverse=not self.guide_sort_asc)
-        elif col == "tot_mats":
-            self.guide_rows.sort(key=lambda r: r.get("tot_mat_qty", 0), reverse=not self.guide_sort_asc)
-        elif col == "max_buy":
-            self.guide_rows.sort(key=lambda r: r.get("max_buy_val", 0), reverse=not self.guide_sort_asc)
-        elif col == "xp_ea":
-            self.guide_rows.sort(key=lambda r: r["xp_ea"], reverse=not self.guide_sort_asc)
-        elif col == "needed":
-            self.guide_rows.sort(key=lambda r: r["needed"], reverse=not self.guide_sort_asc)
-        elif col == "gp_xp":
-            self.guide_rows.sort(key=lambda r: r["gp_xp_val"], reverse=not self.guide_sort_asc)
-        elif col == "bracket_cost":
-            self.guide_rows.sort(key=lambda r: r["bracket_cost_val"], reverse=not self.guide_sort_asc)
-        elif col == "xp_rate":
-            self.guide_rows.sort(key=lambda r: r["xp_rate_val"], reverse=not self.guide_sort_asc)
-        else:
-            self.guide_rows.sort(key=lambda r: str(r.get(col, "")), reverse=not self.guide_sort_asc)
+        arrow = " ▼" if not self.guide_sort_asc else " ▲"
+        headers = {
+            "name": ("#0", "Training Method (▶ Expand)"),
+            "status": ("status", "Status"),
+            "level_range": ("level_range", "Level Range"),
+            "materials": ("materials", "Materials (ea)"),
+            "tot_mats": ("tot_mats", "Total Mats Needed"),
+            "needed": ("needed", "Units Needed"),
+            "max_buy": ("max_buy", "🎯 Max Mat Buy"),
+            "xp_ea": ("xp_ea", "XP / Act"),
+            "gp_xp": ("gp_xp", "Live GP/XP"),
+            "bracket_cost": ("bracket_cost", "Net Profit / Loss"),
+            "action_rec": ("action_rec", "Best Disposal"),
+            "xp_rate": ("xp_rate", "XP / Hour"),
+            "time_est": ("time_est", "Est. Time"),
+            "verdict": ("verdict", "Strategy Tips / Verdict")
+        }
+        for sort_k, (col_id, title) in headers.items():
+            self.tree_guide.heading(col_id, text=title + (arrow if getattr(self, "guide_sort_col", "") == sort_k else ""))
 
-        self.tree_guide.delete(*self.tree_guide.get_children())
-        for r in self.guide_rows:
-            self.tree_guide.insert("", "end", iid=r["id"], values=(
-                r["status"],
-                r["level_range"],
-                r["name"],
-                r["materials"],
-                r["tot_mats"],
-                f"{r['needed']:,}",
-                r["max_buy"],
-                f"{r['xp_ea']:,.1f}" if r["xp_ea"] % 1 else f"{int(r['xp_ea']):,}",
-                r["gp_xp"],
-                r["bracket_cost"],
-                r["action_rec"],
-                r["xp_rate"],
-                r["time_est"],
-                r["verdict"]
-            ), tags=(r["tag"],))
+        self.recalculate_guide_table()
+
 
     def build_timers_tab(self):
         container = ttk.Frame(self.tab_timers)
@@ -3925,12 +4099,14 @@ class OSRSAlchDashboard(tk.Tk):
             # Insert child ingredients underneath parent
             for idx, m in enumerate(p["materials"]):
                 child_id = f"{p['id']}_mat_{m['id']}_{idx}"
-                if idx == 0:
-                    ceiling_str = f"🎯 ≤ {p['target_buy_p']:,} gp" if p["target_buy_p"] > 0 else f"≤ {p['breakeven_p']:,} gp"
-                    m_prof_str = f"≤ {p['breakeven_p']:,} be"
-                else:
-                    ceiling_str = f"{m['price_ea']:,} gp"
-                    m_prof_str = "--"
+                other_mats_cost = sum(other["price_ea"] * other["qty"] for other_idx, other in enumerate(p["materials"]) if other_idx != idx)
+                net_alloc_m = p["net_revenue"] - other_mats_cost
+                m_qty = m["qty"]
+                be_m = math.floor(net_alloc_m / m_qty) if m_qty > 0 else 0
+                tb_m = math.floor((net_alloc_m - target_margin) / m_qty) if m_qty > 0 else 0
+
+                ceiling_str = f"🎯 ≤ {tb_m:,} gp" if tb_m > 0 else (f"≤ {be_m:,} gp" if be_m > 0 else "--")
+                m_prof_str = f"≤ {be_m:,} be" if be_m > 0 else "--"
 
                 self.tree_ge.insert(p["id"], "end", iid=child_id, text=f"    ↳ {m['qty']}x {m['name']}", values=(
                     "--",

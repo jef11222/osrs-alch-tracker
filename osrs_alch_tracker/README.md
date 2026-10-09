@@ -8,6 +8,14 @@ A real-time, desktop companion tool for **Old School RuneScape (OSRS)** that mon
 
 ## ✨ Key Features
 
+- **📂 Expandable Ingredient Dropdown Trees in Skilling Guide (v1.3.34):**
+  - **Hierarchical Ingredient Tree (`▶` / `▼`):** The Skilling Guide is now an interactive dropdown tree! Click `▶` on any method (such as bar smelting, bows, potions, or jewellery) to expand and reveal its exact raw materials indented underneath (`↳ 1x Iron ore`, `↳ 2x Coal`).
+  - **Individual Buy Ceilings for Each Ore & Material:** Each individual ingredient row calculates and displays its own dedicated **`🎯 Max Mat Buy` ceiling** (`target_buy_p`) and breakeven ceiling, telling you the exact ceiling price to pay for each component to maintain your profit margin.
+  - **Live Offer & Ask Market Prices:** Ingredient rows display real-time GE Target Offer (Bid), Instant Buy (Ask), total quantity scaled to your goal level, and total batch gold cost.
+  - **1-Click Copy on Child Cells:** Click any ingredient's Max Buy price, Bid Offer, Ask, or quantity to instantly copy the exact integer to your clipboard for rapid in-game trading.
+  - **➕ Expand All / ➖ Collapse All:** One-click toolbar controls to expand all training methods at once or collapse back to compact rows.
+  - **Full Multi-Material Ceilings in Craft & Sell GE:** Secondary ingredients (like Coal, second ores, secondaries) in `💰 Craft & Sell GE` now calculate and display individual best buy ceilings and breakeven values alongside primary materials.
+
 - **🔨 Comprehensive Bar Smelting & Blast Furnace Training (v1.3.33):**
   - **Complete Bar Smelting in Skilling Guide:** Added mathematically exact training brackets for smelting **Bronze, Iron, Silver, Steel, Gold (with Goldsmith Gauntlets), Mithril, Adamantite, and Runite bars** into the Skilling Guide tab.
   - **Blast Furnace vs. Standard Furnace Methods:** Full support for both premier Members Blast Furnace training (halved coal requirements, 110k+ XP/hr, and 1M+ GP/hr profit) and standard Furnace methods (Edgeville/Falador/Lumbridge) for Free-to-Play players.
