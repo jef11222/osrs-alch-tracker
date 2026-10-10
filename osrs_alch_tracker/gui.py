@@ -1781,7 +1781,7 @@ class OSRSAlchDashboard(tk.Tk):
         top_row.pack(fill="x")
 
         tk.Label(top_row, text="🤝 World 308 'Varrock West' Bulk Trading Hub", font=("Segoe UI", 11, "bold"), fg="#f39c12", bg="#202023").pack(side="left")
-        tk.Label(top_row, text="📍 W308 Varrock West Bank | CC: 'Varrock West' / 'W308 Anvil'", font=("Segoe UI", 8), fg="#888888", bg="#202023").pack(side="right")
+        tk.Label(top_row, text="📍 W308 Varrock West Bank | Clan Guest: 'Varrock Mob'", font=("Segoe UI", 8), fg="#888888", bg="#202023").pack(side="right")
 
         tk.Label(banner, text="Bypass the 4-hour 70-unit GE buy limit and save 2% GE tax by trading bulk noted items directly with smiths and crafters!",
                  font=("Segoe UI", 8), fg="#cccccc", bg="#202023").pack(anchor="w", pady=(2, 4))
@@ -1918,11 +1918,11 @@ class OSRSAlchDashboard(tk.Tk):
         v_act = tk.Frame(v_body, bg="#1a1a1d")
         v_act.pack(side="right", fill="y", padx=(10, 0))
 
-        self.btn_copy_coins = tk.Button(v_act, text="💰 Copy Coins",
-                                        command=lambda: self.copy_to_clipboard("0", "Copied coins amount!"),
+        self.btn_copy_coins = tk.Button(v_act, text="⌨️ Type: --",
+                                        command=lambda: None,
                                         bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
         self.btn_copy_coins.pack(fill="x", pady=2)
-        ToolTip(self.btn_copy_coins, "Click to copy exact coin amount to clipboard for instant pasting or typing into trade window.")
+        ToolTip(self.btn_copy_coins, "Shows exact shorthand to type into OSRS Offer-X prompt (e.g. 7580k). Click for step-by-step guidance!")
 
         self.btn_copy_validator_ad = tk.Button(v_act, text="📢 Copy Trade Ad", command=self.copy_w308_validator_ad,
                                                bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
@@ -2091,10 +2091,21 @@ class OSRSAlchDashboard(tk.Tk):
         net_profit = total_alch - total_coins - total_nats
         profit_ea = (net_profit // qty) if qty > 0 else 0
 
+        # Exact in-game shorthand for OSRS trade "Enter amount:" prompt (e.g. 7580k, 15m)
+        if total_coins > 0:
+            if total_coins % 1_000_000 == 0:
+                trade_shorthand = f"{total_coins // 1_000_000}m"
+            elif total_coins % 1_000 == 0:
+                trade_shorthand = f"{total_coins // 1_000}k"
+            else:
+                trade_shorthand = str(total_coins)
+        else:
+            trade_shorthand = "0"
+
         c_str = f"{total_coins / 1_000_000:.2f}M" if total_coins >= 1_000_000 else f"{total_coins:,}"
         a_str = f"{total_alch / 1_000_000:.2f}M" if total_alch >= 1_000_000 else f"{total_alch:,}"
 
-        self.lbl_v_coins.config(text=f"Coins To Give: {total_coins:,} gp ({c_str})")
+        self.lbl_v_coins.config(text=f"Coins To Give: {total_coins:,} gp (Type: {trade_shorthand})")
         self.lbl_v_alch.config(text=f"High Alch: {total_alch:,} gp ({a_str})")
         self.lbl_v_nat.config(text=f"Nature Cost: {total_nats:,} gp ({qty:,} @ {nat_cost} ea)")
 
@@ -2118,11 +2129,11 @@ class OSRSAlchDashboard(tk.Tk):
                 )
 
         self.lbl_v_warning.config(
-            text=f"⚠️ Verification: Ensure 2nd trade screen shows EXACTLY {qty:,} noted {sel_name} and EXACTLY {total_coins:,} coins!"
+            text=f"⌨️ Trade Screen: Offer-X Coins ➔ Type '{trade_shorthand}' (Enter) | Verify: {qty:,} noted {sel_name}"
         )
         self.btn_copy_coins.config(
-            text=f"💰 Copy Coins ({c_str})",
-            command=lambda: self.copy_to_clipboard(str(total_coins), f"Copied {total_coins:,} gp coins amount to clipboard!")
+            text=f"⌨️ Type: {trade_shorthand}",
+            command=lambda: self.on_click_copy_trade_coins(trade_shorthand, total_coins)
         )
         if hasattr(self, "btn_copy_validator_ad"):
             p_ad = f"{price / 1000:.1f}k" if price % 1000 != 0 else f"{price // 1000}k"
@@ -2131,6 +2142,15 @@ class OSRSAlchDashboard(tk.Tk):
                 text="📢 Copy Custom Ad",
                 command=lambda: self.copy_to_clipboard(ad_text, f"Copied trade ad: '{ad_text}'")
             )
+
+    def on_click_copy_trade_coins(self, shorthand, total_coins):
+        self.copy_to_clipboard(shorthand, f"Offer-X: Type '{shorthand}' in Trade Screen ({total_coins:,} gp)")
+        FloatingToast(
+            self,
+            "OSRS Trade Amount",
+            f"⌨️ In OSRS Trade Screen:\n1. Right-click Coins ➔ Offer-X\n2. Type '{shorthand}' and hit Enter!\n(OSRS automatically enters {total_coins:,} gp)",
+            3500
+        )
 
     def log_w308_trade_to_session(self):
         sel_name = self.var_w308_item.get()
@@ -2569,7 +2589,7 @@ class OSRSAlchDashboard(tk.Tk):
         tk.Label(w308_box, text="⚡ F2P Speed Secret — How to Alch 12h/Day Without Hitting GE Limits:", font=("Segoe UI", 9, "bold"), fg="#3498db", bg="#1a252f").pack(anchor="w")
         tk.Label(
             w308_box,
-            text="In F2P, the GE limits you to 70 rune items every 4 hours. To alch continuously without waiting for GE limits, visit World 308 at Varrock West Bank (Clan Chat: 'W308 Anvil'). High-level smithers sell thousands of noted Rune 2h swords and battleaxes directly in unlimited bulk for GE mid/low! Zero buy limits!",
+            text="In F2P, the GE limits you to 70 rune items every 4 hours. To alch continuously without waiting for GE limits, visit World 308 at Varrock West Bank (Join as Clan Guest: 'Varrock Mob' or trade in Public Chat). High-level smithers sell thousands of noted Rune 2h swords and battleaxes directly in unlimited bulk for GE mid/low! Zero buy limits!",
             font=("Segoe UI", 8, "italic"), fg="#ecf0f1", bg="#1a252f", wraplength=950, justify="left"
         ).pack(anchor="w", pady=(2, 0))
 
