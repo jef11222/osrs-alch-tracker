@@ -685,6 +685,27 @@ class SetQuantityDialog(tk.Toplevel):
         self.on_save(0)
         self.destroy()
 
+W308_STAPLES = [
+    {"id": 1319, "name": "Rune 2h sword", "alch": 38400, "w308_buy": 37600, "short": "R2H"},
+    {"id": 1079, "name": "Rune platelegs", "alch": 38400, "w308_buy": 37600, "short": "R Legs"},
+    {"id": 1093, "name": "Rune plateskirt", "alch": 38400, "w308_buy": 37600, "short": "R Skirts"},
+    {"id": 1113, "name": "Rune chainbody", "alch": 30000, "w308_buy": 29350, "short": "R Chain"},
+    {"id": 1373, "name": "Rune battleaxe", "alch": 24960, "w308_buy": 24400, "short": "R Baxe"},
+    {"id": 1185, "name": "Rune sq shield", "alch": 23040, "w308_buy": 22500, "short": "R Sq"},
+    {"id": 1275, "name": "Rune pickaxe", "alch": 19200, "w308_buy": 18750, "short": "R Pick"},
+    {"id": 1333, "name": "Rune scimitar", "alch": 15360, "w308_buy": 15000, "short": "R Scim"},
+    {"id": 1289, "name": "Rune sword", "alch": 12480, "w308_buy": 12200, "short": "R Sword"},
+    {"id": 1147, "name": "Rune med helm", "alch": 11520, "w308_buy": 11250, "short": "R Med"},
+    {"id": 1213, "name": "Rune dagger", "alch": 4800, "w308_buy": 4600, "short": "R Dagger"},
+    {"id": 1123, "name": "Adamant platebody", "alch": 9984, "w308_buy": 9650, "short": "Addy Body"},
+    {"id": 1397, "name": "Air battlestaff", "alch": 9300, "w308_buy": 8950, "short": "Air Bstaff"},
+    {"id": 1393, "name": "Fire battlestaff", "alch": 9300, "w308_buy": 8950, "short": "Fire Bstaff"},
+    {"id": 2503, "name": "Black d'hide body", "alch": 8085, "w308_buy": 7750, "short": "Black Dhide"},
+    {"id": 2501, "name": "Red d'hide body", "alch": 6738, "w308_buy": 6450, "short": "Red Dhide"},
+    {"id": 2499, "name": "Blue d'hide body", "alch": 5616, "w308_buy": 5350, "short": "Blue Dhide"},
+    {"id": 1135, "name": "Green d'hide body", "alch": 4680, "w308_buy": 4450, "short": "Green Dhide"},
+]
+
 class OSRSAlchDashboard(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -713,6 +734,13 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.rec_sort_col = "profit_ea"
         self.rec_sort_desc = True
+
+        self.session_sort_col = "time"
+        self.session_sort_desc = True
+        self.session_view_mode = self.state.config.get("session_view_mode", "consolidated")
+        self.w308_rows = []
+        self.w308_sort_col = "profit_ea"
+        self.w308_sort_desc = True
 
         # Clipboard copy feedback
         self.clipboard_clear_timer = None
@@ -860,60 +888,35 @@ class OSRSAlchDashboard(tk.Tk):
         self.sub_bar.pack(fill="x", padx=10, pady=5)
         self.build_sub_bar()
 
-        # 3. Main Notebook (Tabs)
+        # 3. Main Notebook (5 Consolidated Super-Hubs)
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=5)
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
-        # Tab 1: Pure High Alch
-        self.tab_alch = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_alch, text="🔮 Pure High Alch")
-        self.build_alch_tab()
+        # Hub 1: 🔮 High Alchemy & Trading Hub
+        self.tab_hub_alch = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_hub_alch, text="🔮 High Alch & Trading")
+        self.build_alch_hub()
 
-        # Tab 2: Smart Picks (Recommendations)
-        self.tab_rec = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_rec, text="⭐ Smart Picks")
-        self.build_rec_tab()
+        # Hub 2: 🔨 Crafting & Production Workshop
+        self.tab_hub_craft = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_hub_craft, text="🔨 Crafting Workshop")
+        self.build_craft_hub()
 
-        # Tab 3: Overnight Planner
-        self.tab_overnight = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_overnight, text="🌙 Overnight Planner")
-        self.build_overnight_tab()
-
-        # Tab 4: Bond Roadmap & Sustainer
+        # Hub 3: 🎟️ Bond Roadmap & Freedom Engine
         self.tab_bond = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_bond, text="🎟️ Bond Roadmap")
         self.build_bond_tab()
 
-        # Tab 5: Craft & Alch
-        self.tab_craft = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_craft, text="🔨 Craft & Alch")
-        self.build_craft_tab()
-
-        # Tab 4: GE Crafting & Production Profit
-        self.tab_ge_craft = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_ge_craft, text="💰 Craft & Sell GE")
-        self.build_ge_craft_tab()
-
-        # Tab 5: Skilling & Level Training Guide
-        self.tab_guide = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_guide, text="🎓 Level Guide")
-        self.build_guide_tab()
-
-        # Tab 5: 4h GE Limit Timers
+        # Hub 4: ⏱️ 4h GE Limit Timers
         self.tab_timers = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_timers, text="⏱️ 4h GE Timers")
         self.build_timers_tab()
 
-        # Tab 6: Session Profit Tracker
-        self.tab_session = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_session, text="📊 Session Tracker")
-        self.build_session_tab()
-
-        # Tab 7: Alert Log
-        self.tab_alerts = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_alerts, text="🔔 Alert Feed")
-        self.build_alerts_tab()
+        # Hub 5: 📊 Session & Activity Center
+        self.tab_hub_activity = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_hub_activity, text="📊 Session & Activity")
+        self.build_activity_hub()
 
         # 4. Bottom Status Bar
         self.status_bar = tk.Frame(self, bg="#181818", height=28)
@@ -921,11 +924,35 @@ class OSRSAlchDashboard(tk.Tk):
         self.build_status_bar()
 
     def build_top_controls(self):
-        # Row 1: Item & Market Filters
+        # Row 1: Essential Controls (Always Visible)
         p1 = tk.Frame(self.top_frame, bg="#252528")
         p1.pack(fill="x", padx=8, pady=(4, 2))
 
-        # Filters: Members / F2P
+        # Search Bar
+        tk.Label(p1, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 1))
+        self.ent_search = tk.Entry(p1, width=14, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
+        self.ent_search.pack(side="left", padx=(1, 8))
+        self.ent_search.bind("<KeyRelease>", self.on_global_search_changed)
+        self.ent_search.bind("<Escape>", lambda e: self.clear_search())
+        ToolTip(self.ent_search, "Universal search across ALL tabs (Alch, Smart Picks, Craft, Guide, Timers, History). Press Esc to clear, Ctrl+F to focus.")
+
+        # Cash Stack
+        self.var_use_cash = tk.BooleanVar(value=self.state.config.get("use_cash_stack", True))
+        self.cb_cash = tk.Checkbutton(p1, text="Cash:", variable=self.var_use_cash, command=self.on_cash_toggle_changed,
+                                      bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#2ecc71")
+        self.cb_cash.pack(side="left", padx=(2, 0))
+        ToolTip(self.cb_cash, "Toggle budget constraint. Uncheck for unlimited cash.")
+
+        self.ent_cash = tk.Entry(p1, width=8, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        self.ent_cash.insert(0, format_gp(self.state.config.get("cash_stack", 5000000)))
+        if not self.var_use_cash.get():
+            self.ent_cash.config(state="disabled")
+        self.ent_cash.pack(side="left", padx=(1, 8))
+        self.ent_cash.bind("<FocusOut>", self.on_cash_changed)
+        self.ent_cash.bind("<Return>", self.on_cash_changed)
+        ToolTip(self.ent_cash, "Your current in-game cash stack. Supports 900k, 1.5m, etc.")
+
+        # Mode: Members / F2P
         self.var_members = tk.BooleanVar(value=self.state.config.get("members", True))
         self.var_f2p = tk.BooleanVar(value=self.state.config.get("f2p", False))
 
@@ -937,59 +964,9 @@ class OSRSAlchDashboard(tk.Tk):
         cb_f2p = tk.Checkbutton(p1, text="F2P Only", variable=self.var_f2p, command=self.on_f2p_clicked,
                                 bg="#252528", fg="#f1f1f1", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#2ecc71")
         cb_f2p.pack(side="left", padx=2)
-        ToolTip(cb_f2p, "Free-to-Play Mode (F2P Only):\nStrictly filters to F2P items, recipes, quests, and brackets only.\nAll Members items and quests are completely hidden across all tabs.\nGE slots cap at 3.")
+        ToolTip(cb_f2p, "Free-to-Play Mode (F2P Only):\nStrictly filters to F2P items, recipes, quests, and brackets only.")
 
-        # Cash Stack (Toggleable on/off)
-        self.var_use_cash = tk.BooleanVar(value=self.state.config.get("use_cash_stack", True))
-        self.cb_cash = tk.Checkbutton(p1, text="Cash Stack:", variable=self.var_use_cash, command=self.on_cash_toggle_changed,
-                                      bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528", activeforeground="#2ecc71")
-        self.cb_cash.pack(side="left", padx=(4, 0))
-        ToolTip(self.cb_cash, "Toggle budget constraint. Uncheck for unlimited cash.")
-
-        self.ent_cash = tk.Entry(p1, width=8, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
-        self.ent_cash.insert(0, format_gp(self.state.config.get("cash_stack", 5000000)))
-        if not self.var_use_cash.get():
-            self.ent_cash.config(state="disabled")
-        self.ent_cash.pack(side="left", padx=(1, 6))
-        self.ent_cash.bind("<FocusOut>", self.on_cash_changed)
-        self.ent_cash.bind("<Return>", self.on_cash_changed)
-        ToolTip(self.ent_cash, "Your current in-game cash stack. Supports 900k, 1.5m, etc.")
-
-        # Max Item Spend
-        tk.Label(p1, text="Max Spend:", fg="#cccccc", bg="#252528").pack(side="left")
-        self.ent_max_spend = tk.Entry(p1, width=7, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
-        self.ent_max_spend.insert(0, format_gp(self.state.config.get("max_item_cost", 500000)))
-        self.ent_max_spend.pack(side="left", padx=(2, 6))
-        self.ent_max_spend.bind("<FocusOut>", self.on_filter_changed)
-        self.ent_max_spend.bind("<Return>", self.on_filter_changed)
-        ToolTip(self.ent_max_spend, "Maximum buy price of a single item to display.")
-
-        # Min 24h Volume
-        tk.Label(p1, text="Min Vol:", fg="#cccccc", bg="#252528").pack(side="left")
-        self.ent_min_vol = tk.Entry(p1, width=6, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
-        self.ent_min_vol.insert(0, str(self.state.config.get("min_volume", 5000)))
-        self.ent_min_vol.pack(side="left", padx=(2, 6))
-        self.ent_min_vol.bind("<FocusOut>", self.on_filter_changed)
-        self.ent_min_vol.bind("<Return>", self.on_filter_changed)
-        ToolTip(self.ent_min_vol, "Minimum 24-hour traded volume on Grand Exchange.")
-
-        # Min Profit per alch (Empty = show everything!)
-        tk.Label(p1, text="Min Profit:", fg="#cccccc", bg="#252528").pack(side="left")
-        self.ent_min_profit = tk.Entry(p1, width=5, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
-        m_prof = self.state.config.get("min_profit")
-        if m_prof is not None and m_prof > 0:
-            self.ent_min_profit.insert(0, str(m_prof))
-        self.ent_min_profit.pack(side="left", padx=(2, 6))
-        self.ent_min_profit.bind("<KeyRelease>", lambda e: self.recalculate_alch_table())
-        ToolTip(self.ent_min_profit, "Minimum GP profit per alch. Leave blank to show all items (even 0 or negative for XP).")
-
-        # Live Search Bar (Universal across ALL tabs)
-        tk.Label(p1, text="🔍", fg="#f39c12", bg="#252528").pack(side="left", padx=(2, 1))
-        self.ent_search = tk.Entry(p1, width=13, bg="#1e1e1e", fg="#ffffff", insertbackground="#ffffff", relief="flat")
-        self.ent_search.pack(side="left", padx=(1, 8))
-        self.ent_search.bind("<KeyRelease>", self.on_global_search_changed)
-        self.ent_search.bind("<Escape>", lambda e: self.clear_search())
-        ToolTip(self.ent_search, "Universal search across ALL tabs (Alch, Smart Picks, Craft, Guide, Timers, History). Press Esc to clear, Ctrl+F to focus.")
+        tk.Label(p1, text="|", fg="#444444", bg="#252528").pack(side="left", padx=6)
 
         # Strategy Combobox
         lbl_strat = tk.Label(p1, text="Strategy:", fg="#cccccc", bg="#252528")
@@ -1000,101 +977,150 @@ class OSRSAlchDashboard(tk.Tk):
         strat_display = "smart (Bid+1)" if curr_strat == "smart" else ("instant (Ask)" if curr_strat == "instant" else "patient (Bid)")
         self.var_strat = tk.StringVar(value=strat_display)
         cb_strat = ttk.Combobox(p1, textvariable=self.var_strat, values=["patient (Bid)", "smart (Bid+1)", "instant (Ask)"], width=13, state="readonly")
-        cb_strat.pack(side="left", padx=(2, 8))
+        cb_strat.pack(side="left", padx=(2, 6))
         cb_strat.bind("<<ComboboxSelected>>", self.on_strategy_changed)
-        ToolTip(cb_strat, "patient (Bid) = Lowest price, maximum profit.\nsmart (Bid+1) = Bid + 1 gp for top queue priority (much faster fills!).\ninstant (Ask) = Instant fill from active sellers.")
+        ToolTip(cb_strat, "patient (Bid) = Lowest price, maximum profit.\nsmart (Bid+1) = Bid + 1 gp for top queue priority.\ninstant (Ask) = Instant fill.")
+
+        # Pinned Actions on Right of Row 1
+        self.btn_update = tk.Button(p1, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
+                                    bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
+        self.btn_update.pack(side="right", padx=(4, 0))
+        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}.\nClick to check GitHub for updates.")
+
+        self.btn_refresh = tk.Button(p1, text="🔄 Refresh Now", command=self.trigger_refresh,
+                                     bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=10, pady=1, cursor="hand2")
+        self.btn_refresh.pack(side="right", padx=(4, 2))
+        ToolTip(self.btn_refresh, "Fetch latest live prices from OSRS Wiki API. Shortcut: F5")
+
+        self.lbl_countdown = tk.Label(p1, text="(Next: 02:00)", fg="#888888", bg="#252528", font=("Segoe UI", 8))
+        self.lbl_countdown.pack(side="right", padx=(0, 4))
+        ToolTip(self.lbl_countdown, "Time until next automatic price sync with OSRS Wiki.")
+
+        self.lbl_bridge_status = tk.Label(p1, text="🟢 Bridge", fg="#2ecc71", bg="#252528", font=("Segoe UI", 8, "bold"))
+        self.lbl_bridge_status.pack(side="right", padx=(2, 8))
+        ToolTip(self.lbl_bridge_status, "Microbot / RuneLite Bridge:\nListening on 127.0.0.1:18833 for live GE trades, 4h cooldown timers, coins, and nature runes.")
+
+        # Expandable Filters Drawer Button
+        self.show_filters_drawer = self.state.config.get("show_advanced_filters", False)
+        filter_btn_text = "⚙️ Filters ▴" if self.show_filters_drawer else "⚙️ Filters ▾"
+        filter_btn_bg = "#3e3e42" if self.show_filters_drawer else "#252528"
+        self.btn_toggle_filters = tk.Button(p1, text=filter_btn_text, command=self.toggle_filters_drawer,
+                                            bg=filter_btn_bg, fg="#f39c12", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
+        self.btn_toggle_filters.pack(side="right", padx=(2, 6))
+        ToolTip(self.btn_toggle_filters, "Toggle Advanced Filters Drawer (Min Vol, Max Spend, Min Profit, Speed, Audio/Popups, Monitor).")
+
+        # Row 2: Collapsible Filters Drawer
+        self.p2 = tk.Frame(self.top_frame, bg="#202023", relief="solid", borderwidth=1, padx=6, pady=4)
+
+        # Max Item Spend
+        tk.Label(self.p2, text="Max Spend:", fg="#cccccc", bg="#202023").pack(side="left")
+        self.ent_max_spend = tk.Entry(self.p2, width=7, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
+        self.ent_max_spend.insert(0, format_gp(self.state.config.get("max_item_cost", 500000)))
+        self.ent_max_spend.pack(side="left", padx=(2, 6))
+        self.ent_max_spend.bind("<FocusOut>", self.on_filter_changed)
+        self.ent_max_spend.bind("<Return>", self.on_filter_changed)
+        ToolTip(self.ent_max_spend, "Maximum buy price of a single item to display.")
+
+        # Min 24h Volume
+        tk.Label(self.p2, text="Min Vol:", fg="#cccccc", bg="#202023").pack(side="left")
+        self.ent_min_vol = tk.Entry(self.p2, width=6, bg="#1e1e1e", fg="#f1f1f1", insertbackground="#ffffff", relief="flat")
+        self.ent_min_vol.insert(0, str(self.state.config.get("min_volume", 5000)))
+        self.ent_min_vol.pack(side="left", padx=(2, 6))
+        self.ent_min_vol.bind("<FocusOut>", self.on_filter_changed)
+        self.ent_min_vol.bind("<Return>", self.on_filter_changed)
+        ToolTip(self.ent_min_vol, "Minimum 24-hour traded volume on Grand Exchange.")
+
+        # Min Profit per alch
+        tk.Label(self.p2, text="Min Profit:", fg="#cccccc", bg="#202023").pack(side="left")
+        self.ent_min_profit = tk.Entry(self.p2, width=5, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        m_prof = self.state.config.get("min_profit")
+        if m_prof is not None and m_prof > 0:
+            self.ent_min_profit.insert(0, str(m_prof))
+        self.ent_min_profit.pack(side="left", padx=(2, 6))
+        self.ent_min_profit.bind("<KeyRelease>", lambda e: self.recalculate_alch_table())
+        ToolTip(self.ent_min_profit, "Minimum GP profit per alch. Leave blank to show all items (even 0 or negative for XP).")
 
         # Speed Filter Combobox
-        lbl_spd = tk.Label(p1, text="Speed:", fg="#cccccc", bg="#252528")
+        lbl_spd = tk.Label(self.p2, text="Speed:", fg="#cccccc", bg="#202023")
         lbl_spd.pack(side="left")
         ToolTip(lbl_spd, "Filter items by estimated transaction fill wait time.")
 
         self.var_speed = tk.StringVar(value=self.state.config.get("speed_filter", "All"))
-        cb_spd = ttk.Combobox(p1, textvariable=self.var_speed, values=["All", "⚡ Fast (<15m)", "⏱️ Steady (<1h)"], width=12, state="readonly")
-        cb_spd.pack(side="left", padx=(2, 4))
+        cb_spd = ttk.Combobox(self.p2, textvariable=self.var_speed, values=["All", "⚡ Fast (<15m)", "⏱️ Steady (<1h)"], width=12, state="readonly")
+        cb_spd.pack(side="left", padx=(2, 6))
         cb_spd.bind("<<ComboboxSelected>>", self.on_speed_filter_changed)
-        ToolTip(cb_spd, "Filter by buy fill speed:\n⚡ Fast (<15m) = Active sales happening right now (fills in minutes!)\n⏱️ Steady (<1h) = Consistent volume\nAll = Show all items regardless of wait time")
+        ToolTip(cb_spd, "Filter by buy fill speed:\n⚡ Fast (<15m) = Active sales happening right now\n⏱️ Steady (<1h) = Consistent volume\nAll = Show all items")
 
-        # Row 2: Toggles, Alerts, Auto-Sync & Action Buttons
-        p2 = tk.Frame(self.top_frame, bg="#252528")
-        p2.pack(fill="x", padx=8, pady=(2, 4))
+        tk.Label(self.p2, text="|", fg="#444444", bg="#202023").pack(side="left", padx=4)
 
-        # Toggles on Left
+        # Explorer's Ring
         self.var_free_alch = tk.BooleanVar(value=self.state.config.get("free_alchs_mode", False))
+        cb_free = tk.Checkbutton(self.p2, text="🌿 Ring (0 Nat)", variable=self.var_free_alch, command=self.on_filter_changed,
+                                 bg="#202023", fg="#3498db", selectcolor="#2d2d30", activebackground="#202023")
+        cb_free.pack(side="left", padx=(0, 4))
+        ToolTip(cb_free, "Explorer's Ring Mode: Calculates profit assuming 0 Nature Rune cost.")
+
+        # Sound & Desktop
         self.var_sound = tk.BooleanVar(value=self.state.config.get("sound_enabled", True))
         self.var_desktop = tk.BooleanVar(value=self.state.config.get("desktop_alerts", True))
         self.var_hide_maxed = tk.BooleanVar(value=self.state.config.get("hide_maxed_cooldown", True))
 
-        cb_free = tk.Checkbutton(p2, text="🌿 Ring (0 Nat)", variable=self.var_free_alch, command=self.on_filter_changed,
-                                 bg="#252528", fg="#3498db", selectcolor="#2d2d30", activebackground="#252528")
-        cb_free.pack(side="left", padx=(0, 6))
-        ToolTip(cb_free, "Explorer's Ring Mode: Calculates profit assuming 0 Nature Rune cost.")
+        cb_snd = tk.Checkbutton(self.p2, text="🔊 Sound", variable=self.var_sound, command=self.save_preferences,
+                                bg="#202023", fg="#cccccc", selectcolor="#2d2d30", activebackground="#202023")
+        cb_snd.pack(side="left", padx=4)
 
-        cb_snd = tk.Checkbutton(p2, text="🔊 Sound Alerts", variable=self.var_sound, command=self.save_preferences,
-                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
-        cb_snd.pack(side="left", padx=6)
-        ToolTip(cb_snd, "Play audio chime when a 4h limit resets or a high margin alert triggers.")
+        cb_dsk = tk.Checkbutton(self.p2, text="🔔 Popups", variable=self.var_desktop, command=self.save_preferences,
+                                bg="#202023", fg="#cccccc", selectcolor="#2d2d30", activebackground="#202023")
+        cb_dsk.pack(side="left", padx=4)
 
-        cb_dsk = tk.Checkbutton(p2, text="🔔 Desktop Popups", variable=self.var_desktop, command=self.save_preferences,
-                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
-        cb_dsk.pack(side="left", padx=6)
-        ToolTip(cb_dsk, "Show desktop popup notifications on 4h limit resets.")
+        cb_max = tk.Checkbutton(self.p2, text="⏳ Hide Maxed", variable=self.var_hide_maxed, command=self.on_hide_maxed_changed,
+                                bg="#202023", fg="#cccccc", selectcolor="#2d2d30", activebackground="#202023")
+        cb_max.pack(side="left", padx=4)
 
-        cb_max = tk.Checkbutton(p2, text="⏳ Hide Maxed", variable=self.var_hide_maxed, command=self.on_hide_maxed_changed,
-                                bg="#252528", fg="#cccccc", selectcolor="#2d2d30", activebackground="#252528")
-        cb_max.pack(side="left", padx=6)
-        ToolTip(cb_max, "Hide Maxed (4h GE Limit):\nTemporarily removes items from the table when your 4-hour GE limit is reached (0 remaining), and mutes their alerts.\nItems automatically reappear when the 4h cooldown expires.")
+        tk.Label(self.p2, text="|", fg="#444444", bg="#202023").pack(side="left", padx=4)
 
-        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=5)
-
-        tk.Label(p2, text="Basis:", fg="#cccccc", bg="#252528").pack(side="left", padx=(2, 2))
+        # Basis
+        tk.Label(self.p2, text="Basis:", fg="#cccccc", bg="#202023").pack(side="left", padx=(2, 2))
         curr_basis = self.state.config.get("price_basis", "5m")
         basis_display = "5m Volume Avg" if curr_basis == "5m" else "1-Trade Tick"
         self.var_price_basis = tk.StringVar(value=basis_display)
-        cb_basis = ttk.Combobox(p2, textvariable=self.var_price_basis, values=["5m Volume Avg", "1-Trade Tick"], width=13, state="readonly")
+        cb_basis = ttk.Combobox(self.p2, textvariable=self.var_price_basis, values=["5m Volume Avg", "1-Trade Tick"], width=13, state="readonly")
         cb_basis.pack(side="left", padx=(0, 6))
         cb_basis.bind("<<ComboboxSelected>>", self.on_price_basis_changed)
-        ToolTip(cb_basis, "Price Calculation Basis:\n- 5m Volume Avg (Recommended): Volume-weighted average across real trades over the last 5 minutes. Eliminates 1-item freak dumps and provides prices that actually fill on the GE.\n- 1-Trade Tick: Instant single-trade tick from /latest.")
 
-        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=5)
-
-        tk.Label(p2, text="⏱️ Auto-Sync:", fg="#888888", bg="#252528", font=("Segoe UI", 8)).pack(side="left")
+        # Auto-Sync
+        tk.Label(self.p2, text="⏱️ Sync:", fg="#888888", bg="#202023", font=("Segoe UI", 8)).pack(side="left")
         self.var_refresh = tk.StringVar(value=f"{self.state.config.get('auto_refresh_mins', 2)} min")
-        cb_ref = ttk.Combobox(p2, textvariable=self.var_refresh, values=["1 min", "2 min", "5 min", "10 min", "Off"], width=6, state="readonly")
+        cb_ref = ttk.Combobox(self.p2, textvariable=self.var_refresh, values=["1 min", "2 min", "5 min", "10 min", "Off"], width=6, state="readonly")
         cb_ref.pack(side="left", padx=(2, 6))
         cb_ref.bind("<<ComboboxSelected>>", self.on_refresh_rate_changed)
-        ToolTip(cb_ref, "Configure how often market prices automatically refresh.")
 
-        # Multi-Account Selector & Live Bridge Indicator
-        tk.Label(p2, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
-        tk.Label(p2, text="Monitor:", fg="#3498db", bg="#252528", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(2, 2))
+        # Account Lock
+        tk.Label(self.p2, text="|", fg="#444444", bg="#202023").pack(side="left", padx=4)
+        tk.Label(self.p2, text="Monitor:", fg="#3498db", bg="#202023", font=("Segoe UI", 8, "bold")).pack(side="left", padx=(2, 2))
         saved_char = self.state.config.get("monitored_character", "All Accounts")
         self.var_account = tk.StringVar(value=saved_char)
         init_accs = ["All Accounts"] + sorted(list(self.state.accounts.keys()))
         if saved_char not in init_accs:
             init_accs.append(saved_char)
-        self.cb_account = ttk.Combobox(p2, textvariable=self.var_account, values=init_accs, width=13, state="readonly")
+        self.cb_account = ttk.Combobox(self.p2, textvariable=self.var_account, values=init_accs, width=13, state="readonly")
         self.cb_account.pack(side="left", padx=(0, 4))
         self.cb_account.bind("<<ComboboxSelected>>", self.on_account_selected)
-        ToolTip(self.cb_account, "Character Lock / Multi-Instance Monitor:\nChoose an account to lock dashboard monitoring to (Cash, Nats, Levels, GE Cart, Session, Timers).\nAlt accounts will update silently in the background without stealing focus or disrupting your view.")
 
-        self.lbl_bridge_status = tk.Label(p2, text="🟢 Bridge", fg="#2ecc71", bg="#252528", font=("Segoe UI", 8, "bold"))
-        self.lbl_bridge_status.pack(side="left", padx=(2, 6))
-        ToolTip(self.lbl_bridge_status, "Microbot / RuneLite Bridge:\nListening on 127.0.0.1:18833 for live GE trades, 4h cooldown timers, coins, and nature runes.")
+        # Pack drawer if enabled
+        if self.show_filters_drawer:
+            self.p2.pack(fill="x", padx=8, pady=(2, 4))
 
-        # Action Buttons on Right
-        self.btn_update = tk.Button(p2, text=f"⚡ v{APP_VERSION}", command=self.on_update_button_click,
-                                    bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
-        self.btn_update.pack(side="right", padx=(4, 0))
-        ToolTip(self.btn_update, f"OSRS Tracker v{APP_VERSION}.\nClick to check GitHub for updates.")
-
-        self.btn_refresh = tk.Button(p2, text="🔄 Refresh Now", command=self.trigger_refresh,
-                                     bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=10, pady=1, cursor="hand2")
-        self.btn_refresh.pack(side="right", padx=(4, 2))
-        ToolTip(self.btn_refresh, "Fetch latest live prices from OSRS Wiki API. Shortcut: F5")
-
-        self.lbl_countdown = tk.Label(p2, text="(Next: 02:00)", fg="#888888", bg="#252528", font=("Segoe UI", 8))
-        self.lbl_countdown.pack(side="right", padx=(0, 4))
+    def toggle_filters_drawer(self):
+        self.show_filters_drawer = not getattr(self, "show_filters_drawer", False)
+        self.state.config["show_advanced_filters"] = self.show_filters_drawer
+        self.state.save_config()
+        if self.show_filters_drawer:
+            self.p2.pack(fill="x", padx=8, pady=(2, 4))
+            self.btn_toggle_filters.config(text="⚙️ Filters ▴", bg="#3e3e42")
+        else:
+            self.p2.pack_forget()
+            self.btn_toggle_filters.config(text="⚙️ Filters ▾", bg="#252528")
         ToolTip(self.lbl_countdown, "Time until next automatic price sync with OSRS Wiki.")
 
     def build_sub_bar(self):
@@ -1168,6 +1194,170 @@ class OSRSAlchDashboard(tk.Tk):
                                         font=("Segoe UI", 8, "bold"), fg="#2ecc71", bg="#252528")
         self.lbl_cart_status.pack(side="left", padx=2)
         ToolTip(self.lbl_cart_status, "Shopping cart status: slots used, gold budget allocated, projected profit, and casting time.")
+
+    def build_alch_hub(self):
+        nav_bar = tk.Frame(self.tab_hub_alch, bg="#1e1e1e", padx=6, pady=4)
+        nav_bar.pack(fill="x")
+
+        pill_box = tk.Frame(nav_bar, bg="#252528", relief="solid", borderwidth=1, padx=2, pady=2)
+        pill_box.pack(side="left")
+
+        self.btn_sub_alch_all = tk.Button(pill_box, text="📋 All Alch Items", command=lambda: self.switch_alch_subview("all"),
+                                          bg="#f39c12", fg="#000000", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_alch_all.pack(side="left", padx=2)
+
+        self.btn_sub_alch_rec = tk.Button(pill_box, text="⭐ Smart Picks", command=lambda: self.switch_alch_subview("rec"),
+                                          bg="#252528", fg="#cccccc", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_alch_rec.pack(side="left", padx=2)
+
+        self.btn_sub_alch_night = tk.Button(pill_box, text="🌙 Overnight Planner", command=lambda: self.switch_alch_subview("overnight"),
+                                            bg="#252528", fg="#cccccc", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_alch_night.pack(side="left", padx=2)
+
+        self.btn_sub_alch_w308 = tk.Button(pill_box, text="🤝 W308 Bulk Trading", command=lambda: self.switch_alch_subview("w308"),
+                                           bg="#252528", fg="#cccccc", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_alch_w308.pack(side="left", padx=2)
+
+        self.alch_hub_content = tk.Frame(self.tab_hub_alch, bg="#1e1e1e")
+        self.alch_hub_content.pack(fill="both", expand=True)
+
+        self.tab_alch = ttk.Frame(self.alch_hub_content)
+        self.build_alch_tab()
+
+        self.tab_rec = ttk.Frame(self.alch_hub_content)
+        self.build_rec_tab()
+
+        self.tab_overnight = ttk.Frame(self.alch_hub_content)
+        self.build_overnight_tab()
+
+        self.tab_w308 = ttk.Frame(self.alch_hub_content)
+        self.build_w308_tab()
+
+        self.current_alch_subview = "all"
+        self.tab_alch.pack(fill="both", expand=True)
+
+    def switch_alch_subview(self, key):
+        self.current_alch_subview = key
+        for tab in (self.tab_alch, self.tab_rec, self.tab_overnight, self.tab_w308):
+            tab.pack_forget()
+
+        for btn in (self.btn_sub_alch_all, self.btn_sub_alch_rec, self.btn_sub_alch_night, self.btn_sub_alch_w308):
+            btn.config(bg="#252528", fg="#cccccc")
+
+        if key == "all":
+            self.tab_alch.pack(fill="both", expand=True)
+            self.btn_sub_alch_all.config(bg="#f39c12", fg="#000000")
+            self.recalculate_alch_table()
+        elif key == "rec":
+            self.tab_rec.pack(fill="both", expand=True)
+            self.btn_sub_alch_rec.config(bg="#f39c12", fg="#000000")
+            self.recalculate_rec_table()
+        elif key == "overnight":
+            self.tab_overnight.pack(fill="both", expand=True)
+            self.btn_sub_alch_night.config(bg="#f39c12", fg="#000000")
+            self.recalculate_overnight_table()
+        elif key == "w308":
+            self.tab_w308.pack(fill="both", expand=True)
+            self.btn_sub_alch_w308.config(bg="#f39c12", fg="#000000")
+            self.recalculate_w308_table()
+
+    def build_craft_hub(self):
+        nav_bar = tk.Frame(self.tab_hub_craft, bg="#1e1e1e", padx=6, pady=4)
+        nav_bar.pack(fill="x")
+
+        pill_box = tk.Frame(nav_bar, bg="#252528", relief="solid", borderwidth=1, padx=2, pady=2)
+        pill_box.pack(side="left")
+
+        self.btn_sub_craft_alch = tk.Button(pill_box, text="🔨 Craft & Alch", command=lambda: self.switch_craft_subview("craft_alch"),
+                                            bg="#f39c12", fg="#000000", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_craft_alch.pack(side="left", padx=2)
+
+        self.btn_sub_craft_ge = tk.Button(pill_box, text="💰 Craft & Sell GE", command=lambda: self.switch_craft_subview("craft_ge"),
+                                          bg="#252528", fg="#cccccc", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_craft_ge.pack(side="left", padx=2)
+
+        self.btn_sub_craft_guide = tk.Button(pill_box, text="🎓 Level Training Guide", command=lambda: self.switch_craft_subview("guide"),
+                                             bg="#252528", fg="#cccccc", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_craft_guide.pack(side="left", padx=2)
+
+        self.craft_hub_content = tk.Frame(self.tab_hub_craft, bg="#1e1e1e")
+        self.craft_hub_content.pack(fill="both", expand=True)
+
+        self.tab_craft = ttk.Frame(self.craft_hub_content)
+        self.build_craft_tab()
+
+        self.tab_ge_craft = ttk.Frame(self.craft_hub_content)
+        self.build_ge_craft_tab()
+
+        self.tab_guide = ttk.Frame(self.craft_hub_content)
+        self.build_guide_tab()
+
+        self.current_craft_subview = "craft_alch"
+        self.tab_craft.pack(fill="both", expand=True)
+
+    def switch_craft_subview(self, key):
+        self.current_craft_subview = key
+        for tab in (self.tab_craft, self.tab_ge_craft, self.tab_guide):
+            tab.pack_forget()
+
+        for btn in (self.btn_sub_craft_alch, self.btn_sub_craft_ge, self.btn_sub_craft_guide):
+            btn.config(bg="#252528", fg="#cccccc")
+
+        if key == "craft_alch":
+            self.tab_craft.pack(fill="both", expand=True)
+            self.btn_sub_craft_alch.config(bg="#f39c12", fg="#000000")
+            self.recalculate_craft_table()
+        elif key == "craft_ge":
+            self.tab_ge_craft.pack(fill="both", expand=True)
+            self.btn_sub_craft_ge.config(bg="#f39c12", fg="#000000")
+            self.recalculate_ge_craft_table()
+        elif key == "guide":
+            self.tab_guide.pack(fill="both", expand=True)
+            self.btn_sub_craft_guide.config(bg="#f39c12", fg="#000000")
+            self.recalculate_guide_table()
+
+    def build_activity_hub(self):
+        nav_bar = tk.Frame(self.tab_hub_activity, bg="#1e1e1e", padx=6, pady=4)
+        nav_bar.pack(fill="x")
+
+        pill_box = tk.Frame(nav_bar, bg="#252528", relief="solid", borderwidth=1, padx=2, pady=2)
+        pill_box.pack(side="left")
+
+        self.btn_sub_act_session = tk.Button(pill_box, text="📊 Session Profit Ledger", command=lambda: self.switch_activity_subview("session"),
+                                             bg="#f39c12", fg="#000000", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_act_session.pack(side="left", padx=2)
+
+        self.btn_sub_act_alerts = tk.Button(pill_box, text="🔔 Live Alerts Feed", command=lambda: self.switch_activity_subview("alerts"),
+                                            bg="#252528", fg="#cccccc", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=2, cursor="hand2")
+        self.btn_sub_act_alerts.pack(side="left", padx=2)
+
+        self.activity_hub_content = tk.Frame(self.tab_hub_activity, bg="#1e1e1e")
+        self.activity_hub_content.pack(fill="both", expand=True)
+
+        self.tab_session = ttk.Frame(self.activity_hub_content)
+        self.build_session_tab()
+
+        self.tab_alerts = ttk.Frame(self.activity_hub_content)
+        self.build_alerts_tab()
+
+        self.current_activity_subview = "session"
+        self.tab_session.pack(fill="both", expand=True)
+
+    def switch_activity_subview(self, key):
+        self.current_activity_subview = key
+        for tab in (self.tab_session, self.tab_alerts):
+            tab.pack_forget()
+
+        for btn in (self.btn_sub_act_session, self.btn_sub_act_alerts):
+            btn.config(bg="#252528", fg="#cccccc")
+
+        if key == "session":
+            self.tab_session.pack(fill="both", expand=True)
+            self.btn_sub_act_session.config(bg="#f39c12", fg="#000000")
+            self.update_session_display()
+        elif key == "alerts":
+            self.tab_alerts.pack(fill="both", expand=True)
+            self.btn_sub_act_alerts.config(bg="#f39c12", fg="#000000")
 
     def build_alch_tab(self):
         container = ttk.Frame(self.tab_alch)
@@ -1566,6 +1756,424 @@ class OSRSAlchDashboard(tk.Tk):
             "#11": "Night Market Analysis:\nDetailed rationale based on 48h/7d timeseries market behavior."
         }
         HeadingToolTip(self.tree_overnight, overnight_col_tooltips)
+
+    def build_w308_tab(self):
+        container = ttk.Frame(self.tab_w308)
+        container.pack(fill="both", expand=True, padx=6, pady=4)
+
+        # 1. Header & Quick Advertising Strip
+        banner = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=10, pady=6)
+        banner.pack(fill="x", pady=(2, 6))
+
+        top_row = tk.Frame(banner, bg="#202023")
+        top_row.pack(fill="x")
+
+        tk.Label(top_row, text="🤝 World 308 'Varrock West' Bulk Trading Hub", font=("Segoe UI", 11, "bold"), fg="#f39c12", bg="#202023").pack(side="left")
+        tk.Label(top_row, text="📍 W308 Varrock West Bank | CC: 'Varrock West' / 'W308 Anvil'", font=("Segoe UI", 8), fg="#888888", bg="#202023").pack(side="right")
+
+        tk.Label(banner, text="Bypass the 4-hour 70-unit GE buy limit and save 2% GE tax by trading bulk noted items directly with smiths and crafters!",
+                 font=("Segoe UI", 8), fg="#cccccc", bg="#202023").pack(anchor="w", pady=(2, 6))
+
+        # Ad Buttons Row
+        ad_row = tk.Frame(banner, bg="#202023")
+        ad_row.pack(fill="x")
+
+        tk.Label(ad_row, text="📢 Trade Ad Fast-Copy:", font=("Segoe UI", 8, "bold"), fg="#3498db", bg="#202023").pack(side="left", padx=(0, 6))
+
+        btn_ad_r2h = tk.Button(ad_row, text="Copy: Buying R2H 37.6k ea",
+                               command=lambda: self.copy_to_clipboard("Buying R2H 37.6k ea Bulk - Trade Me", "Copied R2H Buy Ad to clipboard!"),
+                               bg="#2d2d30", fg="#f1c40f", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_ad_r2h.pack(side="left", padx=3)
+        ToolTip(btn_ad_r2h, "Click to copy: 'Buying R2H 37.6k ea Bulk - Trade Me'")
+
+        btn_ad_legs = tk.Button(ad_row, text="Copy: Buying Legs/Skirts 37.6k",
+                                command=lambda: self.copy_to_clipboard("Buying Rune Legs/Skirts 37.6k ea Bulk - Trade Me", "Copied Rune Legs/Skirts Ad to clipboard!"),
+                                bg="#2d2d30", fg="#f1c40f", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_ad_legs.pack(side="left", padx=3)
+        ToolTip(btn_ad_legs, "Click to copy: 'Buying Rune Legs/Skirts 37.6k ea Bulk - Trade Me'")
+
+        btn_ad_multi = tk.Button(ad_row, text="Copy: Multi-Item Bulk Ad",
+                                 command=lambda: self.copy_to_clipboard("Buying R2H / Legs / Skirts 37.6k | Addy Body 9.65k Bulk - Trade Me", "Copied Multi-Alch Ad to clipboard!"),
+                                 bg="#2d2d30", fg="#2ecc71", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        btn_ad_multi.pack(side="left", padx=3)
+        ToolTip(btn_ad_multi, "Click to copy: 'Buying R2H / Legs / Skirts 37.6k | Addy Body 9.65k Bulk - Trade Me'")
+
+        # 2. Anti-Scam Bulk Trade Validator Card
+        val_card = tk.Frame(container, bg="#1a1a1d", relief="solid", borderwidth=1, padx=10, pady=6)
+        val_card.pack(fill="x", pady=(0, 6))
+
+        v_head = tk.Frame(val_card, bg="#1a1a1d")
+        v_head.pack(fill="x", pady=(0, 4))
+        tk.Label(v_head, text="🛡️ Anti-Scam Bulk Trade Calculator & 2nd Screen Verifier", font=("Segoe UI", 9, "bold"), fg="#e67e22", bg="#1a1a1d").pack(side="left")
+        tk.Label(v_head, text="Verify exact gold totals and noted quantities before accepting the 2nd trade window", font=("Segoe UI", 8, "italic"), fg="#888888", bg="#1a1a1d").pack(side="left", padx=(10, 0))
+
+        v_body = tk.Frame(val_card, bg="#1a1a1d")
+        v_body.pack(fill="x")
+
+        # Inputs on left
+        v_in = tk.Frame(v_body, bg="#1a1a1d")
+        v_in.pack(side="left", fill="y", padx=(0, 15))
+
+        # Item row
+        r1 = tk.Frame(v_in, bg="#1a1a1d")
+        r1.pack(fill="x", pady=2)
+        tk.Label(r1, text="Item:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        item_names = [it["name"] for it in W308_STAPLES]
+        self.var_w308_item = tk.StringVar(value=item_names[0] if item_names else "")
+        self.cb_w308_item = ttk.Combobox(r1, textvariable=self.var_w308_item, values=item_names, width=17, state="readonly")
+        self.cb_w308_item.pack(side="left")
+        self.cb_w308_item.bind("<<ComboboxSelected>>", self.on_w308_validator_item_selected)
+
+        # Qty row
+        r2 = tk.Frame(v_in, bg="#1a1a1d")
+        r2.pack(fill="x", pady=2)
+        tk.Label(r2, text="Qty:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        self.ent_w308_qty = tk.Entry(r2, width=10, bg="#252528", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        self.ent_w308_qty.insert(0, "500")
+        self.ent_w308_qty.pack(side="left")
+        self.ent_w308_qty.bind("<KeyRelease>", self.calculate_w308_trade_validator)
+
+        # Price row
+        r3 = tk.Frame(v_in, bg="#1a1a1d")
+        r3.pack(fill="x", pady=2)
+        tk.Label(r3, text="Agreed Ea:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        self.ent_w308_price = tk.Entry(r3, width=10, bg="#252528", fg="#f1c40f", insertbackground="#ffffff", relief="flat")
+        self.ent_w308_price.insert(0, str(W308_STAPLES[0]["w308_buy"] if W308_STAPLES else 37600))
+        self.ent_w308_price.pack(side="left")
+        self.ent_w308_price.bind("<KeyRelease>", self.calculate_w308_trade_validator)
+
+        # Results on center-right
+        v_res = tk.Frame(v_body, bg="#1a1a1d")
+        v_res.pack(side="left", fill="both", expand=True)
+
+        res_grid = tk.Frame(v_res, bg="#1a1a1d")
+        res_grid.pack(fill="x")
+
+        self.lbl_v_coins = tk.Label(res_grid, text="Coins To Give: 18,800,000 gp (18.80M)", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#1a1a1d")
+        self.lbl_v_coins.grid(row=0, column=0, sticky="w", padx=6, pady=1)
+
+        self.lbl_v_alch = tk.Label(res_grid, text="High Alch: 19,200,000 gp (19.20M)", font=("Segoe UI", 9), fg="#9b59b6", bg="#1a1a1d")
+        self.lbl_v_alch.grid(row=0, column=1, sticky="w", padx=6, pady=1)
+
+        self.lbl_v_nat = tk.Label(res_grid, text="Nature Cost: 84,000 gp (500 nats)", font=("Segoe UI", 9), fg="#3498db", bg="#1a1a1d")
+        self.lbl_v_nat.grid(row=1, column=0, sticky="w", padx=6, pady=1)
+
+        self.lbl_v_profit = tk.Label(res_grid, text="Net Profit: +316,000 gp (+632/ea)", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#1a1a1d")
+        self.lbl_v_profit.grid(row=1, column=1, sticky="w", padx=6, pady=1)
+
+        self.lbl_v_warning = tk.Label(v_res, text="⚠️ Verification: Ensure 2nd trade screen shows EXACTLY 500 noted items and EXACTLY 18,800,000 coins!",
+                                      font=("Segoe UI", 8, "bold"), fg="#e67e22", bg="#1a1a1d")
+        self.lbl_v_warning.pack(anchor="w", padx=6, pady=(3, 0))
+
+        # Actions on right
+        v_act = tk.Frame(v_body, bg="#1a1a1d")
+        v_act.pack(side="right", fill="y", padx=(10, 0))
+
+        self.btn_copy_coins = tk.Button(v_act, text="💰 Copy Coins (18.8M)",
+                                        command=lambda: self.copy_to_clipboard("18800000", "Copied 18,800,000 coins to clipboard!"),
+                                        bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=3, cursor="hand2")
+        self.btn_copy_coins.pack(fill="x", pady=2)
+        ToolTip(self.btn_copy_coins, "Click to copy exact coin amount to clipboard for instant pasting or typing into trade window.")
+
+        btn_log_w308 = tk.Button(v_act, text="✓ Log To Session",
+                                 command=self.log_w308_trade_to_session,
+                                 bg="#27ae60", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=3, cursor="hand2")
+        btn_log_w308.pack(fill="x", pady=2)
+        ToolTip(btn_log_w308, "Record this bulk purchase directly into your Session Tracker (no 4h GE cooldown timer added since it was a direct trade).")
+
+        # 3. W308 Margin Sheet Table
+        tree_frame = ttk.Frame(container)
+        tree_frame.pack(fill="both", expand=True)
+
+        cols = ("item", "w308_price", "ge_instant", "alch_val", "profit_ea", "margin_pct", "max_stack", "total_spend", "expected_profit", "chat_ad")
+        self.tree_w308 = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
+
+        self.tree_w308.heading("item", text="Bulk Item", command=lambda: self.toggle_sort_w308("item"))
+        self.tree_w308.heading("w308_price", text="W308 Buy (ea)", command=lambda: self.toggle_sort_w308("w308_price"))
+        self.tree_w308.heading("ge_instant", text="GE Instant (ea)", command=lambda: self.toggle_sort_w308("ge_instant"))
+        self.tree_w308.heading("alch_val", text="High Alch", command=lambda: self.toggle_sort_w308("alch_val"))
+        self.tree_w308.heading("profit_ea", text="Profit / Ea ▼", command=lambda: self.toggle_sort_w308("profit_ea"))
+        self.tree_w308.heading("margin_pct", text="Margin %", command=lambda: self.toggle_sort_w308("margin_pct"))
+        self.tree_w308.heading("max_stack", text="Max Stack (Budget)", command=lambda: self.toggle_sort_w308("max_stack"))
+        self.tree_w308.heading("total_spend", text="Total Spend", command=lambda: self.toggle_sort_w308("total_spend"))
+        self.tree_w308.heading("expected_profit", text="Expected Net Profit", command=lambda: self.toggle_sort_w308("expected_profit"))
+        self.tree_w308.heading("chat_ad", text="Chat Ad Copy", command=lambda: self.toggle_sort_w308("chat_ad"))
+
+        self.tree_w308.column("item", width=150, anchor="w")
+        self.tree_w308.column("w308_price", width=105, anchor="e")
+        self.tree_w308.column("ge_instant", width=105, anchor="e")
+        self.tree_w308.column("alch_val", width=95, anchor="e")
+        self.tree_w308.column("profit_ea", width=95, anchor="e")
+        self.tree_w308.column("margin_pct", width=80, anchor="center")
+        self.tree_w308.column("max_stack", width=120, anchor="center")
+        self.tree_w308.column("total_spend", width=105, anchor="e")
+        self.tree_w308.column("expected_profit", width=130, anchor="e")
+        self.tree_w308.column("chat_ad", width=240, anchor="w")
+
+        v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree_w308.yview)
+        h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree_w308.xview)
+        self.tree_w308.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+
+        v_scroll.pack(side="right", fill="y")
+        h_scroll.pack(side="bottom", fill="x")
+        self.tree_w308.pack(side="left", fill="both", expand=True)
+
+        self.tree_w308.bind("<Button-1>", self.on_w308_click)
+        self.tree_w308.bind("<Double-1>", self.on_w308_double_click)
+        self.tree_w308.bind("<Button-3>", self.on_w308_right_click)
+
+        w308_col_tooltips = {
+            "#1": "Bulk Item:\nName of the bulk tradeable alchable item. Double-click row to load into Anti-Scam Validator!",
+            "#2": "W308 Buy (ea):\nStandard community benchmark buy price in World 308 Varrock West Bank.",
+            "#3": "GE Instant (ea):\nInstant buy (Ask) price on the Grand Exchange. Demonstrates your savings buying bulk direct!",
+            "#4": "High Alch:\nFixed gold payout per item when cast with High Alchemy.",
+            "#5": "Profit / Ea:\nNet profit per item alched = High Alch - W308 Buy - Nature Rune Cost.",
+            "#6": "Margin %:\nProfit percentage relative to your capital outlay.",
+            "#7": "Max Stack (Budget):\nMaximum quantity you can purchase with your current active cash stack without GE limits!",
+            "#8": "Total Spend:\nTotal gold required to purchase the max stack.",
+            "#9": "Expected Net Profit:\nTotal gold profit earned once all units are purchased and alched.",
+            "#10": "Chat Ad Copy:\nReady-to-use chat spam message. Click cell to copy directly to your clipboard!"
+        }
+        HeadingToolTip(self.tree_w308, w308_col_tooltips)
+        self.calculate_w308_trade_validator()
+
+    def on_w308_validator_item_selected(self, event=None):
+        sel_name = self.var_w308_item.get()
+        item = next((it for it in W308_STAPLES if it["name"] == sel_name), None)
+        if item:
+            self.ent_w308_price.delete(0, tk.END)
+            self.ent_w308_price.insert(0, str(item["w308_buy"]))
+        self.calculate_w308_trade_validator()
+
+    def calculate_w308_trade_validator(self, event=None):
+        if not hasattr(self, "lbl_v_coins"):
+            return
+        sel_name = self.var_w308_item.get()
+        item = next((it for it in W308_STAPLES if it["name"] == sel_name), None)
+        alch_val = item["alch"] if item else 38400
+
+        try:
+            qty = int(self.ent_w308_qty.get().strip().replace(",", ""))
+        except Exception:
+            qty = 0
+
+        try:
+            price = int(self.ent_w308_price.get().strip().replace(",", ""))
+        except Exception:
+            price = 0
+
+        nat_cost = self.get_effective_nature_price()
+        total_coins = qty * price
+        total_alch = qty * alch_val
+        total_nats = qty * nat_cost
+        net_profit = total_alch - total_coins - total_nats
+        profit_ea = (net_profit // qty) if qty > 0 else 0
+
+        c_str = f"{total_coins / 1_000_000:.2f}M" if total_coins >= 1_000_000 else f"{total_coins:,}"
+        a_str = f"{total_alch / 1_000_000:.2f}M" if total_alch >= 1_000_000 else f"{total_alch:,}"
+
+        self.lbl_v_coins.config(text=f"Coins To Give: {total_coins:,} gp ({c_str})")
+        self.lbl_v_alch.config(text=f"High Alch: {total_alch:,} gp ({a_str})")
+        self.lbl_v_nat.config(text=f"Nature Cost: {total_nats:,} gp ({qty:,} @ {nat_cost} ea)")
+
+        prof_color = "#2ecc71" if net_profit >= 0 else "#e74c3c"
+        self.lbl_v_profit.config(text=f"Net Profit: {net_profit:+,} gp ({profit_ea:+,}/ea)", fg=prof_color)
+
+        self.lbl_v_warning.config(
+            text=f"⚠️ Verification: Ensure 2nd trade screen shows EXACTLY {qty:,} noted {sel_name} and EXACTLY {total_coins:,} coins!"
+        )
+        self.btn_copy_coins.config(
+            text=f"💰 Copy Coins ({total_coins:,})",
+            command=lambda: self.copy_to_clipboard(str(total_coins), f"Copied {total_coins:,} gp coins amount to clipboard!")
+        )
+
+    def log_w308_trade_to_session(self):
+        sel_name = self.var_w308_item.get()
+        item = next((it for it in W308_STAPLES if it["name"] == sel_name), None)
+        if not item:
+            return
+
+        try:
+            qty = int(self.ent_w308_qty.get().strip().replace(",", ""))
+            price = int(self.ent_w308_price.get().strip().replace(",", ""))
+        except Exception:
+            messagebox.showerror("Invalid Input", "Please enter valid whole numbers for quantity and price.")
+            return
+
+        if qty <= 0 or price <= 0:
+            messagebox.showerror("Invalid Input", "Quantity and price must be greater than zero.")
+            return
+
+        nat_cost = self.get_effective_nature_price()
+        active_acc = getattr(self.state, "active_account", "Default")
+        if not active_acc or active_acc in ("All", "All Accounts"):
+            active_acc = self.var_account.get() if getattr(self, "var_account", None) and self.var_account.get() != "All Accounts" else "Default"
+
+        self.state.log_alch_batch(
+            item_id=item["id"],
+            item_name=item["name"],
+            qty=qty,
+            buy_price=price,
+            nat_price=nat_cost,
+            alch_val=item["alch"],
+            account=active_acc
+        )
+        self.update_session_display()
+        total_profit = (item["alch"] - (price + nat_cost)) * qty
+        FloatingToast(self, "W308 Trade Logged", f"Logged {qty:,}x {item['name']} ({total_profit:+,} gp realized profit) to Session Tracker!", 4000)
+
+    def toggle_sort_w308(self, col):
+        if getattr(self, "w308_sort_col", None) == col:
+            self.w308_sort_desc = not self.w308_sort_desc
+        else:
+            self.w308_sort_col = col
+            self.w308_sort_desc = True if col in ("profit_ea", "margin_pct", "max_stack", "total_spend", "expected_profit", "alch_val") else False
+        self.recalculate_w308_table()
+
+    def recalculate_w308_table(self):
+        if not hasattr(self, "tree_w308"):
+            return
+
+        nat_cost = self.get_effective_nature_price()
+        cash_stack = self.state.config.get("cash_stack", 5000000)
+        search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
+
+        rows = []
+        for it in W308_STAPLES:
+            item_name = it["name"]
+            if search_query and search_query not in item_name.lower():
+                continue
+
+            item_id = it["id"]
+            alch_val = it["alch"]
+            w308_buy = it["w308_buy"]
+
+            # GE Instant price from API if present
+            ge_data = self.api.latest_prices.get(str(item_id)) or self.api.latest_prices.get(item_id) or {}
+            ge_instant = ge_data.get("high") or ge_data.get("low") or w308_buy
+
+            profit_ea = alch_val - (w308_buy + nat_cost)
+            margin_pct = (profit_ea / w308_buy * 100.0) if w308_buy > 0 else 0.0
+            max_stack = (cash_stack // w308_buy) if w308_buy > 0 else 0
+            total_spend = max_stack * w308_buy
+            expected_profit = max_stack * profit_ea
+            chat_ad = f"Buying {it['short']} {it['w308_buy']/1000:.1f}k ea Bulk - Trade Me"
+
+            rows.append({
+                "id": item_id,
+                "item": item_name,
+                "w308_price": w308_buy,
+                "ge_instant": ge_instant,
+                "alch_val": alch_val,
+                "profit_ea": profit_ea,
+                "margin_pct": margin_pct,
+                "max_stack": max_stack,
+                "total_spend": total_spend,
+                "expected_profit": expected_profit,
+                "chat_ad": chat_ad,
+                "short": it["short"]
+            })
+
+        self.w308_rows = rows
+
+        # Sort
+        col = getattr(self, "w308_sort_col", "profit_ea")
+        desc = getattr(self, "w308_sort_desc", True)
+        if col in ("item", "chat_ad"):
+            self.w308_rows.sort(key=lambda r: r[col].lower(), reverse=desc)
+        else:
+            self.w308_rows.sort(key=lambda r: r.get(col, 0), reverse=desc)
+
+        # Update headings
+        col_names = {
+            "item": "Bulk Item",
+            "w308_price": "W308 Buy (ea)",
+            "ge_instant": "GE Instant (ea)",
+            "alch_val": "High Alch",
+            "profit_ea": "Profit / Ea",
+            "margin_pct": "Margin %",
+            "max_stack": "Max Stack (Budget)",
+            "total_spend": "Total Spend",
+            "expected_profit": "Expected Net Profit",
+            "chat_ad": "Chat Ad Copy"
+        }
+        for col_id, base_text in col_names.items():
+            if col == col_id:
+                indicator = " ▼" if desc else " ▲"
+                self.tree_w308.heading(col_id, text=f"{base_text}{indicator}")
+            else:
+                self.tree_w308.heading(col_id, text=base_text)
+
+        # Insert items
+        self.tree_w308.delete(*self.tree_w308.get_children())
+        for r in self.w308_rows:
+            p_ea_str = f"+{r['profit_ea']:,} gp" if r['profit_ea'] >= 0 else f"{r['profit_ea']:,} gp"
+            tot_p_str = f"+{format_gp(r['expected_profit'])}" if r['expected_profit'] >= 0 else f"-{format_gp(abs(r['expected_profit']))}"
+            self.tree_w308.insert("", "end", iid=str(r["id"]), values=(
+                r["item"],
+                f"{r['w308_price']:,} gp",
+                f"{r['ge_instant']:,} gp",
+                f"{r['alch_val']:,} gp",
+                p_ea_str,
+                f"{r['margin_pct']:.1f}%",
+                f"{r['max_stack']:,}",
+                format_gp(r["total_spend"]),
+                tot_p_str,
+                r["chat_ad"]
+            ))
+
+    def on_w308_click(self, event):
+        region = self.tree_w308.identify_region(event.x, event.y)
+        if region != "cell":
+            return
+        col = self.tree_w308.identify_column(event.x)
+        row_id = self.tree_w308.identify_row(event.y)
+        if not row_id:
+            return
+        row = next((r for r in self.w308_rows if str(r["id"]) == str(row_id)), None)
+        if not row:
+            return
+
+        if col == "#1":  # item
+            self.copy_to_clipboard(row["item"], f"Copied '{row['item']}'")
+        elif col == "#2":  # w308_price
+            self.copy_to_clipboard(str(row["w308_price"]), f"Copied W308 Price: {row['w308_price']:,} gp")
+        elif col == "#7":  # max_stack
+            self.copy_to_clipboard(str(row["max_stack"]), f"Copied Max Stack: {row['max_stack']:,}")
+        elif col == "#10":  # chat_ad
+            self.copy_to_clipboard(row["chat_ad"], f"Copied Chat Ad: '{row['chat_ad']}'")
+
+    def on_w308_double_click(self, event):
+        row_id = self.tree_w308.identify_row(event.y)
+        if not row_id:
+            return
+        row = next((r for r in self.w308_rows if str(r["id"]) == str(row_id)), None)
+        if not row:
+            return
+        # Auto populate Trade Validator
+        self.var_w308_item.set(row["item"])
+        self.ent_w308_price.delete(0, tk.END)
+        self.ent_w308_price.insert(0, str(row["w308_price"]))
+        self.ent_w308_qty.delete(0, tk.END)
+        self.ent_w308_qty.insert(0, str(row["max_stack"] if row["max_stack"] > 0 else 500))
+        self.calculate_w308_trade_validator()
+        FloatingToast(self, "Trade Validator Loaded", f"Loaded {row['item']} into Anti-Scam Bulk Trade Validator!", 2500)
+
+    def on_w308_right_click(self, event):
+        row_id = self.tree_w308.identify_row(event.y)
+        if not row_id:
+            return
+        self.tree_w308.selection_set(row_id)
+        row = next((r for r in self.w308_rows if str(r["id"]) == str(row_id)), None)
+        if not row:
+            return
+
+        menu = tk.Menu(self, tearoff=0, bg="#252528", fg="#f1f1f1", activebackground="#f39c12", activeforeground="#000000")
+        menu.add_command(label=f"🛡️ Load {row['item']} into Trade Validator", command=lambda: self.on_w308_double_click(event))
+        menu.add_command(label=f"📢 Copy Chat Ad ('{row['chat_ad']}')", command=lambda: self.copy_to_clipboard(row["chat_ad"], f"Copied Chat Ad"))
+        menu.add_command(label=f"💰 Copy Buy Price ({row['w308_price']:,} gp)", command=lambda: self.copy_to_clipboard(str(row["w308_price"]), f"Copied price"))
+        menu.add_command(label=f"📦 Copy Max Stack ({row['max_stack']:,})", command=lambda: self.copy_to_clipboard(str(row["max_stack"]), f"Copied stack"))
+        menu.tk_popup(event.x_root, event.y_root)
 
     def build_bond_tab(self):
         container = ttk.Frame(self.tab_bond)
@@ -4046,14 +4654,27 @@ class OSRSAlchDashboard(tk.Tk):
         self.card_xp = self.create_stat_card(cards_frame, "Magic XP Gained", "0 XP", "#9b59b6", "Total Magic experience gained (65 XP per High Alchemy cast).")
         self.card_nats = self.create_stat_card(cards_frame, "Natures Used", "0", "#f39c12", "Total Nature Runes consumed during this session.")
 
-        # Top of History table with Action Buttons
+        # Top of History table with Action Buttons & View Mode Switcher
         hist_bar = tk.Frame(container, bg="#1e1e1e")
         hist_bar.pack(fill="x", pady=(5, 4))
 
-        lbl_hist = tk.Label(hist_bar, text="Session Log History (Immutable to GE Fluctuations):", font=("Segoe UI", 10, "bold"), fg="#f39c12", bg="#1e1e1e")
+        lbl_hist = tk.Label(hist_bar, text="Session Ledger:", font=("Segoe UI", 10, "bold"), fg="#f39c12", bg="#1e1e1e")
         lbl_hist.pack(side="left")
 
-        btn_edit = tk.Button(hist_bar, text="✏️ Edit Selected Entry", command=self.open_edit_session_dialog,
+        # View Mode Switcher Pills
+        self.btn_view_consolidated = tk.Button(hist_bar, text="📦 Consolidated Daily View",
+                                               command=lambda: self.set_session_view_mode("consolidated"),
+                                               relief="flat", padx=10, pady=2, font=("Segoe UI", 8, "bold"), cursor="hand2")
+        self.btn_view_consolidated.pack(side="left", padx=(12, 4))
+        ToolTip(self.btn_view_consolidated, "Consolidate all purchases by day and item stack (e.g. 500 Rune platelegs total with weighted average buy price and daily P&L). Expand rows to audit individual fills.")
+
+        self.btn_view_detailed = tk.Button(hist_bar, text="📜 Detailed Transactions",
+                                           command=lambda: self.set_session_view_mode("detailed"),
+                                           relief="flat", padx=10, pady=2, font=("Segoe UI", 8, "bold"), cursor="hand2")
+        self.btn_view_detailed.pack(side="left", padx=4)
+        ToolTip(self.btn_view_detailed, "View flat unbundled list of every individual transaction fill with full timestamps.")
+
+        btn_edit = tk.Button(hist_bar, text="✏️ Edit Selected", command=self.open_edit_session_dialog,
                              bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, cursor="hand2")
         btn_edit.pack(side="right", padx=4)
         ToolTip(btn_edit, "Edit Selected Entry:\nManually adjust buy price, nature cost, or quantity if actual GE purchase differed.")
@@ -4064,19 +4685,23 @@ class OSRSAlchDashboard(tk.Tk):
         ToolTip(btn_del, "Delete Entry:\nRemove the selected transaction from your session history log.")
 
         cols = ("time", "account", "item", "qty", "buy_price", "nat_price", "alch_val", "profit")
-        self.tree_session = ttk.Treeview(container, columns=cols, show="headings", height=10)
-        self.tree_session.heading("time", text="Time")
-        self.tree_session.heading("account", text="Account")
-        self.tree_session.heading("item", text="Item Name")
-        self.tree_session.heading("qty", text="Quantity")
-        self.tree_session.heading("buy_price", text="Bought At (ea)")
-        self.tree_session.heading("nat_price", text="Nat Cost (ea)")
-        self.tree_session.heading("alch_val", text="Alch Value (Fixed)")
-        self.tree_session.heading("profit", text="Realized Profit")
+        self.tree_session = ttk.Treeview(container, columns=cols, show="tree headings", height=10)
 
-        self.tree_session.column("time", width=75, anchor="center")
+        self.tree_session.heading("#0", text="📅 Breakdown / Stack")
+        self.tree_session.column("#0", width=230, anchor="w")
+
+        self.tree_session.heading("time", text="Time", command=lambda: self.toggle_sort_session("time"))
+        self.tree_session.heading("account", text="Account", command=lambda: self.toggle_sort_session("account"))
+        self.tree_session.heading("item", text="Item Name", command=lambda: self.toggle_sort_session("item"))
+        self.tree_session.heading("qty", text="Quantity", command=lambda: self.toggle_sort_session("qty"))
+        self.tree_session.heading("buy_price", text="Bought At (ea)", command=lambda: self.toggle_sort_session("buy_price"))
+        self.tree_session.heading("nat_price", text="Nat Cost (ea)", command=lambda: self.toggle_sort_session("nat_price"))
+        self.tree_session.heading("alch_val", text="Alch Value (Fixed)", command=lambda: self.toggle_sort_session("alch_val"))
+        self.tree_session.heading("profit", text="Realized Profit", command=lambda: self.toggle_sort_session("profit"))
+
+        self.tree_session.column("time", width=85, anchor="center")
         self.tree_session.column("account", width=95, anchor="center")
-        self.tree_session.column("item", width=190, anchor="w")
+        self.tree_session.column("item", width=180, anchor="w")
         self.tree_session.column("qty", width=85, anchor="center")
         self.tree_session.column("buy_price", width=105, anchor="e")
         self.tree_session.column("nat_price", width=95, anchor="e")
@@ -4087,16 +4712,18 @@ class OSRSAlchDashboard(tk.Tk):
         self.tree_session.bind("<Double-1>", lambda e: self.open_edit_session_dialog())
 
         session_col_tooltips = {
-            "#1": "Time:\nTimestamp when this alch batch was recorded.",
+            "#0": "Breakdown / Stack:\nHierarchical view showing Day -> Consolidated Stack -> Individual Fill transaction rows.",
+            "#1": "Time / Count:\nTimestamp when batch was recorded or count of transaction fills in consolidated mode.",
             "#2": "Account:\nIn-game character name that bought/alched this batch.",
             "#3": "Item Name:\nName of the alched item.",
-            "#4": "Quantity:\nNumber of items alched in this batch.",
-            "#5": "Bought At (ea):\nGold price paid per item on the Grand Exchange.",
-            "#6": "Nat Cost (ea):\nPrice paid per Nature Rune.",
+            "#4": "Quantity:\nTotal number of items alched in this batch or consolidated stack.",
+            "#5": "Bought At (ea):\nGold price paid per item (or weighted average buy price in consolidated mode).",
+            "#6": "Nat Cost (ea):\nPrice paid per Nature Rune (or weighted average cost).",
             "#7": "Alch Value (Fixed):\nFixed High Alchemy gold payout per item.",
             "#8": "Realized Profit:\nNet profit earned = (Alch Value - Buy Price - Nat Cost) * Quantity."
         }
         HeadingToolTip(self.tree_session, session_col_tooltips)
+        self.update_session_view_buttons()
 
         session_btn_bar = tk.Frame(container, bg="#1e1e1e")
         session_btn_bar.pack(fill="x", pady=8)
@@ -4110,6 +4737,50 @@ class OSRSAlchDashboard(tk.Tk):
                               bg="#7f8c8d", fg="#ffffff", relief="flat", padx=10, pady=4, cursor="hand2")
         btn_reset.pack(side="right")
         ToolTip(btn_reset, "Reset Session:\nClears all session stats and history log back to zero.")
+
+    def set_session_view_mode(self, mode):
+        self.session_view_mode = mode
+        self.state.config["session_view_mode"] = mode
+        self.state.save_config()
+        self.update_session_view_buttons()
+        self.update_session_display()
+
+    def update_session_view_buttons(self):
+        if not hasattr(self, "btn_view_consolidated"):
+            return
+        if getattr(self, "session_view_mode", "consolidated") == "consolidated":
+            self.btn_view_consolidated.config(bg="#f39c12", fg="#000000")
+            self.btn_view_detailed.config(bg="#252528", fg="#cccccc")
+        else:
+            self.btn_view_consolidated.config(bg="#252528", fg="#cccccc")
+            self.btn_view_detailed.config(bg="#f39c12", fg="#000000")
+
+    def toggle_sort_session(self, col):
+        if getattr(self, "session_sort_col", None) == col:
+            self.session_sort_desc = not self.session_sort_desc
+        else:
+            self.session_sort_col = col
+            self.session_sort_desc = True if col in ("qty", "buy_price", "nat_price", "alch_val", "profit", "time") else False
+        self.update_session_headings()
+        self.update_session_display()
+
+    def update_session_headings(self):
+        col_names = {
+            "time": "Time",
+            "account": "Account",
+            "item": "Item Name",
+            "qty": "Quantity",
+            "buy_price": "Bought At (ea)",
+            "nat_price": "Nat Cost (ea)",
+            "alch_val": "Alch Value (Fixed)",
+            "profit": "Realized Profit"
+        }
+        for col_id, base_text in col_names.items():
+            if getattr(self, "session_sort_col", "time") == col_id:
+                indicator = " ▼" if getattr(self, "session_sort_desc", True) else " ▲"
+                self.tree_session.heading(col_id, text=f"{base_text}{indicator}")
+            else:
+                self.tree_session.heading(col_id, text=base_text)
 
     def create_stat_card(self, parent, title, initial_val, val_color, tooltip=""):
         card = tk.Frame(parent, bg="#252528", relief="solid", borderwidth=1, padx=14, pady=10)
@@ -4348,6 +5019,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.recalculate_rec_table()
         if hasattr(self, "recalculate_overnight_table"):
             self.recalculate_overnight_table()
+        if hasattr(self, "recalculate_w308_table"):
+            self.recalculate_w308_table()
         if hasattr(self, "recalculate_bond_roadmap"):
             self.recalculate_bond_roadmap()
         self.recalculate_craft_table()
@@ -4391,6 +5064,8 @@ class OSRSAlchDashboard(tk.Tk):
             self.recalculate_rec_table()
         if hasattr(self, "recalculate_overnight_table"):
             self.recalculate_overnight_table()
+        if hasattr(self, "recalculate_w308_table"):
+            self.recalculate_w308_table()
         if hasattr(self, "recalculate_craft_table"):
             self.recalculate_craft_table()
         if hasattr(self, "recalculate_ge_craft_table"):
@@ -6175,19 +6850,132 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.tree_session.delete(*self.tree_session.get_children())
         table_rows = [h for h in filtered if not search_query or (search_query in h.get("item", "").lower() or search_query in h.get("account", "").lower())]
-        for h in table_rows:
-            prof = h.get('profit', 0)
-            prof_str = f"+{format_gp(prof)}" if prof >= 0 else f"-{format_gp(abs(prof))}"
-            self.tree_session.insert("", "end", iid=h.get("id"), values=(
-                h.get("time"),
-                h.get("account", "Default"),
-                h.get("item"),
-                f"{h.get('qty', 0):,}",
-                f"{h.get('buy_price', 0):,} gp",
-                f"{h.get('nat_price', 0):,} gp",
-                f"{h.get('alch_val', 0):,} gp",
-                prof_str
-            ))
+
+        view_mode = getattr(self, "session_view_mode", "consolidated")
+        if view_mode == "consolidated":
+            self.tree_session.configure(show="tree headings")
+            self.tree_session.heading("#0", text="📅 Breakdown / Stack")
+
+            # Group by Date
+            today_str = time.strftime("%Y-%m-%d")
+            yesterday_str = time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400))
+
+            days_map = {}
+            for h in table_rows:
+                ts = h.get("timestamp")
+                if ts:
+                    d_str = time.strftime("%Y-%m-%d", time.localtime(ts))
+                else:
+                    d_str = today_str
+                days_map.setdefault(d_str, []).append(h)
+
+            sorted_days = sorted(days_map.keys(), reverse=True)
+            for d_str in sorted_days:
+                day_entries = days_map[d_str]
+                day_qty = sum(e.get("qty", 0) for e in day_entries)
+                day_profit = sum(e.get("profit", 0) for e in day_entries)
+                day_label = f"📅 Today ({d_str})" if d_str == today_str else (f"📅 Yesterday ({d_str})" if d_str == yesterday_str else f"📅 {d_str}")
+
+                day_prof_str = f"+{format_gp(day_profit)}" if day_profit >= 0 else f"-{format_gp(abs(day_profit))}"
+                day_iid = f"day_{d_str}"
+
+                # Group by Item within day
+                items_map = {}
+                for e in day_entries:
+                    items_map.setdefault(e.get("item", "Unknown"), []).append(e)
+
+                self.tree_session.insert("", "end", iid=day_iid, text=day_label, values=(
+                    f"{len(day_entries)} fills",
+                    curr_sel if curr_sel != "All Accounts" else "All",
+                    f"{len(items_map)} item types",
+                    f"{day_qty:,}",
+                    "—",
+                    "—",
+                    "—",
+                    day_prof_str
+                ), open=True)
+
+                # Sort items by total profit descending
+                sorted_items = sorted(items_map.items(), key=lambda kv: sum(x.get("profit", 0) for x in kv[1]), reverse=True)
+                for item_name, item_entries in sorted_items:
+                    it_qty = sum(x.get("qty", 0) for x in item_entries)
+                    it_profit = sum(x.get("profit", 0) for x in item_entries)
+                    total_spend = sum(x.get("qty", 0) * x.get("buy_price", 0) for x in item_entries)
+                    total_nat = sum(x.get("qty", 0) * x.get("nat_price", 0) for x in item_entries)
+                    avg_buy = int(round(total_spend / it_qty)) if it_qty > 0 else 0
+                    avg_nat = int(round(total_nat / it_qty)) if it_qty > 0 else 0
+                    alch_val = item_entries[0].get("alch_val", 0)
+                    acc_str = item_entries[0].get("account", "Default") if len(set(x.get("account") for x in item_entries)) == 1 else "Multi"
+
+                    it_prof_str = f"+{format_gp(it_profit)}" if it_profit >= 0 else f"-{format_gp(abs(it_profit))}"
+                    item_iid = f"item_{d_str}_{item_name.replace(' ', '_')}"
+
+                    self.tree_session.insert(day_iid, "end", iid=item_iid, text=f"  📦 {item_name}", values=(
+                        f"{len(item_entries)} fills",
+                        acc_str,
+                        item_name,
+                        f"{it_qty:,}",
+                        f"{avg_buy:,} gp",
+                        f"{avg_nat:,} gp",
+                        f"{alch_val:,} gp",
+                        it_prof_str
+                    ), open=True)
+
+                    # Individual fills
+                    for idx, h in enumerate(item_entries):
+                        p = h.get("profit", 0)
+                        p_str = f"+{format_gp(p)}" if p >= 0 else f"-{format_gp(abs(p))}"
+                        fill_iid = h.get("id")
+                        self.tree_session.insert(item_iid, "end", iid=fill_iid, text=f"    ↳ Fill #{idx + 1} ({h.get('time')})", values=(
+                            h.get("time"),
+                            h.get("account", "Default"),
+                            h.get("item"),
+                            f"{h.get('qty', 0):,}",
+                            f"{h.get('buy_price', 0):,} gp",
+                            f"{h.get('nat_price', 0):,} gp",
+                            f"{h.get('alch_val', 0):,} gp",
+                            p_str
+                        ))
+        else:
+            # Detailed Flat Mode with Interactive Column Sorting
+            self.tree_session.configure(show="headings")
+            col = getattr(self, "session_sort_col", "time")
+            desc = getattr(self, "session_sort_desc", True)
+
+            def get_sort_key(h):
+                if col == "time":
+                    return h.get("timestamp", 0)
+                elif col == "account":
+                    return h.get("account", "").lower()
+                elif col == "item":
+                    return h.get("item", "").lower()
+                elif col == "qty":
+                    return h.get("qty", 0)
+                elif col == "buy_price":
+                    return h.get("buy_price", 0)
+                elif col == "nat_price":
+                    return h.get("nat_price", 0)
+                elif col == "alch_val":
+                    return h.get("alch_val", 0)
+                elif col == "profit":
+                    return h.get("profit", 0)
+                return 0
+
+            table_rows.sort(key=get_sort_key, reverse=desc)
+
+            for h in table_rows:
+                prof = h.get('profit', 0)
+                prof_str = f"+{format_gp(prof)}" if prof >= 0 else f"-{format_gp(abs(prof))}"
+                self.tree_session.insert("", "end", iid=h.get("id"), values=(
+                    h.get("time"),
+                    h.get("account", "Default"),
+                    h.get("item"),
+                    f"{h.get('qty', 0):,}",
+                    f"{h.get('buy_price', 0):,} gp",
+                    f"{h.get('nat_price', 0):,} gp",
+                    f"{h.get('alch_val', 0):,} gp",
+                    prof_str
+                ))
 
     def update_timers_display(self):
         self.tree_timers.delete(*self.tree_timers.get_children())
@@ -6865,6 +7653,8 @@ class OSRSAlchDashboard(tk.Tk):
         entry = next((e for e in self.state.session.get("history", []) if e["id"] == entry_id), None)
         if entry:
             EditSessionDialog(self, entry, self._on_entry_edited)
+        else:
+            messagebox.showinfo("Select Fill", "Please expand the group and select an individual transaction fill to edit.")
 
     def _on_entry_edited(self, entry_id, new_qty, new_buy_price, new_nat_price):
         self.state.update_session_entry(entry_id, new_qty, new_buy_price, new_nat_price)
@@ -6875,8 +7665,13 @@ class OSRSAlchDashboard(tk.Tk):
         selected_id = self.tree_session.selection()
         if not selected_id:
             return
-        if messagebox.askyesno("Delete Entry", "Delete this history entry from your session?"):
-            self.state.delete_session_entry(selected_id[0])
+        entry_id = selected_id[0]
+        entry = next((e for e in self.state.session.get("history", []) if e["id"] == entry_id), None)
+        if not entry:
+            messagebox.showinfo("Select Fill", "Please expand the group and select an individual transaction fill to delete.")
+            return
+        if messagebox.askyesno("Delete Entry", f"Delete this transaction fill for {entry['item']} from your session?"):
+            self.state.delete_session_entry(entry_id)
             self.recalculate_all()
             self.show_status_message("Session entry deleted & 4h GE timer updated.")
 
