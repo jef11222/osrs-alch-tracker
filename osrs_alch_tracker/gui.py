@@ -5839,13 +5839,16 @@ class OSRSAlchDashboard(tk.Tk):
                 continue
 
             # Realistic Volume Capping (inspired by QuantScapers analysis engine)
-            avail_limit = rem_limit if is_cd else base_limit
             is_vol_capped = False
-            if vol > 0 and avail_limit > 0 and vol < avail_limit:
-                effective_limit = vol
-                is_vol_capped = True
-            elif avail_limit > 0:
-                effective_limit = avail_limit
+            if is_cd and rem_limit <= 0:
+                effective_limit = 0
+            elif base_limit > 0:
+                avail_limit = rem_limit if is_cd else base_limit
+                if vol > 0 and vol < avail_limit:
+                    effective_limit = vol
+                    is_vol_capped = True
+                else:
+                    effective_limit = avail_limit
             else:
                 effective_limit = min(vol, 125) if vol > 0 else 125
                 if vol > 0 and vol < 125:
