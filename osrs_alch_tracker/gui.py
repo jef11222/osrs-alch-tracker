@@ -22,6 +22,7 @@ from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
 from bridge_server import BridgeServer
 import datetime
 import webbrowser
+import re
 
 # Hall-of-Fame All-Time Workhorses (The gold standards of OSRS High Alchemy)
 WORKHORSE_ITEMS = [
@@ -3572,6 +3573,10 @@ class OSRSAlchDashboard(tk.Tk):
         if curr_char != "All Accounts" and curr_char in self.state.accounts:
             char_lvls = self.state.accounts[curr_char].get("levels", {})
             lvl = char_lvls.get(skill_name, player_levels.get(skill_name, 1))
+        elif self.state.accounts:
+            latest_acc = max(self.state.accounts.values(), key=lambda a: a.get("last_seen", 0))
+            char_lvls = latest_acc.get("levels", {})
+            lvl = char_lvls.get(skill_name, player_levels.get(skill_name, 1))
         else:
             lvl = player_levels.get(skill_name, 1)
 
@@ -3665,6 +3670,32 @@ class OSRSAlchDashboard(tk.Tk):
         except Exception:
             pass
         self.recalculate_guide_table()
+
+def is_activity_match(detected_act: str, target_name: str) -> bool:
+    if not detected_act or not target_name:
+        return False
+    d = detected_act.lower().strip()
+    t = target_name.lower().strip()
+    if d in t or t in d:
+        return True
+    d_tokens = set(re.findall(r"\w+", d))
+    t_tokens = set(re.findall(r"\w+", t))
+    metals = {"bronze", "iron", "steel", "silver", "gold", "mithril", "adamant", "adamantite", "rune", "runite"}
+    d_metals = {m.replace("adamantite", "adamant").replace("runite", "rune") for m in d_tokens.intersection(metals)}
+    t_metals = {m.replace("adamantite", "adamant").replace("runite", "rune") for m in t_tokens.intersection(metals)}
+    if d_metals and t_metals and d_metals != t_metals:
+        return False
+    is_d_smelt = any(w in d for w in ("smelt", "furnace")) or ("bar" in d and "smith" not in d)
+    is_t_smelt = any(w in t for w in ("smelt", "furnace", "baseline")) or ("bar" in t and not any(k in t for k in ("plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife", "2h", "chain", "skirt", "scimitar", "warhammer", "battleaxe", "mace", "claws", "shield")))
+    if is_d_smelt and is_t_smelt and d_metals and d_metals == t_metals:
+        return True
+    is_d_anvil = any(w in d for w in ("smith", "anvil", "hammer", "plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife"))
+    is_t_anvil = any(w in t for w in ("smith", "anvil", "hammer", "plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife", "scimitar", "2h"))
+    if is_d_anvil and is_t_anvil and d_metals and d_metals == t_metals:
+        overlap = d_tokens.intersection(t_tokens) - {"smithing", "smith", "bars", "bar"}
+        if overlap or not is_d_smelt:
+            return True
+    return False
 
     def _render_smithing_material_tree(self, cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open, live_rate=0, detected_activity=""):
         coal_id = 453
@@ -3883,6 +3914,42 @@ class OSRSAlchDashboard(tk.Tk):
             furnace_rec = "🔥 Blast Furnace" if (mem_ok and coal_qty > 0) else "🔥 Edgeville Furnace"
             furnace_xp_rate = "90k/hr (BF)" if (mem_ok and coal_qty > 0) else "25k/hr (Smelt)"
 
+            # Materials for smelting cycle
+            tier_mats_raw = [{"id": ore_id, "name": ore_name, "qty": 1}]
+            if tier_name == "Bronze" and second_id > 0:
+                tier_mats_raw.append({"id": second_id, "name": second_name, "qty": 1})
+            elif coal_qty > 0:
+                tier_mats_raw.append({"id": coal_id, "name": "Coal", "qty": coal_qty})
+
+            base_cycle = calculate_skilling_cycle("Smithing", f"{bar_name} (Furnace Smelt)", smelt_xp, tier_mats_raw)
+            base_cycle_rate = base_cycle.get("xp_per_hour", 25000)
+            is_matching_smelt = bool(detected_activity and (is_activity_match(detected_activity, f"{bar_name} (Smelt Ore)") or is_activity_match(detected_activity, bar_name)))
+            base_eff_rate = live_rate if (live_rate > 5000 and is_matching_smelt) else base_cycle_rate
+            base_prog = get_progression_eta(cur_lvl, cur_xp, cur_lvl + 1, smelt_xp, base_cycle, live_rate=base_eff_rate if (live_rate > 5000 and is_matching_smelt) else 0)
+
+            if cur_lvl >= smelt_lvl:
+                base_time_est = f"{base_prog['time_str_next']} (Next)"
+                if is_matching_smelt:
+                    best_active_item = {
+                        "name": f"{bar_name} Smelting",
+                        "req_lvl": smelt_lvl,
+                        "cycle": base_cycle,
+                        "prog": base_prog,
+                        "rate": base_eff_rate,
+                        "is_matched": True
+                    }
+                elif best_active_item is None:
+                    best_active_item = {
+                        "name": f"{bar_name} Smelting",
+                        "req_lvl": smelt_lvl,
+                        "cycle": base_cycle,
+                        "prog": base_prog,
+                        "rate": base_eff_rate,
+                        "is_matched": False
+                    }
+            else:
+                base_time_est = f"~{base_prog['time_str_next']}"
+
             self.tree_guide.insert("", "end", iid=tier_iid, text=f"⚒️ {bar_name} Smelting & Smithing Family Tree", values=(
                 tier_status,
                 f"Lvl {smelt_lvl}+",
@@ -3895,16 +3962,9 @@ class OSRSAlchDashboard(tk.Tk):
                 f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp / bar",
                 furnace_rec,
                 furnace_xp_rate,
-                "--",
+                base_time_est,
                 f"Smelt {bar_name} from raw ores ({ore_summary_str}). Sells on GE for {bar_net:,} gp net ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar)."
             ), tags=(tier_tag,))
-
-            # Register tier in self.guide_rows
-            tier_mats_raw = [{"id": ore_id, "name": ore_name, "qty": 1}]
-            if tier_name == "Bronze" and second_id > 0:
-                tier_mats_raw.append({"id": second_id, "name": second_name, "qty": 1})
-            elif coal_qty > 0:
-                tier_mats_raw.append({"id": coal_id, "name": "Coal", "qty": coal_qty})
 
             self.guide_rows.append({
                 "id": tier_iid,
@@ -3932,7 +3992,9 @@ class OSRSAlchDashboard(tk.Tk):
                 "action_rec": furnace_rec,
                 "xp_rate": furnace_xp_rate,
                 "xp_rate_val": 90000 if (mem_ok and coal_qty > 0) else 25000,
-                "time_est": "--",
+                "time_est": base_time_est,
+                "cycle": base_cycle,
+                "prog": base_prog,
                 "verdict": f"Smelt {bar_name} from raw ores ({ore_summary_str}). Sells on GE for {bar_net:,} gp net ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar).",
                 "output_id": bar_id,
                 "tag": tier_tag
@@ -3951,8 +4013,8 @@ class OSRSAlchDashboard(tk.Tk):
                 "--",
                 f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp",
                 "🏪 Sell on GE",
-                "--",
-                "--",
+                furnace_xp_rate,
+                base_time_est,
                 f"BASELINE BENCHMARK: Smelt bar and sell directly on GE for {bar_net:,} gp ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar). Compare all anvil items against this baseline!"
             ), tags=("baseline",))
 
@@ -3980,9 +4042,11 @@ class OSRSAlchDashboard(tk.Tk):
                 "bracket_cost": f"{'+' if bar_profit >= 0 else ''}{bar_profit:,} gp",
                 "bracket_cost_val": bar_profit,
                 "action_rec": "🏪 Sell on GE",
-                "xp_rate": "--",
-                "xp_rate_val": 0,
-                "time_est": "--",
+                "xp_rate": furnace_xp_rate,
+                "xp_rate_val": 90000 if (mem_ok and coal_qty > 0) else 25000,
+                "time_est": base_time_est,
+                "cycle": base_cycle,
+                "prog": base_prog,
                 "verdict": f"BASELINE BENCHMARK: Smelt bar and sell directly on GE for {bar_net:,} gp ({'+' if bar_profit >= 0 else ''}{bar_profit:,} gp profit/bar).",
                 "output_id": bar_id,
                 "tag": "baseline"
@@ -4023,20 +4087,30 @@ class OSRSAlchDashboard(tk.Tk):
                 mats_cycle = [{"id": bar_id, "name": bar_name, "qty": bars_cnt}]
                 cycle = calculate_skilling_cycle("Smithing", itm_name, smith_xp, mats_cycle)
                 cycle_rate = cycle.get("xp_per_hour", itm.get("xp_rate", 50000))
-                is_matching_active = bool(detected_activity and (detected_activity.lower() in itm_name.lower() or itm_name.lower() in detected_activity.lower()))
+                is_matching_active = bool(detected_activity and is_activity_match(detected_activity, itm_name))
                 eff_rate = live_rate if (live_rate > 5000 and is_matching_active) else cycle_rate
 
                 prog = get_progression_eta(cur_lvl, cur_xp, cur_lvl + 1, smith_xp, cycle, live_rate=eff_rate if (live_rate > 5000 and is_matching_active) else 0)
 
                 if cur_lvl >= req_lvl:
                     time_est_str = f"{prog['time_str_next']} (Next)"
-                    if best_active_item is None or req_lvl >= best_active_item.get("req_lvl", 0) or is_matching_active:
+                    if is_matching_active:
                         best_active_item = {
                             "name": itm_name,
                             "req_lvl": req_lvl,
                             "cycle": cycle,
                             "prog": prog,
-                            "rate": eff_rate
+                            "rate": eff_rate,
+                            "is_matched": True
+                        }
+                    elif best_active_item is None or (not best_active_item.get("is_matched") and req_lvl >= best_active_item.get("req_lvl", 0)):
+                        best_active_item = {
+                            "name": itm_name,
+                            "req_lvl": req_lvl,
+                            "cycle": cycle,
+                            "prog": prog,
+                            "rate": eff_rate,
+                            "is_matched": False
                         }
                 else:
                     time_est_str = f"~{prog['time_str_next']}"
@@ -4281,8 +4355,23 @@ class OSRSAlchDashboard(tk.Tk):
             target_lvl = 99
 
         # Check if connected account has exact XP and live skilling activity data
-        active_acc = self.var_active_account.get() if hasattr(self, "var_active_account") else ""
-        acc_info = self.state.accounts.get(active_acc, {}) if active_acc else {}
+        active_acc_name = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
+        acc_info = {}
+        if active_acc_name != "All Accounts" and active_acc_name in self.state.accounts:
+            acc_info = self.state.accounts[active_acc_name]
+        elif self.state.accounts:
+            # Fall back to the most recently seen account
+            acc_info = max(self.state.accounts.values(), key=lambda a: a.get("last_seen", 0))
+
+        acc_levels = acc_info.get("levels", {})
+        if active_skill in acc_levels:
+            live_lvl = acc_levels[active_skill]
+            if live_lvl > 0 and (cur_lvl <= 1 or cur_lvl != live_lvl):
+                cur_lvl = live_lvl
+                if hasattr(self, "ent_guide_cur_lvl"):
+                    self.ent_guide_cur_lvl.delete(0, tk.END)
+                    self.ent_guide_cur_lvl.insert(0, str(live_lvl))
+
         acc_xps = acc_info.get("xp", {})
         exact_xp = acc_xps.get(active_skill)
         if exact_xp is not None and exact_xp > 0:
@@ -4538,7 +4627,7 @@ class OSRSAlchDashboard(tk.Tk):
             # Cycle & Progression ETA calculation
             cycle = calculate_skilling_cycle(active_skill, b["name"], xp_ea, mats)
             cycle_rate = cycle.get("xp_per_hour", b.get("xp_rate", 50000))
-            is_matching_active = bool(detected_activity and (detected_activity.lower() in b["name"].lower() or b["name"].lower() in detected_activity.lower()))
+            is_matching_active = bool(detected_activity and is_activity_match(detected_activity, b["name"]))
             eff_rate = live_rate if (live_rate > 5000 and is_matching_active) else cycle_rate
 
             prog = get_progression_eta(cur_lvl, cur_xp, cur_lvl + 1, xp_ea, cycle, live_rate=eff_rate if (live_rate > 5000 and is_matching_active) else 0)
@@ -4546,12 +4635,21 @@ class OSRSAlchDashboard(tk.Tk):
             # Time estimate
             if status_tag == "current":
                 time_est_str = f"{prog['time_str_next']} (Next)"
-                if active_bracket_obj is None or is_matching_active:
+                if is_matching_active:
                     active_bracket_obj = {
                         "name": b["name"],
                         "cycle": cycle,
                         "prog": prog,
-                        "rate": eff_rate
+                        "rate": eff_rate,
+                        "is_matched": True
+                    }
+                elif active_bracket_obj is None or not active_bracket_obj.get("is_matched"):
+                    active_bracket_obj = {
+                        "name": b["name"],
+                        "cycle": cycle,
+                        "prog": prog,
+                        "rate": eff_rate,
+                        "is_matched": False
                     }
             elif cur_lvl >= max_l:
                 time_est_str = "0s"
@@ -8872,6 +8970,12 @@ class OSRSAlchDashboard(tk.Tk):
 
     def _apply_active_account_data(self):
         sel = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
+        target_acc = None
+        if sel != "All Accounts" and sel in self.state.accounts:
+            target_acc = self.state.accounts[sel]
+        elif self.state.accounts:
+            target_acc = max(self.state.accounts.values(), key=lambda a: a.get("last_seen", 0))
+
         if sel == "All Accounts":
             if self.state.accounts:
                 total_coins = sum(acc.get("coins", 0) for acc in self.state.accounts.values())
@@ -8885,12 +8989,9 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_owned_nat.insert(0, str(total_nats))
                     self.state.config["owned_nature_runes"] = total_nats
         else:
-            acc = self.state.accounts.get(sel)
-            if acc:
-                coins = acc.get("coins", 0)
-                nats = acc.get("nature_runes", 0)
-                is_mem = acc.get("is_members", True)
-                levels = acc.get("levels", {})
+            if target_acc:
+                coins = target_acc.get("coins", 0)
+                nats = target_acc.get("nature_runes", 0)
 
                 if coins > 0 and self.var_use_cash.get():
                     self.ent_cash.delete(0, tk.END)
@@ -8902,32 +9003,34 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_owned_nat.insert(0, str(nats))
                     self.state.config["owned_nature_runes"] = nats
 
+        if target_acc:
+            levels = target_acc.get("levels", {})
 
-                if hasattr(self, "ent_craft_lvl") and "Crafting" in levels:
-                    self.ent_craft_lvl.delete(0, tk.END)
-                    self.ent_craft_lvl.insert(0, str(levels["Crafting"]))
-                    self.state.config.setdefault("player_levels", {})["Crafting"] = levels["Crafting"]
+            if hasattr(self, "ent_craft_lvl") and "Crafting" in levels:
+                self.ent_craft_lvl.delete(0, tk.END)
+                self.ent_craft_lvl.insert(0, str(levels["Crafting"]))
+                self.state.config.setdefault("player_levels", {})["Crafting"] = levels["Crafting"]
 
-                if hasattr(self, "ent_smith_lvl") and "Smithing" in levels:
-                    self.ent_smith_lvl.delete(0, tk.END)
-                    self.ent_smith_lvl.insert(0, str(levels["Smithing"]))
-                    self.state.config.setdefault("player_levels", {})["Smithing"] = levels["Smithing"]
+            if hasattr(self, "ent_smith_lvl") and "Smithing" in levels:
+                self.ent_smith_lvl.delete(0, tk.END)
+                self.ent_smith_lvl.insert(0, str(levels["Smithing"]))
+                self.state.config.setdefault("player_levels", {})["Smithing"] = levels["Smithing"]
 
-                if hasattr(self, "ent_fletch_lvl") and "Fletching" in levels:
-                    self.ent_fletch_lvl.delete(0, tk.END)
-                    self.ent_fletch_lvl.insert(0, str(levels["Fletching"]))
-                    self.state.config.setdefault("player_levels", {})["Fletching"] = levels["Fletching"]
+            if hasattr(self, "ent_fletch_lvl") and "Fletching" in levels:
+                self.ent_fletch_lvl.delete(0, tk.END)
+                self.ent_fletch_lvl.insert(0, str(levels["Fletching"]))
+                self.state.config.setdefault("player_levels", {})["Fletching"] = levels["Fletching"]
 
-                if hasattr(self, "ent_mage_lvl") and "Magic" in levels:
-                    self.ent_mage_lvl.delete(0, tk.END)
-                    self.ent_mage_lvl.insert(0, str(levels["Magic"]))
-                    self.state.config.setdefault("player_levels", {})["Magic"] = levels["Magic"]
+            if hasattr(self, "ent_mage_lvl") and "Magic" in levels:
+                self.ent_mage_lvl.delete(0, tk.END)
+                self.ent_mage_lvl.insert(0, str(levels["Magic"]))
+                self.state.config.setdefault("player_levels", {})["Magic"] = levels["Magic"]
 
-                if hasattr(self, "ent_guide_cur_lvl") and hasattr(self, "var_guide_skill"):
-                    g_sk = self.var_guide_skill.get()
-                    if g_sk in levels:
-                        self.ent_guide_cur_lvl.delete(0, tk.END)
-                        self.ent_guide_cur_lvl.insert(0, str(levels[g_sk]))
+            if hasattr(self, "ent_guide_cur_lvl") and hasattr(self, "var_guide_skill"):
+                g_sk = self.var_guide_skill.get()
+                if g_sk in levels:
+                    self.ent_guide_cur_lvl.delete(0, tk.END)
+                    self.ent_guide_cur_lvl.insert(0, str(levels[g_sk]))
 
         self._sync_cart_from_ge()
 

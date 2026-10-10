@@ -705,12 +705,23 @@ public class AlchBridgePlugin extends Plugin {
             if (xpGained == 225) return "Steel Platelegs/Skirt";
             if (xpGained == 300) return "Mithril Platelegs/Skirt";
             if (xpGained == 450) return "Rune Platelegs/Skirt";
-            if (xpGained == 56 || xpGained == 57) return "Gold Bar (Smelting)";
-            if (xpGained == 30) return "Steel Bar (Smelting)";
-            if (xpGained == 17 || xpGained == 18) return "Iron Bar (Smelting)";
-            if (xpGained == 22 || xpGained == 23) return "Silver Bar (Smelting)";
-            if (xpGained == 6 || xpGained == 7) return "Bronze Bar (Smelting)";
-            return "Smithing Anvil/Furnace";
+            if (xpGained == 30) return "Smelting Mithril Bars";
+            if (xpGained == 37 || xpGained == 38) return "Smelting Adamant Bars";
+            if (xpGained == 50) {
+                ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
+                if (inv != null && (inv.count(ItemID.RUNITE_ORE) > 0 || inv.count(ItemID.COAL) > 0)) {
+                    return "Smelting Rune Bars";
+                }
+                return "Mithril Dagger";
+            }
+            if (xpGained == 17 || xpGained == 18) return "Smelting Steel Bars";
+            if (xpGained == 12 || xpGained == 13) return "Smelting Iron Bars";
+            if (xpGained == 14) return "Smelting Silver Bars";
+            if (xpGained == 22 || xpGained == 23) return "Smelting Gold Bars";
+            if (xpGained == 56 || xpGained == 57) return "Smelting Gold Bars (Gauntlets)";
+            if (xpGained == 6 || xpGained == 7) return "Smelting Bronze Bars";
+            if (xpGained == 25 || xpGained == 26) return "Smelting Cannonballs";
+            return "Smithing";
         } else if (skill == Skill.CRAFTING) {
             if (xpGained == 50) return "Cutting Sapphires";
             if (xpGained == 67 || xpGained == 68) return "Cutting Emeralds";
@@ -749,68 +760,130 @@ public class AlchBridgePlugin extends Plugin {
 
     private void detectSkillingFromInventory(ItemContainer inv) {
         if (inv == null) return;
-        boolean hasHammer = inv.count(ItemID.HAMMER) > 0;
-        boolean hasChisel = inv.count(ItemID.CHISEL) > 0;
-        boolean hasKnife = inv.count(ItemID.KNIFE) > 0;
-        boolean hasGlassPipe = inv.count(ItemID.GLASSBLOWING_PIPE) > 0;
 
+        // 1. Smelting Ores (Check ores first: player can have a hammer in inventory while smelting!)
+        if (inv.count(ItemID.MITHRIL_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Mithril Bars";
+            return;
+        } else if (inv.count(ItemID.ADAMANTITE_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Adamant Bars";
+            return;
+        } else if (inv.count(ItemID.RUNITE_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Rune Bars";
+            return;
+        } else if (inv.count(ItemID.IRON_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            if (inv.count(ItemID.COAL) > 0) {
+                detectedActivityName = "Smelting Steel Bars";
+            } else {
+                detectedActivityName = "Smelting Iron Bars";
+            }
+            return;
+        } else if (inv.count(ItemID.GOLD_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Gold Bars";
+            return;
+        } else if (inv.count(ItemID.SILVER_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Silver Bars";
+            return;
+        } else if (inv.count(ItemID.COPPER_ORE) > 0 || inv.count(ItemID.TIN_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Bronze Bars";
+            return;
+        } else if (inv.count(ItemID.STEEL_BAR) > 0 && inv.count(ItemID.AMMO_MOULD) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Cannonballs";
+            return;
+        }
+
+        // 2. Anvil Smithing with Hammer & Bars
+        boolean hasHammer = inv.count(ItemID.HAMMER) > 0;
         if (hasHammer) {
             if (inv.count(ItemID.RUNITE_BAR) > 0) {
                 detectedSkill = Skill.SMITHING;
                 detectedActivityName = "Smithing Rune Bars";
+                return;
             } else if (inv.count(ItemID.ADAMANTITE_BAR) > 0) {
                 detectedSkill = Skill.SMITHING;
                 detectedActivityName = "Smithing Adamant Bars";
+                return;
             } else if (inv.count(ItemID.MITHRIL_BAR) > 0) {
                 detectedSkill = Skill.SMITHING;
                 detectedActivityName = "Smithing Mithril Bars";
+                return;
             } else if (inv.count(ItemID.STEEL_BAR) > 0) {
                 detectedSkill = Skill.SMITHING;
                 detectedActivityName = "Smithing Steel Bars";
+                return;
             } else if (inv.count(ItemID.IRON_BAR) > 0) {
                 detectedSkill = Skill.SMITHING;
                 detectedActivityName = "Smithing Iron Bars";
+                return;
             } else if (inv.count(ItemID.BRONZE_BAR) > 0) {
                 detectedSkill = Skill.SMITHING;
                 detectedActivityName = "Smithing Bronze Bars";
+                return;
             }
-        } else if (hasGlassPipe && inv.count(ItemID.MOLTEN_GLASS) > 0) {
+        }
+
+        // 3. Glassblowing
+        boolean hasGlassPipe = inv.count(ItemID.GLASSBLOWING_PIPE) > 0;
+        if (hasGlassPipe && inv.count(ItemID.MOLTEN_GLASS) > 0) {
             detectedSkill = Skill.CRAFTING;
             detectedActivityName = "Blowing Molten Glass";
-        } else if (hasChisel) {
+            return;
+        }
+
+        // 4. Gem Cutting
+        boolean hasChisel = inv.count(ItemID.CHISEL) > 0;
+        if (hasChisel) {
             if (inv.count(ItemID.UNCUT_DIAMOND) > 0) {
                 detectedSkill = Skill.CRAFTING;
                 detectedActivityName = "Cutting Diamonds";
+                return;
             } else if (inv.count(ItemID.UNCUT_RUBY) > 0) {
                 detectedSkill = Skill.CRAFTING;
                 detectedActivityName = "Cutting Rubies";
+                return;
             } else if (inv.count(ItemID.UNCUT_EMERALD) > 0) {
                 detectedSkill = Skill.CRAFTING;
                 detectedActivityName = "Cutting Emeralds";
+                return;
             } else if (inv.count(ItemID.UNCUT_SAPPHIRE) > 0) {
                 detectedSkill = Skill.CRAFTING;
                 detectedActivityName = "Cutting Sapphires";
+                return;
             }
-        } else if (hasKnife) {
+        }
+
+        // 5. Fletching
+        boolean hasKnife = inv.count(ItemID.KNIFE) > 0;
+        if (hasKnife) {
             if (inv.count(ItemID.MAGIC_LOGS) > 0) {
                 detectedSkill = Skill.FLETCHING;
                 detectedActivityName = "Fletching Magic Logs";
+                return;
             } else if (inv.count(ItemID.YEW_LOGS) > 0) {
                 detectedSkill = Skill.FLETCHING;
                 detectedActivityName = "Fletching Yew Logs";
+                return;
             } else if (inv.count(ItemID.MAPLE_LOGS) > 0) {
                 detectedSkill = Skill.FLETCHING;
                 detectedActivityName = "Fletching Maple Logs";
+                return;
             } else if (inv.count(ItemID.WILLOW_LOGS) > 0) {
                 detectedSkill = Skill.FLETCHING;
                 detectedActivityName = "Fletching Willow Logs";
+                return;
             }
         } else if (inv.count(ItemID.BOW_STRING) > 0) {
             detectedSkill = Skill.FLETCHING;
             detectedActivityName = "Stringing Bows";
-        } else if (inv.count(ItemID.IRON_ORE) > 0 || inv.count(ItemID.COAL) > 0 || inv.count(ItemID.GOLD_ORE) > 0 || inv.count(ItemID.SILVER_ORE) > 0) {
-            detectedSkill = Skill.SMITHING;
-            detectedActivityName = "Smelting Bars";
+            return;
         }
     }
 
@@ -1440,6 +1513,16 @@ public class AlchBridgePlugin extends Plugin {
 
     private void sendAccountSnapshot() {
         try {
+            ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
+            if (inv != null) {
+                detectSkillingFromInventory(inv);
+            }
+
+            lastSkillXpMap.put(Skill.CRAFTING, client.getSkillExperience(Skill.CRAFTING));
+            lastSkillXpMap.put(Skill.SMITHING, client.getSkillExperience(Skill.SMITHING));
+            lastSkillXpMap.put(Skill.FLETCHING, client.getSkillExperience(Skill.FLETCHING));
+            lastSkillXpMap.put(Skill.MAGIC, client.getSkillExperience(Skill.MAGIC));
+
             Map<String, Object> data = new HashMap<>();
             data.put("event", "ACCOUNT_SNAPSHOT");
             data.put("account", getAccountName());
@@ -1468,7 +1551,6 @@ public class AlchBridgePlugin extends Plugin {
                 data.put("est_secs_next", estSecs);
             }
 
-            ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
             if (inv != null) {
                 data.put("coins", inv.count(ItemID.COINS_995));
                 data.put("natureRunes", inv.count(ItemID.NATURE_RUNE));
@@ -1585,7 +1667,7 @@ public class AlchBridgePlugin extends Plugin {
     public boolean isSkillingActive() {
         if (detectedSkill == null) return false;
         long now = System.currentTimeMillis();
-        return (now - lastSkillingDropTime < 60000L);
+        return (now - lastSkillingDropTime < 180000L);
     }
 
     public Skill getDetectedSkill() {
