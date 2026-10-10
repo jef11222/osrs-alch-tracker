@@ -23,6 +23,7 @@ public class AlchBridgeOverlay extends OverlayPanel {
         this.config = config;
         setPosition(OverlayPosition.BOTTOM_RIGHT);
         setPriority(OverlayPriority.MED);
+        getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, "Toggle Bond Tracker", "Alch Session"));
         getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, "Toggle Cost Basis", "Alch Session"));
         getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, "Reset", "Alch Session"));
     }
@@ -33,7 +34,7 @@ public class AlchBridgeOverlay extends OverlayPanel {
             return null;
         }
 
-        panelComponent.setPreferredSize(new Dimension(180, 0));
+        panelComponent.setPreferredSize(new Dimension(185, 0));
         panelComponent.getChildren().clear();
 
         // Header Title
@@ -116,6 +117,41 @@ public class AlchBridgeOverlay extends OverlayPanel {
                 .right((totalProfit >= 0 ? "+" : "") + formatGp(totalProfit))
                 .rightColor(totalProfColor)
                 .build());
+        }
+
+        // Bond Progress & Live ETA
+        if (plugin.isBondTrackerEnabled()) {
+            long totalCoins = plugin.getTotalCoins();
+            long bondPrice = plugin.getBondPrice();
+            double bondPct = bondPrice > 0 ? ((double) totalCoins / (double) bondPrice * 100.0) : 0.0;
+            String bondText;
+            Color bondColor;
+
+            if (totalCoins >= bondPrice) {
+                bondText = String.format("Ready! (%.1fM)", totalCoins / 1_000_000.0);
+                bondColor = new Color(46, 204, 113); // Bright Green
+            } else {
+                bondText = String.format("%.1fM / %.1fM (%.1f%%)", totalCoins / 1_000_000.0, bondPrice / 1_000_000.0, bondPct);
+                bondColor = bondPct >= 50.0 ? new Color(255, 193, 7) : new Color(255, 152, 0); // Gold or Orange
+            }
+
+            panelComponent.getChildren().add(LineComponent.builder()
+                .left("Bond:")
+                .right(bondText)
+                .rightColor(bondColor)
+                .build());
+
+            long profitPerHour = plugin.getProfitPerHour();
+            if (totalCoins < bondPrice && profitPerHour > 0) {
+                long remGp = bondPrice - totalCoins;
+                double hrs = (double) remGp / (double) profitPerHour;
+                String etaText = hrs >= 24.0 ? String.format("~%.1f days", hrs / 24.0) : String.format("~%.1f hrs", hrs);
+                panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Bond ETA:")
+                    .right(etaText)
+                    .rightColor(new Color(186, 104, 200)) // Pastel Purple
+                    .build());
+            }
         }
 
         // Magic XP / Hour

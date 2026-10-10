@@ -85,4 +85,14 @@ public interface AlchBridgeConfig extends Config {
     default int manualTradeBuyPrice() {
         return 0;
     }
+
+    @ConfigItem(
+        keyName = "showBondTracker",
+        name = "Show Bond Progress",
+        description = "Display live Bond progress bar, percentage, and ETA on overlay",
+        position = 8
+    )
+    default boolean showBondTracker() {
+        return true;
+    }
 }

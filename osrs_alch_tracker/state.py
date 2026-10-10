@@ -606,6 +606,28 @@ class AppState:
         self.save_session()
         return entry
 
+    def log_trade_flip(self, item_id, item_name, qty, buy_price, sell_price, profit, account="Default", timestamp=None):
+        now = float(timestamp) if timestamp else time.time()
+        entry_id = str(int(now * 1000)) + f"_flip_{item_id}"
+        entry = {
+            "id": entry_id,
+            "account": account or "Default",
+            "item_id": item_id,
+            "timestamp": now,
+            "time": time.strftime("%H:%M:%S", time.localtime(now)),
+            "item": f"[Trade Flip] {item_name}",
+            "qty": qty,
+            "buy_price": buy_price,
+            "nat_price": 0,
+            "alch_val": sell_price,
+            "profit": profit
+        }
+        self.session["history"].insert(0, entry)
+        self.session["history"] = self.session["history"][:200]
+        self._recalc_session_totals()
+        self.save_session()
+        return entry
+
     def update_session_entry(self, entry_id, new_qty, new_buy_price, new_nat_price):
         for entry in self.session["history"]:
             if entry["id"] == entry_id:

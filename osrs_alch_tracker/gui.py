@@ -8895,6 +8895,21 @@ class OSRSAlchDashboard(tk.Tk):
                         if self.state.config.get("desktop_alerts"):
                             FloatingToast(self, f"🤝 W308 Trade [{account}]", f"Bought {qty:,}x {item_name} @ {unit_price:,} gp ea (Profit: +{format_gp(entry['profit'])})")
 
+        elif event_type == "TRADE_SOLD":
+            item_id = data.get("itemId", 0)
+            item_name = data.get("itemName", "")
+            qty = data.get("quantity", 0)
+            unit_price = data.get("unitPrice", 0)
+            buy_price = data.get("buyPrice", 0)
+            profit = data.get("profit", 0)
+            if item_id > 0 and qty > 0:
+                entry = self.state.log_trade_flip(item_id, item_name, qty, buy_price, unit_price, profit, account=account, timestamp=data.get("timestamp"))
+                self.update_session_display()
+                if is_active:
+                    self.lbl_status_right.config(text=f"🤝 P2P/W308 Sale: Sold {qty:,}x {item_name} @ {unit_price:,} gp (+{format_gp(profit)}) [{account}]", fg="#2ecc71")
+                    if self.state.config.get("desktop_alerts"):
+                        FloatingToast(self, f"🤝 Trade Sale [{account}]", f"Sold {qty:,}x {item_name} @ {unit_price:,} gp ea (Profit: +{format_gp(profit)})")
+
         elif event_type == "ALCH_CAST":
             if is_active:
                 self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")

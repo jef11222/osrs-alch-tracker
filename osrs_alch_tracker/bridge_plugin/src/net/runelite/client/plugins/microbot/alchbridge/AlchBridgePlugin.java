@@ -124,7 +124,10 @@ public class AlchBridgePlugin extends Plugin {
     private int lastW308TradePrice = 0;
     private int lastAlchedItemId = -1;
 
+    // Two-Way Trade Tracking (Buy & Sell)
     private int pendingTradeCoinsOffered = 0;
+    private int pendingTradeCoinsReceived = 0;
+    private final Map<Integer, Integer> pendingTradeItemsOffered = new ConcurrentHashMap<>();
     private final Map<Integer, Integer> pendingTradeItemsReceived = new ConcurrentHashMap<>();
     private long lastTradeActivityTime = 0;
 
@@ -132,6 +135,12 @@ public class AlchBridgePlugin extends Plugin {
     private long sessionTotalHighAlchGp = 0;
     private long sessionTotalNatCost = 0;
     private long sessionUnknownItemProfit = 0;
+    private long sessionTradeProfit = 0;
+
+    // Wealth & Bond Tracking
+    private int lastBankCoins = 0;
+    private long sessionStartWealth = 0;
+    private Boolean bondTrackerOverride = null;
 
     @Provides
     AlchBridgeConfig provideConfig(ConfigManager configManager) {
@@ -429,6 +438,10 @@ public class AlchBridgePlugin extends Plugin {
             }
             int coins = bank.count(ItemID.COINS_995);
             int natureRunes = bank.count(ItemID.NATURE_RUNE);
+            lastBankCoins = coins;
+            if (sessionStartWealth <= 0 && coins > 0) {
+                sessionStartWealth = (long) Math.max(0, lastCoins) + (long) lastBankCoins;
+            }
 
             Map<String, Object> data = new HashMap<>();
             data.put("event", "BANK_SYNC");
@@ -441,18 +454,10 @@ public class AlchBridgePlugin extends Plugin {
         } else if (event.getContainerId() == InventoryID.TRADE.getId()) {
             ItemContainer trade = event.getItemContainer();
             if (trade != null) {
-                int coins = trade.count(ItemID.COINS_995);
-                if (coins > 0) {
-                    pendingTradeCoinsOffered = coins;
-                    lastTradeActivityTime = System.currentTimeMillis();
-                }
-            }
-        } else if (event.getContainerId() == InventoryID.TRADEOTHER.getId()) {
-            ItemContainer tradeOther = event.getItemContainer();
-            if (tradeOther != null) {
-                Item[] items = tradeOther.getItems();
+                pendingTradeCoinsOffered = trade.count(ItemID.COINS_995);
+                Item[] items = trade.getItems();
+                Map<Integer, Integer> map = new HashMap<>();
                 if (items != null) {
-                    Map<Integer, Integer> map = new HashMap<>();
                     for (Item itm : items) {
                         if (itm != null && itm.getId() > 0 && itm.getQuantity() > 0 && itm.getId() != ItemID.COINS_995) {
                             int id = itm.getId();
@@ -461,12 +466,30 @@ public class AlchBridgePlugin extends Plugin {
                             map.merge(unnotedId, itm.getQuantity(), Integer::sum);
                         }
                     }
-                    if (!map.isEmpty()) {
-                        pendingTradeItemsReceived.clear();
-                        pendingTradeItemsReceived.putAll(map);
-                        lastTradeActivityTime = System.currentTimeMillis();
+                }
+                pendingTradeItemsOffered.clear();
+                pendingTradeItemsOffered.putAll(map);
+                lastTradeActivityTime = System.currentTimeMillis();
+            }
+        } else if (event.getContainerId() == InventoryID.TRADEOTHER.getId()) {
+            ItemContainer tradeOther = event.getItemContainer();
+            if (tradeOther != null) {
+                pendingTradeCoinsReceived = tradeOther.count(ItemID.COINS_995);
+                Item[] items = tradeOther.getItems();
+                Map<Integer, Integer> map = new HashMap<>();
+                if (items != null) {
+                    for (Item itm : items) {
+                        if (itm != null && itm.getId() > 0 && itm.getQuantity() > 0 && itm.getId() != ItemID.COINS_995) {
+                            int id = itm.getId();
+                            ItemComposition comp = itemManager.getItemComposition(id);
+                            int unnotedId = (comp.getNote() != -1 && comp.getLinkedNoteId() > 0) ? comp.getLinkedNoteId() : id;
+                            map.merge(unnotedId, itm.getQuantity(), Integer::sum);
+                        }
                     }
                 }
+                pendingTradeItemsReceived.clear();
+                pendingTradeItemsReceived.putAll(map);
+                lastTradeActivityTime = System.currentTimeMillis();
             }
         }
     }
@@ -495,6 +518,8 @@ public class AlchBridgePlugin extends Plugin {
             } else if ("manualTradeBuyPrice".equals(event.getKey())) {
                 sessionProfit = calculateSessionProfit();
                 recalculateRates(System.currentTimeMillis());
+            } else if ("showBondTracker".equals(event.getKey())) {
+                bondTrackerOverride = null;
             }
         }
     }
@@ -610,6 +635,8 @@ public class AlchBridgePlugin extends Plugin {
                 resetSession();
             } else if ("Toggle Cost Basis".equals(option)) {
                 toggleCostBasisMode();
+            } else if ("Toggle Bond Tracker".equals(option)) {
+                toggleBondTracker();
             }
         }
     }
@@ -678,7 +705,7 @@ public class AlchBridgePlugin extends Plugin {
             int count = entry.getValue();
             totalBuyCost += getItemBuyCost(id) * count;
         }
-        return (sessionTotalHighAlchGp - sessionTotalNatCost - totalBuyCost) + sessionUnknownItemProfit;
+        return (sessionTotalHighAlchGp - sessionTotalNatCost - totalBuyCost) + sessionUnknownItemProfit + sessionTradeProfit;
     }
 
     public int getActiveW308Price() {
@@ -699,66 +726,167 @@ public class AlchBridgePlugin extends Plugin {
         return lastW308TradeItemName;
     }
 
-    private void commitPendingTrade() {
-        if (pendingTradeCoinsOffered <= 0 || pendingTradeItemsReceived.isEmpty()) {
-            return;
-        }
+    public long getTotalCoins() {
+        return Math.max(0L, (long) lastCoins) + Math.max(0L, (long) lastBankCoins);
+    }
 
+    public long getBondPrice() {
+        long price = itemManager.getItemPrice(ItemID.OLD_SCHOOL_BOND);
+        if (price <= 0) {
+            price = 11800000L;
+        }
+        return price;
+    }
+
+    public boolean isBondTrackerEnabled() {
+        if (bondTrackerOverride != null) {
+            return bondTrackerOverride;
+        }
+        return config.showBondTracker();
+    }
+
+    public void toggleBondTracker() {
+        boolean next = !isBondTrackerEnabled();
+        bondTrackerOverride = next;
+        if (configManager != null) {
+            try {
+                configManager.setConfiguration("alchbridge", "showBondTracker", next);
+            } catch (Exception e) {
+                log.debug("Could not persist bond tracker config: {}", e.getMessage());
+            }
+        }
+        log.info("Bond tracker toggled to: {}", next);
+    }
+
+    public long getSessionNetGpFlow() {
+        if (sessionStartWealth <= 0) {
+            return sessionProfit;
+        }
+        return getTotalCoins() - sessionStartWealth;
+    }
+
+    private void commitPendingTrade() {
         if (System.currentTimeMillis() - lastTradeActivityTime > 120000) {
             clearPendingTrade();
             return;
         }
 
-        int totalCoins = pendingTradeCoinsOffered;
-        int itemCount = pendingTradeItemsReceived.size();
+        // Scenario 1: BUY TRADE (Player gave coins, got items)
+        if (pendingTradeCoinsOffered > 0 && !pendingTradeItemsReceived.isEmpty()) {
+            int totalCoins = pendingTradeCoinsOffered;
+            int itemCount = pendingTradeItemsReceived.size();
 
-        if (itemCount == 1) {
-            Map.Entry<Integer, Integer> entry = pendingTradeItemsReceived.entrySet().iterator().next();
-            int unnotedId = entry.getKey();
-            int qty = entry.getValue();
-            if (qty > 0) {
-                int unitCost = (int) Math.round((double) totalCoins / (double) qty);
-                lastW308TradePrices.put(unnotedId, unitCost);
-                lastW308TradePrice = unitCost;
-                ItemComposition comp = itemManager.getItemComposition(unnotedId);
-                lastW308TradeItemName = comp != null ? comp.getName() : ("Item " + unnotedId);
-
-                log.info("W308 Trade detected: {} x {} for {} coins ({} ea)", lastW308TradeItemName, qty, totalCoins, unitCost);
-
-                Map<String, Object> data = new HashMap<>();
-                data.put("event", "TRADE_ACCEPTED");
-                data.put("account", getAccountName());
-                data.put("itemId", unnotedId);
-                data.put("itemName", lastW308TradeItemName);
-                data.put("quantity", qty);
-                data.put("unitPrice", unitCost);
-                data.put("totalCoins", totalCoins);
-                data.put("timestamp", System.currentTimeMillis() / 1000.0);
-                sendPayload(data);
-            }
-        } else {
-            long totalEstValue = 0;
-            for (Map.Entry<Integer, Integer> entry : pendingTradeItemsReceived.entrySet()) {
+            if (itemCount == 1) {
+                Map.Entry<Integer, Integer> entry = pendingTradeItemsReceived.entrySet().iterator().next();
                 int unnotedId = entry.getKey();
                 int qty = entry.getValue();
-                long price = Math.max(1, itemManager.getItemPrice(unnotedId));
-                totalEstValue += price * qty;
-            }
+                if (qty > 0) {
+                    int unitCost = (int) Math.round((double) totalCoins / (double) qty);
+                    lastW308TradePrices.put(unnotedId, unitCost);
+                    lastW308TradePrice = unitCost;
+                    ItemComposition comp = itemManager.getItemComposition(unnotedId);
+                    lastW308TradeItemName = comp != null ? comp.getName() : ("Item " + unnotedId);
 
-            for (Map.Entry<Integer, Integer> entry : pendingTradeItemsReceived.entrySet()) {
+                    log.info("W308/P2P Buy Trade detected: {} x {} for {} coins ({} ea)", lastW308TradeItemName, qty, totalCoins, unitCost);
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("event", "TRADE_ACCEPTED");
+                    data.put("account", getAccountName());
+                    data.put("itemId", unnotedId);
+                    data.put("itemName", lastW308TradeItemName);
+                    data.put("quantity", qty);
+                    data.put("unitPrice", unitCost);
+                    data.put("totalCoins", totalCoins);
+                    data.put("timestamp", System.currentTimeMillis() / 1000.0);
+                    sendPayload(data);
+                }
+            } else {
+                long totalEstValue = 0;
+                for (Map.Entry<Integer, Integer> entry : pendingTradeItemsReceived.entrySet()) {
+                    int unnotedId = entry.getKey();
+                    int qty = entry.getValue();
+                    long price = Math.max(1, itemManager.getItemPrice(unnotedId));
+                    totalEstValue += price * qty;
+                }
+
+                for (Map.Entry<Integer, Integer> entry : pendingTradeItemsReceived.entrySet()) {
+                    int unnotedId = entry.getKey();
+                    int qty = entry.getValue();
+                    long price = Math.max(1, itemManager.getItemPrice(unnotedId));
+                    double proportion = totalEstValue > 0 ? ((double) (price * qty) / (double) totalEstValue) : (1.0 / itemCount);
+                    int allocatedCoins = (int) Math.round(totalCoins * proportion);
+                    int unitCost = qty > 0 ? (int) Math.round((double) allocatedCoins / (double) qty) : 0;
+
+                    lastW308TradePrices.put(unnotedId, unitCost);
+                    lastW308TradePrice = unitCost;
+                    ItemComposition comp = itemManager.getItemComposition(unnotedId);
+                    lastW308TradeItemName = comp != null ? comp.getName() : ("Item " + unnotedId);
+
+                    log.info("W308/P2P Multi-Buy detected: {} x {} for {} coins ({} ea)", lastW308TradeItemName, qty, allocatedCoins, unitCost);
+                }
+            }
+        }
+        // Scenario 2: SELL TRADE (Player gave items, received coins)
+        else if (pendingTradeCoinsReceived > 0 && !pendingTradeItemsOffered.isEmpty()) {
+            int totalCoins = pendingTradeCoinsReceived;
+            int itemCount = pendingTradeItemsOffered.size();
+
+            if (itemCount == 1) {
+                Map.Entry<Integer, Integer> entry = pendingTradeItemsOffered.entrySet().iterator().next();
                 int unnotedId = entry.getKey();
                 int qty = entry.getValue();
-                long price = Math.max(1, itemManager.getItemPrice(unnotedId));
-                double proportion = totalEstValue > 0 ? ((double) (price * qty) / (double) totalEstValue) : (1.0 / itemCount);
-                int allocatedCoins = (int) Math.round(totalCoins * proportion);
-                int unitCost = qty > 0 ? (int) Math.round((double) allocatedCoins / (double) qty) : 0;
+                if (qty > 0) {
+                    int unitSellPrice = (int) Math.round((double) totalCoins / (double) qty);
+                    long buyCost = getItemBuyCost(unnotedId);
+                    long flipProfit = (unitSellPrice - buyCost) * qty;
+                    sessionTradeProfit += flipProfit;
+                    sessionProfit = calculateSessionProfit();
 
-                lastW308TradePrices.put(unnotedId, unitCost);
-                lastW308TradePrice = unitCost;
-                ItemComposition comp = itemManager.getItemComposition(unnotedId);
-                lastW308TradeItemName = comp != null ? comp.getName() : ("Item " + unnotedId);
+                    ItemComposition comp = itemManager.getItemComposition(unnotedId);
+                    String itemName = comp != null ? comp.getName() : ("Item " + unnotedId);
+                    lastAlchedItem = String.format("Sold %s (%+d gp)", itemName, flipProfit);
 
-                log.info("W308 Multi-Trade detected: {} x {} for {} coins ({} ea)", lastW308TradeItemName, qty, allocatedCoins, unitCost);
+                    log.info("W308/P2P Sell Trade detected: Sold {} x {} @ {} gp ea (Profit: %+d gp)", itemName, qty, unitSellPrice, flipProfit);
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("event", "TRADE_SOLD");
+                    data.put("account", getAccountName());
+                    data.put("itemId", unnotedId);
+                    data.put("itemName", itemName);
+                    data.put("quantity", qty);
+                    data.put("unitPrice", unitSellPrice);
+                    data.put("buyPrice", buyCost);
+                    data.put("profit", flipProfit);
+                    data.put("totalCoins", totalCoins);
+                    data.put("timestamp", System.currentTimeMillis() / 1000.0);
+                    sendPayload(data);
+                }
+            } else {
+                long totalEstValue = 0;
+                for (Map.Entry<Integer, Integer> entry : pendingTradeItemsOffered.entrySet()) {
+                    int unnotedId = entry.getKey();
+                    int qty = entry.getValue();
+                    long price = Math.max(1, itemManager.getItemPrice(unnotedId));
+                    totalEstValue += price * qty;
+                }
+
+                for (Map.Entry<Integer, Integer> entry : pendingTradeItemsOffered.entrySet()) {
+                    int unnotedId = entry.getKey();
+                    int qty = entry.getValue();
+                    long price = Math.max(1, itemManager.getItemPrice(unnotedId));
+                    double proportion = totalEstValue > 0 ? ((double) (price * qty) / (double) totalEstValue) : (1.0 / itemCount);
+                    int allocatedCoins = (int) Math.round(totalCoins * proportion);
+                    int unitSellPrice = qty > 0 ? (int) Math.round((double) allocatedCoins / (double) qty) : 0;
+                    long buyCost = getItemBuyCost(unnotedId);
+                    long flipProfit = (unitSellPrice - buyCost) * qty;
+                    sessionTradeProfit += flipProfit;
+
+                    ItemComposition comp = itemManager.getItemComposition(unnotedId);
+                    String itemName = comp != null ? comp.getName() : ("Item " + unnotedId);
+
+                    log.info("W308/P2P Multi-Sell: Sold {} x {} @ {} gp ea (Profit: %+d gp)", itemName, qty, unitSellPrice, flipProfit);
+                }
+                sessionProfit = calculateSessionProfit();
             }
         }
 
@@ -767,6 +895,8 @@ public class AlchBridgePlugin extends Plugin {
 
     private void clearPendingTrade() {
         pendingTradeCoinsOffered = 0;
+        pendingTradeCoinsReceived = 0;
+        pendingTradeItemsOffered.clear();
         pendingTradeItemsReceived.clear();
         lastTradeActivityTime = 0;
     }
@@ -824,6 +954,8 @@ public class AlchBridgePlugin extends Plugin {
         sessionTotalHighAlchGp = 0;
         sessionTotalNatCost = 0;
         sessionUnknownItemProfit = 0;
+        sessionTradeProfit = 0;
+        sessionStartWealth = getTotalCoins();
         recentCastTimestamps.clear();
         cachedAlchsPerHour = 0;
         cachedProfitPerHour = 0;
