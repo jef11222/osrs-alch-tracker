@@ -1757,9 +1757,21 @@ class OSRSAlchDashboard(tk.Tk):
         }
         HeadingToolTip(self.tree_overnight, overnight_col_tooltips)
 
+    def get_current_cash_stack(self):
+        if hasattr(self, "ent_cash"):
+            try:
+                val = parse_cash_input(self.ent_cash.get())
+                if val > 0:
+                    return val
+            except Exception:
+                pass
+        return self.state.config.get("cash_stack", 5000000)
+
     def build_w308_tab(self):
         container = ttk.Frame(self.tab_w308)
         container.pack(fill="both", expand=True, padx=6, pady=4)
+
+        cash_stack = self.get_current_cash_stack()
 
         # 1. Header & Quick Advertising Strip
         banner = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=10, pady=6)
@@ -1772,25 +1784,42 @@ class OSRSAlchDashboard(tk.Tk):
         tk.Label(top_row, text="📍 W308 Varrock West Bank | CC: 'Varrock West' / 'W308 Anvil'", font=("Segoe UI", 8), fg="#888888", bg="#202023").pack(side="right")
 
         tk.Label(banner, text="Bypass the 4-hour 70-unit GE buy limit and save 2% GE tax by trading bulk noted items directly with smiths and crafters!",
-                 font=("Segoe UI", 8), fg="#cccccc", bg="#202023").pack(anchor="w", pady=(2, 6))
+                 font=("Segoe UI", 8), fg="#cccccc", bg="#202023").pack(anchor="w", pady=(2, 4))
+
+        # Live Money Stack & Top Allocation Strip
+        self.w308_budget_bar = tk.Frame(banner, bg="#18181a", relief="solid", borderwidth=1, padx=8, pady=4)
+        self.w308_budget_bar.pack(fill="x", pady=(2, 5))
+
+        self.lbl_w308_budget = tk.Label(self.w308_budget_bar, text=f"💰 Active Money Stack: {format_gp(cash_stack)}", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#18181a")
+        self.lbl_w308_budget.pack(side="left", padx=(2, 10))
+
+        self.lbl_w308_top_pick = tk.Label(self.w308_budget_bar, text="🏆 Top Stack Pick: Calculating...", font=("Segoe UI", 9), fg="#f39c12", bg="#18181a")
+        self.lbl_w308_top_pick.pack(side="left", padx=(2, 10))
+
+        btn_load_top = tk.Button(self.w308_budget_bar, text="🎯 Allocate Full Stack to Top Pick", command=self.load_w308_top_pick_to_validator,
+                                 bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
+        btn_load_top.pack(side="right", padx=2)
+        ToolTip(btn_load_top, "Instantly loads the highest-profit bulk item into the Validator and allocates 100% of your money stack!")
 
         # Ad Buttons Row
         ad_row = tk.Frame(banner, bg="#202023")
-        ad_row.pack(fill="x")
+        ad_row.pack(fill="x", pady=(2, 0))
 
         tk.Label(ad_row, text="📢 Trade Ad Fast-Copy:", font=("Segoe UI", 8, "bold"), fg="#3498db", bg="#202023").pack(side="left", padx=(0, 6))
 
-        btn_ad_r2h = tk.Button(ad_row, text="Copy: Buying R2H 37.6k ea",
-                               command=lambda: self.copy_to_clipboard("Buying R2H 37.6k ea Bulk - Trade Me", "Copied R2H Buy Ad to clipboard!"),
-                               bg="#2d2d30", fg="#f1c40f", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
-        btn_ad_r2h.pack(side="left", padx=3)
-        ToolTip(btn_ad_r2h, "Click to copy: 'Buying R2H 37.6k ea Bulk - Trade Me'")
+        r2h_qty = cash_stack // 37600
+        r2h_lbl = f"Copy: Buying {r2h_qty:,} R2H 37.6k ea" if r2h_qty > 0 else "Copy: Buying R2H 37.6k ea"
+        self.btn_ad_r2h = tk.Button(ad_row, text=r2h_lbl, command=self.copy_w308_r2h_ad,
+                                    bg="#2d2d30", fg="#f1c40f", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        self.btn_ad_r2h.pack(side="left", padx=3)
+        ToolTip(self.btn_ad_r2h, "Click to copy bulk R2H buy offer calculated directly from your money stack.")
 
-        btn_ad_legs = tk.Button(ad_row, text="Copy: Buying Legs/Skirts 37.6k",
-                                command=lambda: self.copy_to_clipboard("Buying Rune Legs/Skirts 37.6k ea Bulk - Trade Me", "Copied Rune Legs/Skirts Ad to clipboard!"),
-                                bg="#2d2d30", fg="#f1c40f", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
-        btn_ad_legs.pack(side="left", padx=3)
-        ToolTip(btn_ad_legs, "Click to copy: 'Buying Rune Legs/Skirts 37.6k ea Bulk - Trade Me'")
+        legs_qty = cash_stack // 37600
+        legs_lbl = f"Copy: Buying {legs_qty:,} Legs/Skirts 37.6k" if legs_qty > 0 else "Copy: Buying Legs/Skirts 37.6k"
+        self.btn_ad_legs = tk.Button(ad_row, text=legs_lbl, command=self.copy_w308_legs_ad,
+                                     bg="#2d2d30", fg="#f1c40f", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=2, cursor="hand2")
+        self.btn_ad_legs.pack(side="left", padx=3)
+        ToolTip(self.btn_ad_legs, "Click to copy bulk Rune legs/skirts buy offer calculated directly from your money stack.")
 
         btn_ad_multi = tk.Button(ad_row, text="Copy: Multi-Item Bulk Ad",
                                  command=lambda: self.copy_to_clipboard("Buying R2H / Legs / Skirts 37.6k | Addy Body 9.65k Bulk - Trade Me", "Copied Multi-Alch Ad to clipboard!"),
@@ -1805,7 +1834,7 @@ class OSRSAlchDashboard(tk.Tk):
         v_head = tk.Frame(val_card, bg="#1a1a1d")
         v_head.pack(fill="x", pady=(0, 4))
         tk.Label(v_head, text="🛡️ Anti-Scam Bulk Trade Calculator & 2nd Screen Verifier", font=("Segoe UI", 9, "bold"), fg="#e67e22", bg="#1a1a1d").pack(side="left")
-        tk.Label(v_head, text="Verify exact gold totals and noted quantities before accepting the 2nd trade window", font=("Segoe UI", 8, "italic"), fg="#888888", bg="#1a1a1d").pack(side="left", padx=(10, 0))
+        tk.Label(v_head, text="Auto-scaled to your money stack so you never have to guess quantities or totals", font=("Segoe UI", 8, "italic"), fg="#888888", bg="#1a1a1d").pack(side="left", padx=(10, 0))
 
         v_body = tk.Frame(val_card, bg="#1a1a1d")
         v_body.pack(fill="x")
@@ -1824,23 +1853,40 @@ class OSRSAlchDashboard(tk.Tk):
         self.cb_w308_item.pack(side="left")
         self.cb_w308_item.bind("<<ComboboxSelected>>", self.on_w308_validator_item_selected)
 
-        # Qty row
-        r2 = tk.Frame(v_in, bg="#1a1a1d")
-        r2.pack(fill="x", pady=2)
-        tk.Label(r2, text="Qty:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
-        self.ent_w308_qty = tk.Entry(r2, width=10, bg="#252528", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
-        self.ent_w308_qty.insert(0, "500")
-        self.ent_w308_qty.pack(side="left")
-        self.ent_w308_qty.bind("<KeyRelease>", self.calculate_w308_trade_validator)
-
         # Price row
         r3 = tk.Frame(v_in, bg="#1a1a1d")
         r3.pack(fill="x", pady=2)
         tk.Label(r3, text="Agreed Ea:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
-        self.ent_w308_price = tk.Entry(r3, width=10, bg="#252528", fg="#f1c40f", insertbackground="#ffffff", relief="flat")
-        self.ent_w308_price.insert(0, str(W308_STAPLES[0]["w308_buy"] if W308_STAPLES else 37600))
+        first_price = W308_STAPLES[0]["w308_buy"] if W308_STAPLES else 37600
+        self.ent_w308_price = tk.Entry(r3, width=8, bg="#252528", fg="#f1c40f", insertbackground="#ffffff", relief="flat")
+        self.ent_w308_price.insert(0, str(first_price))
         self.ent_w308_price.pack(side="left")
-        self.ent_w308_price.bind("<KeyRelease>", self.calculate_w308_trade_validator)
+        self.ent_w308_price.bind("<KeyRelease>", self.on_w308_price_changed)
+
+        # Qty row with Quick Money Stack Allocation Buttons
+        r2 = tk.Frame(v_in, bg="#1a1a1d")
+        r2.pack(fill="x", pady=2)
+        tk.Label(r2, text="Qty:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        self.ent_w308_qty = tk.Entry(r2, width=7, bg="#252528", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        init_qty = cash_stack // first_price if first_price > 0 else 100
+        self.ent_w308_qty.insert(0, str(init_qty if init_qty > 0 else 100))
+        self.ent_w308_qty.pack(side="left", padx=(0, 2))
+        self.ent_w308_qty.bind("<KeyRelease>", self.calculate_w308_trade_validator)
+
+        btn_max = tk.Button(r2, text="Max Cash", command=lambda: self.set_w308_validator_fraction(1.0),
+                            bg="#2d2d30", fg="#2ecc71", font=("Segoe UI", 7, "bold"), relief="flat", padx=3, pady=1, cursor="hand2")
+        btn_max.pack(side="left", padx=1)
+        ToolTip(btn_max, "Set quantity to 100% of your active money stack.")
+
+        btn_half = tk.Button(r2, text="50%", command=lambda: self.set_w308_validator_fraction(0.5),
+                             bg="#2d2d30", fg="#f39c12", font=("Segoe UI", 7, "bold"), relief="flat", padx=3, pady=1, cursor="hand2")
+        btn_half.pack(side="left", padx=1)
+        ToolTip(btn_half, "Set quantity to 50% of your active money stack.")
+
+        btn_qtr = tk.Button(r2, text="25%", command=lambda: self.set_w308_validator_fraction(0.25),
+                            bg="#2d2d30", fg="#3498db", font=("Segoe UI", 7, "bold"), relief="flat", padx=3, pady=1, cursor="hand2")
+        btn_qtr.pack(side="left", padx=1)
+        ToolTip(btn_qtr, "Set quantity to 25% of your active money stack.")
 
         # Results on center-right
         v_res = tk.Frame(v_body, bg="#1a1a1d")
@@ -1849,35 +1895,43 @@ class OSRSAlchDashboard(tk.Tk):
         res_grid = tk.Frame(v_res, bg="#1a1a1d")
         res_grid.pack(fill="x")
 
-        self.lbl_v_coins = tk.Label(res_grid, text="Coins To Give: 18,800,000 gp (18.80M)", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#1a1a1d")
+        self.lbl_v_coins = tk.Label(res_grid, text="Coins To Give: -- gp", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#1a1a1d")
         self.lbl_v_coins.grid(row=0, column=0, sticky="w", padx=6, pady=1)
 
-        self.lbl_v_alch = tk.Label(res_grid, text="High Alch: 19,200,000 gp (19.20M)", font=("Segoe UI", 9), fg="#9b59b6", bg="#1a1a1d")
+        self.lbl_v_alch = tk.Label(res_grid, text="High Alch: -- gp", font=("Segoe UI", 9), fg="#9b59b6", bg="#1a1a1d")
         self.lbl_v_alch.grid(row=0, column=1, sticky="w", padx=6, pady=1)
 
-        self.lbl_v_nat = tk.Label(res_grid, text="Nature Cost: 84,000 gp (500 nats)", font=("Segoe UI", 9), fg="#3498db", bg="#1a1a1d")
+        self.lbl_v_nat = tk.Label(res_grid, text="Nature Cost: -- gp", font=("Segoe UI", 9), fg="#3498db", bg="#1a1a1d")
         self.lbl_v_nat.grid(row=1, column=0, sticky="w", padx=6, pady=1)
 
-        self.lbl_v_profit = tk.Label(res_grid, text="Net Profit: +316,000 gp (+632/ea)", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#1a1a1d")
+        self.lbl_v_profit = tk.Label(res_grid, text="Net Profit: -- gp", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#1a1a1d")
         self.lbl_v_profit.grid(row=1, column=1, sticky="w", padx=6, pady=1)
 
-        self.lbl_v_warning = tk.Label(v_res, text="⚠️ Verification: Ensure 2nd trade screen shows EXACTLY 500 noted items and EXACTLY 18,800,000 coins!",
+        self.lbl_v_budget_status = tk.Label(v_res, text="🪙 Money Stack: -- gp | Remaining Change: -- gp", font=("Segoe UI", 8, "bold"), fg="#2ecc71", bg="#1a1a1d")
+        self.lbl_v_budget_status.pack(anchor="w", padx=6, pady=(2, 0))
+
+        self.lbl_v_warning = tk.Label(v_res, text="⚠️ Verification: Ensure 2nd trade screen shows EXACT noted items and coins!",
                                       font=("Segoe UI", 8, "bold"), fg="#e67e22", bg="#1a1a1d")
-        self.lbl_v_warning.pack(anchor="w", padx=6, pady=(3, 0))
+        self.lbl_v_warning.pack(anchor="w", padx=6, pady=(2, 0))
 
         # Actions on right
         v_act = tk.Frame(v_body, bg="#1a1a1d")
         v_act.pack(side="right", fill="y", padx=(10, 0))
 
-        self.btn_copy_coins = tk.Button(v_act, text="💰 Copy Coins (18.8M)",
-                                        command=lambda: self.copy_to_clipboard("18800000", "Copied 18,800,000 coins to clipboard!"),
-                                        bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=3, cursor="hand2")
+        self.btn_copy_coins = tk.Button(v_act, text="💰 Copy Coins",
+                                        command=lambda: self.copy_to_clipboard("0", "Copied coins amount!"),
+                                        bg="#f39c12", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
         self.btn_copy_coins.pack(fill="x", pady=2)
         ToolTip(self.btn_copy_coins, "Click to copy exact coin amount to clipboard for instant pasting or typing into trade window.")
 
+        self.btn_copy_validator_ad = tk.Button(v_act, text="📢 Copy Trade Ad", command=self.copy_w308_validator_ad,
+                                               bg="#2d2d30", fg="#3498db", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
+        self.btn_copy_validator_ad.pack(fill="x", pady=2)
+        ToolTip(self.btn_copy_validator_ad, "Copy tailored chat trade ad with this exact quantity and price.")
+
         btn_log_w308 = tk.Button(v_act, text="✓ Log To Session",
                                  command=self.log_w308_trade_to_session,
-                                 bg="#27ae60", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=3, cursor="hand2")
+                                 bg="#27ae60", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
         btn_log_w308.pack(fill="x", pady=2)
         ToolTip(btn_log_w308, "Record this bulk purchase directly into your Session Tracker (no 4h GE cooldown timer added since it was a direct trade).")
 
@@ -1937,12 +1991,77 @@ class OSRSAlchDashboard(tk.Tk):
         HeadingToolTip(self.tree_w308, w308_col_tooltips)
         self.calculate_w308_trade_validator()
 
+    def set_w308_validator_fraction(self, frac):
+        try:
+            price = int(self.ent_w308_price.get().strip().replace(",", ""))
+        except Exception:
+            price = 0
+        if price <= 0:
+            return
+        cash = self.get_current_cash_stack()
+        target_qty = int((cash * frac) // price)
+        self.ent_w308_qty.delete(0, tk.END)
+        self.ent_w308_qty.insert(0, str(target_qty if target_qty > 0 else 1))
+        self.calculate_w308_trade_validator()
+
+    def on_w308_price_changed(self, event=None):
+        self.calculate_w308_trade_validator()
+
+    def copy_w308_validator_ad(self):
+        sel_name = self.var_w308_item.get()
+        item = next((it for it in W308_STAPLES if it["name"] == sel_name), None)
+        short_name = item["short"] if item else sel_name
+        try:
+            qty = int(self.ent_w308_qty.get().strip().replace(",", ""))
+        except Exception:
+            qty = 0
+        try:
+            price = int(self.ent_w308_price.get().strip().replace(",", ""))
+        except Exception:
+            price = 0
+        p_str = f"{price / 1000:.1f}k" if price % 1000 != 0 else f"{price // 1000}k"
+        ad_str = f"Buying {qty:,} {short_name} {p_str} ea Bulk - Trade Me" if qty > 0 else f"Buying {short_name} {p_str} ea Bulk - Trade Me"
+        self.copy_to_clipboard(ad_str, f"Copied custom trade ad: '{ad_str}'")
+
+    def load_w308_top_pick_to_validator(self):
+        if not self.w308_rows:
+            return
+        best = max(self.w308_rows, key=lambda r: r.get("expected_profit", 0))
+        if best and best.get("max_stack", 0) > 0:
+            self.var_w308_item.set(best["item"])
+            self.ent_w308_price.delete(0, tk.END)
+            self.ent_w308_price.insert(0, str(best["w308_price"]))
+            self.ent_w308_qty.delete(0, tk.END)
+            self.ent_w308_qty.insert(0, str(best["max_stack"]))
+            self.calculate_w308_trade_validator()
+            FloatingToast(self, "Top Stack Pick Loaded", f"Allocated 100% of money stack to {best['item']} ({best['max_stack']:,} units, +{format_gp(best['expected_profit'])} profit)!", 3000)
+
+    def copy_w308_r2h_ad(self):
+        cash = self.get_current_cash_stack()
+        price = 37600
+        qty = cash // price
+        ad_str = f"Buying {qty:,} R2H 37.6k ea Bulk - Trade Me" if qty > 0 else "Buying R2H 37.6k ea Bulk - Trade Me"
+        self.copy_to_clipboard(ad_str, f"Copied R2H buy ad: '{ad_str}'")
+
+    def copy_w308_legs_ad(self):
+        cash = self.get_current_cash_stack()
+        price = 37600
+        qty = cash // price
+        ad_str = f"Buying {qty:,} Rune Legs/Skirts 37.6k ea Bulk - Trade Me" if qty > 0 else "Buying Rune Legs/Skirts 37.6k ea Bulk - Trade Me"
+        self.copy_to_clipboard(ad_str, f"Copied Rune legs/skirts ad: '{ad_str}'")
+
     def on_w308_validator_item_selected(self, event=None):
         sel_name = self.var_w308_item.get()
         item = next((it for it in W308_STAPLES if it["name"] == sel_name), None)
         if item:
+            price = item["w308_buy"]
             self.ent_w308_price.delete(0, tk.END)
-            self.ent_w308_price.insert(0, str(item["w308_buy"]))
+            self.ent_w308_price.insert(0, str(price))
+            # Auto calculate quantity directly based on active money stack!
+            cash = self.get_current_cash_stack()
+            max_qty = cash // price if price > 0 else 0
+            self.ent_w308_qty.delete(0, tk.END)
+            self.ent_w308_qty.insert(0, str(max_qty if max_qty > 0 else 100))
         self.calculate_w308_trade_validator()
 
     def calculate_w308_trade_validator(self, event=None):
@@ -1951,6 +2070,7 @@ class OSRSAlchDashboard(tk.Tk):
         sel_name = self.var_w308_item.get()
         item = next((it for it in W308_STAPLES if it["name"] == sel_name), None)
         alch_val = item["alch"] if item else 38400
+        short_name = item["short"] if item else sel_name
 
         try:
             qty = int(self.ent_w308_qty.get().strip().replace(",", ""))
@@ -1962,7 +2082,9 @@ class OSRSAlchDashboard(tk.Tk):
         except Exception:
             price = 0
 
+        cash_stack = self.get_current_cash_stack()
         nat_cost = self.get_effective_nature_price()
+
         total_coins = qty * price
         total_alch = qty * alch_val
         total_nats = qty * nat_cost
@@ -1979,13 +2101,36 @@ class OSRSAlchDashboard(tk.Tk):
         prof_color = "#2ecc71" if net_profit >= 0 else "#e74c3c"
         self.lbl_v_profit.config(text=f"Net Profit: {net_profit:+,} gp ({profit_ea:+,}/ea)", fg=prof_color)
 
+        # Budget Check & Remaining Cash Display
+        remaining_cash = cash_stack - total_coins
+        if hasattr(self, "lbl_v_budget_status"):
+            if remaining_cash >= 0:
+                rem_str = f"{remaining_cash / 1_000_000:.2f}M" if remaining_cash >= 1_000_000 else f"{remaining_cash:,}"
+                self.lbl_v_budget_status.config(
+                    text=f"🪙 Money Stack: {format_gp(cash_stack)} | Remaining Change: {remaining_cash:,} gp ({rem_str})",
+                    fg="#2ecc71"
+                )
+            else:
+                over = abs(remaining_cash)
+                self.lbl_v_budget_status.config(
+                    text=f"⚠️ Over Budget by {over:,} gp! (Your stack: {format_gp(cash_stack)})",
+                    fg="#e74c3c"
+                )
+
         self.lbl_v_warning.config(
             text=f"⚠️ Verification: Ensure 2nd trade screen shows EXACTLY {qty:,} noted {sel_name} and EXACTLY {total_coins:,} coins!"
         )
         self.btn_copy_coins.config(
-            text=f"💰 Copy Coins ({total_coins:,})",
+            text=f"💰 Copy Coins ({c_str})",
             command=lambda: self.copy_to_clipboard(str(total_coins), f"Copied {total_coins:,} gp coins amount to clipboard!")
         )
+        if hasattr(self, "btn_copy_validator_ad"):
+            p_ad = f"{price / 1000:.1f}k" if price % 1000 != 0 else f"{price // 1000}k"
+            ad_text = f"Buying {qty:,} {short_name} {p_ad} ea Bulk - Trade Me" if qty > 0 else f"Buying {short_name} {p_ad} ea Bulk - Trade Me"
+            self.btn_copy_validator_ad.config(
+                text="📢 Copy Custom Ad",
+                command=lambda: self.copy_to_clipboard(ad_text, f"Copied trade ad: '{ad_text}'")
+            )
 
     def log_w308_trade_to_session(self):
         sel_name = self.var_w308_item.get()
@@ -2035,7 +2180,7 @@ class OSRSAlchDashboard(tk.Tk):
             return
 
         nat_cost = self.get_effective_nature_price()
-        cash_stack = self.state.config.get("cash_stack", 5000000)
+        cash_stack = self.get_current_cash_stack()
         search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
 
         rows = []
@@ -2122,6 +2267,26 @@ class OSRSAlchDashboard(tk.Tk):
                 r["chat_ad"]
             ))
 
+        # Update Money Stack Allocation banner
+        if hasattr(self, "lbl_w308_budget"):
+            self.lbl_w308_budget.config(text=f"💰 Active Money Stack: {format_gp(cash_stack)}")
+        if hasattr(self, "lbl_w308_top_pick") and self.w308_rows:
+            best = max(self.w308_rows, key=lambda r: r.get("expected_profit", 0))
+            if best and best.get("max_stack", 0) > 0:
+                self.lbl_w308_top_pick.config(
+                    text=f"🏆 Top Stack Pick: {best['max_stack']:,}x {best['item']} (+{format_gp(best['expected_profit'])} profit)"
+                )
+        # Update ad buttons with exact quantity from cash stack
+        if hasattr(self, "btn_ad_r2h"):
+            r2h_cnt = cash_stack // 37600
+            self.btn_ad_r2h.config(text=f"Copy: Buying {r2h_cnt:,} R2H 37.6k ea" if r2h_cnt > 0 else "Copy: Buying R2H 37.6k ea")
+        if hasattr(self, "btn_ad_legs"):
+            legs_cnt = cash_stack // 37600
+            self.btn_ad_legs.config(text=f"Copy: Buying {legs_cnt:,} Legs/Skirts 37.6k" if legs_cnt > 0 else "Copy: Buying Legs/Skirts 37.6k")
+
+        if hasattr(self, "calculate_w308_trade_validator"):
+            self.calculate_w308_trade_validator()
+
     def on_w308_click(self, event):
         region = self.tree_w308.identify_region(event.x, event.y)
         if region != "cell":
@@ -2150,14 +2315,14 @@ class OSRSAlchDashboard(tk.Tk):
         row = next((r for r in self.w308_rows if str(r["id"]) == str(row_id)), None)
         if not row:
             return
-        # Auto populate Trade Validator
+        # Auto populate Trade Validator with this item and its max stack directly from money stack!
         self.var_w308_item.set(row["item"])
         self.ent_w308_price.delete(0, tk.END)
         self.ent_w308_price.insert(0, str(row["w308_price"]))
         self.ent_w308_qty.delete(0, tk.END)
-        self.ent_w308_qty.insert(0, str(row["max_stack"] if row["max_stack"] > 0 else 500))
+        self.ent_w308_qty.insert(0, str(row["max_stack"] if row["max_stack"] > 0 else 1))
         self.calculate_w308_trade_validator()
-        FloatingToast(self, "Trade Validator Loaded", f"Loaded {row['item']} into Anti-Scam Bulk Trade Validator!", 2500)
+        FloatingToast(self, "Trade Validator Loaded", f"Loaded {row['item']} into Anti-Scam Bulk Trade Validator with full stack allocated!", 2500)
 
     def on_w308_right_click(self, event):
         row_id = self.tree_w308.identify_row(event.y)
