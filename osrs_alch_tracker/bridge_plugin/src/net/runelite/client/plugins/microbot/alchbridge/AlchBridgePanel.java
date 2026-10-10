@@ -329,14 +329,17 @@ public class AlchBridgePanel extends PluginPanel {
     }
 
     public void updateInventoryBatch(
-        String itemName, int qty, boolean isNoted, int haPrice,
-        int profitEa, long estSeconds, int natRunes, String fireSource, int alchsPerHour
+        List<AlchBridgePlugin.BatchItemEntry> entries, int totalQty,
+        long totalProfit, long grossGp, long estSeconds,
+        int natRunes, String fireSource, int alchsPerHour
     ) {
         SwingUtilities.invokeLater(() -> {
-            if (itemName == null || qty <= 0) {
+            if (entries == null || entries.isEmpty() || totalQty <= 0) {
                 batchTitleLabel.setText("Alch Batch (Inventory)");
                 batchItemLabel.setText("No alchable stack detected");
                 batchItemLabel.setForeground(Color.GRAY);
+                batchItemLabel.setToolTipText(null);
+                batchCard.setToolTipText(null);
                 batchRunesLabel.setText("Withdraw items to view batch ETA");
                 batchRunesLabel.setForeground(new Color(110, 110, 110));
                 batchEtaLabel.setText("Est. Completion: --");
@@ -348,21 +351,51 @@ public class AlchBridgePanel extends PluginPanel {
                 return;
             }
 
-            batchTitleLabel.setText("Alch Batch (Inventory)");
-            String notedTag = isNoted ? " (noted)" : "";
-            batchItemLabel.setText(String.format("%,dx %s%s", qty, itemName, notedTag));
-            batchItemLabel.setForeground(Color.WHITE);
+            int distinctTypes = entries.size();
+            if (distinctTypes == 1) {
+                batchTitleLabel.setText("Alch Batch (Inventory)");
+                AlchBridgePlugin.BatchItemEntry single = entries.get(0);
+                String notedTag = single.isNoted ? " (noted)" : "";
+                batchItemLabel.setText(String.format("%,dx %s%s", single.qty, single.name, notedTag));
+                batchItemLabel.setForeground(Color.WHITE);
+                batchItemLabel.setToolTipText(null);
+                batchCard.setToolTipText(null);
+
+                String profStr = totalProfit >= 0 ? ("+" + formatGp(totalProfit)) : formatGp(totalProfit);
+                String profEaStr = single.profitEa >= 0 ? ("+" + numFmt.format(single.profitEa)) : numFmt.format(single.profitEa);
+                batchProfitLabel.setText(String.format("Batch Profit: %s (%s ea)", profStr, profEaStr));
+            } else {
+                batchTitleLabel.setText(String.format("Alch Batch (%d Item Types)", distinctTypes));
+                batchItemLabel.setText(String.format("%,dx Alchables (%d types)", totalQty, distinctTypes));
+                batchItemLabel.setForeground(Color.WHITE);
+
+                StringBuilder tooltip = new StringBuilder("<html><b>Inventory Batch (")
+                    .append(String.format("%,d", totalQty)).append(" items, ").append(distinctTypes).append(" types):</b><br/>");
+                for (AlchBridgePlugin.BatchItemEntry e : entries) {
+                    String pEaStr = e.profitEa >= 0 ? ("+" + numFmt.format(e.profitEa)) : numFmt.format(e.profitEa);
+                    tooltip.append("• ").append(String.format("%,dx %s", e.qty, e.name))
+                           .append(" <font color='#aaaaaa'>(").append(pEaStr).append(" ea)</font><br/>");
+                }
+                tooltip.append("</html>");
+                batchItemLabel.setToolTipText(tooltip.toString());
+                batchCard.setToolTipText(tooltip.toString());
+
+                int avgProfitEa = (int) Math.round((double) totalProfit / (double) totalQty);
+                String profStr = totalProfit >= 0 ? ("+" + formatGp(totalProfit)) : formatGp(totalProfit);
+                String avgEaStr = avgProfitEa >= 0 ? ("+" + numFmt.format(avgProfitEa)) : numFmt.format(avgProfitEa);
+                batchProfitLabel.setText(String.format("Batch Profit: %s (avg %s ea)", profStr, avgEaStr));
+            }
 
             // Nature runes & Fire status
             String natStatus;
-            if (natRunes >= qty) {
-                natStatus = String.format("Nats: %,d/%,d [OK]", natRunes, qty);
+            if (natRunes >= totalQty) {
+                natStatus = String.format("Nats: %,d/%,d [OK]", natRunes, totalQty);
             } else {
-                int def = qty - natRunes;
-                natStatus = String.format("Nats: %,d/%,d [Need %,d]", natRunes, qty, def);
+                int def = totalQty - natRunes;
+                natStatus = String.format("Nats: %,d/%,d [Need %,d]", natRunes, totalQty, def);
             }
             batchRunesLabel.setText(String.format("%s | Fire: %s", natStatus, fireSource));
-            batchRunesLabel.setForeground(natRunes >= qty ? new Color(189, 195, 199) : new Color(255, 183, 77));
+            batchRunesLabel.setForeground(natRunes >= totalQty ? new Color(189, 195, 199) : new Color(255, 183, 77));
 
             // Est. Completion ETA
             String timeStr = formatDuration(estSeconds);
@@ -370,15 +403,9 @@ public class AlchBridgePanel extends PluginPanel {
             batchEtaLabel.setText(String.format("Est. Completion: %s (%s)", timeStr, speedTag));
             batchEtaLabel.setForeground(new Color(0, 220, 255));
 
-            // Profit & XP
-            long totalProfit = (long) profitEa * (long) qty;
-            String profStr = totalProfit >= 0 ? ("+" + formatGp(totalProfit)) : formatGp(totalProfit);
-            String profEaStr = profitEa >= 0 ? ("+" + numFmt.format(profitEa)) : numFmt.format(profitEa);
-            batchProfitLabel.setText(String.format("Batch Profit: %s (%s ea)", profStr, profEaStr));
             batchProfitLabel.setForeground(totalProfit >= 0 ? PROFIT_GREEN : new Color(231, 76, 60));
 
-            long grossGp = (long) haPrice * (long) qty;
-            long totalXp = (long) qty * 65L;
+            long totalXp = (long) totalQty * 65L;
             batchGrossLabel.setText(String.format("Magic XP: +%,d XP | Gross: %s", totalXp, formatGp(grossGp)));
             batchGrossLabel.setForeground(new Color(160, 160, 160));
         });

@@ -15,7 +15,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -128,6 +130,7 @@ public class AlchBridgePlugin extends Plugin {
     // Inventory Batch Scanning & ETA
     private String batchItemName = null;
     private int batchItemQty = 0;
+    private int batchDistinctTypes = 0;
     private boolean batchIsNoted = false;
     private int batchHaPrice = 0;
     private int batchBuyCost = 0;
@@ -138,6 +141,31 @@ public class AlchBridgePlugin extends Plugin {
     private long batchEstSeconds = 0;
     private int batchNatureRunes = 0;
     private String batchFireSource = "--";
+
+    public static class BatchItemEntry {
+        public final int unnotedId;
+        public final String name;
+        public int qty;
+        public final boolean isNoted;
+        public final int haPrice;
+        public final int buyCost;
+        public final int profitEa;
+        public long totalProfit;
+        public long grossGp;
+
+        public BatchItemEntry(int unnotedId, String name, int qty, boolean isNoted,
+                              int haPrice, int buyCost, int profitEa, long totalProfit, long grossGp) {
+            this.unnotedId = unnotedId;
+            this.name = name;
+            this.qty = qty;
+            this.isNoted = isNoted;
+            this.haPrice = haPrice;
+            this.buyCost = buyCost;
+            this.profitEa = profitEa;
+            this.totalProfit = totalProfit;
+            this.grossGp = grossGp;
+        }
+    }
 
     // Two-Way Trade Tracking (Buy & Sell)
     private int pendingTradeCoinsOffered = 0;
@@ -549,9 +577,11 @@ public class AlchBridgePlugin extends Plugin {
                 activeCostBasisOverride = null;
                 sessionProfit = calculateSessionProfit();
                 recalculateRates(System.currentTimeMillis());
+                scanInventoryBatch(null);
             } else if ("manualTradeBuyPrice".equals(event.getKey())) {
                 sessionProfit = calculateSessionProfit();
                 recalculateRates(System.currentTimeMillis());
+                scanInventoryBatch(null);
             } else if ("showBondTracker".equals(event.getKey())) {
                 bondTrackerOverride = null;
             }
@@ -713,6 +743,7 @@ public class AlchBridgePlugin extends Plugin {
         }
         sessionProfit = calculateSessionProfit();
         recalculateRates(System.currentTimeMillis());
+        scanInventoryBatch(null);
         log.info("Cost basis toggled to: {}", next.getDisplayName());
     }
 
@@ -781,6 +812,10 @@ public class AlchBridgePlugin extends Plugin {
         return batchItemQty;
     }
 
+    public int getBatchDistinctTypes() {
+        return batchDistinctTypes;
+    }
+
     public long getBatchEstSeconds() {
         return batchEstSeconds;
     }
@@ -797,13 +832,12 @@ public class AlchBridgePlugin extends Plugin {
         }
 
         int natRunes = inv.count(ItemID.NATURE_RUNE);
+        String fireSource = checkFireSource(inv);
 
-        int bestId = -1;
-        int bestUnnotedId = -1;
-        int bestQty = 0;
-        int bestHaPrice = 0;
-        String bestName = null;
-        boolean bestIsNote = false;
+        int natCost = (int) itemManager.getItemPrice(ItemID.NATURE_RUNE);
+        if (natCost <= 0) natCost = 140;
+
+        Map<Integer, BatchItemEntry> entryMap = new LinkedHashMap<>();
 
         Item[] items = inv.getItems();
         if (items != null) {
@@ -819,48 +853,86 @@ public class AlchBridgePlugin extends Plugin {
                 ItemComposition unnotedComp = (unnotedId != id) ? itemManager.getItemComposition(unnotedId) : comp;
                 if (unnotedComp == null) continue;
 
+                String name = unnotedComp.getName();
+                if (name == null) continue;
+                String lower = name.toLowerCase();
+                // Runes and pouches cannot be alched in OSRS
+                if (lower.endsWith(" rune") || lower.endsWith(" runes") || lower.contains("rune pouch")) {
+                    continue;
+                }
+
                 int haPrice = unnotedComp.getHaPrice();
-                if (haPrice > 0) {
-                    int qty = itm.getQuantity();
-                    if (qty > bestQty || (qty == bestQty && haPrice > bestHaPrice)) {
-                        bestQty = qty;
-                        bestId = id;
-                        bestUnnotedId = unnotedId;
-                        bestHaPrice = haPrice;
-                        bestName = unnotedComp.getName();
-                        bestIsNote = (comp.getNote() != -1);
-                    }
+                if (haPrice <= 0) continue;
+
+                int qty = itm.getQuantity();
+                boolean isNoted = (comp.getNote() != -1);
+                int buyCost = (int) getItemBuyCost(unnotedId);
+                int profitEa = (buyCost > 0) ? (haPrice - buyCost - natCost) : (haPrice - natCost);
+                long itemProfit = (long) profitEa * (long) qty;
+                long itemGross = (long) haPrice * (long) qty;
+
+                if (entryMap.containsKey(unnotedId)) {
+                    BatchItemEntry existing = entryMap.get(unnotedId);
+                    existing.qty += qty;
+                    existing.totalProfit += itemProfit;
+                    existing.grossGp += itemGross;
+                } else {
+                    entryMap.put(unnotedId, new BatchItemEntry(
+                        unnotedId, name, qty, isNoted, haPrice, buyCost, profitEa, itemProfit, itemGross
+                    ));
                 }
             }
         }
 
-        String fireSource = checkFireSource(inv);
+        List<BatchItemEntry> entries = new ArrayList<>(entryMap.values());
+        entries.sort((a, b) -> Integer.compare(b.qty, a.qty));
 
-        int natCost = (int) itemManager.getItemPrice(ItemID.NATURE_RUNE);
-        if (natCost <= 0) natCost = 140;
+        int totalQty = 0;
+        long totalProfit = 0;
+        long totalGross = 0;
+        for (BatchItemEntry e : entries) {
+            totalQty += e.qty;
+            totalProfit += e.totalProfit;
+            totalGross += e.grossGp;
+        }
 
-        int buyCost = bestUnnotedId > 0 ? (int) getItemBuyCost(bestUnnotedId) : 0;
-        int profitEa = (bestHaPrice > 0 && buyCost > 0) ? (bestHaPrice - buyCost - natCost) : (bestHaPrice - natCost);
-
+        int distinctCount = entries.size();
         double rate = (cachedAlchsPerHour > 600) ? (double) cachedAlchsPerHour : 1200.0;
-        long estSecs = bestQty > 0 ? Math.round((bestQty / rate) * 3600.0) : 0;
+        long estSecs = totalQty > 0 ? Math.round((totalQty / rate) * 3600.0) : 0;
 
-        this.batchItemName = bestName;
-        this.batchItemQty = bestQty;
-        this.batchIsNoted = bestIsNote;
-        this.batchHaPrice = bestHaPrice;
-        this.batchBuyCost = buyCost;
-        this.batchProfitEa = profitEa;
-        this.batchTotalProfit = (long) profitEa * (long) bestQty;
-        this.batchTotalXp = (long) bestQty * 65L;
-        this.batchGrossGp = (long) bestHaPrice * (long) bestQty;
+        this.batchItemQty = totalQty;
+        this.batchDistinctTypes = distinctCount;
         this.batchEstSeconds = estSecs;
+        this.batchTotalProfit = totalProfit;
+        this.batchGrossGp = totalGross;
+        this.batchTotalXp = (long) totalQty * 65L;
         this.batchNatureRunes = natRunes;
         this.batchFireSource = fireSource;
 
+        if (distinctCount == 0) {
+            this.batchItemName = null;
+            this.batchIsNoted = false;
+            this.batchHaPrice = 0;
+            this.batchBuyCost = 0;
+            this.batchProfitEa = 0;
+        } else if (distinctCount == 1) {
+            BatchItemEntry single = entries.get(0);
+            this.batchItemName = single.name;
+            this.batchIsNoted = single.isNoted;
+            this.batchHaPrice = single.haPrice;
+            this.batchBuyCost = single.buyCost;
+            this.batchProfitEa = single.profitEa;
+        } else {
+            this.batchItemName = String.format("Alchables (%d types)", distinctCount);
+            this.batchIsNoted = false;
+            this.batchHaPrice = totalQty > 0 ? (int) Math.round((double) totalGross / (double) totalQty) : 0;
+            this.batchBuyCost = 0;
+            this.batchProfitEa = totalQty > 0 ? (int) Math.round((double) totalProfit / (double) totalQty) : 0;
+        }
+
         if (panel != null) {
             panel.updateInventoryBatch(
-                bestName, bestQty, bestIsNote, bestHaPrice, profitEa,
+                entries, totalQty, totalProfit, totalGross,
                 estSecs, natRunes, fireSource, cachedAlchsPerHour
             );
         }
@@ -1130,6 +1202,7 @@ public class AlchBridgePlugin extends Plugin {
         cachedProfitPerHour = 0;
         cachedXpPerHour = 0;
         lastRateUpdateTime = 0;
+        batchDistinctTypes = 0;
         scanInventoryBatch(null);
         log.info("Alch session stats reset");
     }
