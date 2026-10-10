@@ -227,6 +227,32 @@ def parse_cash_input(text):
     except ValueError:
         return 0
 
+def is_activity_match(detected_act: str, target_name: str) -> bool:
+    if not detected_act or not target_name:
+        return False
+    d = detected_act.lower().strip()
+    t = target_name.lower().strip()
+    if d in t or t in d:
+        return True
+    d_tokens = set(re.findall(r"\w+", d))
+    t_tokens = set(re.findall(r"\w+", t))
+    metals = {"bronze", "iron", "steel", "silver", "gold", "mithril", "adamant", "adamantite", "rune", "runite"}
+    d_metals = {m.replace("adamantite", "adamant").replace("runite", "rune") for m in d_tokens.intersection(metals)}
+    t_metals = {m.replace("adamantite", "adamant").replace("runite", "rune") for m in t_tokens.intersection(metals)}
+    if d_metals and t_metals and d_metals != t_metals:
+        return False
+    is_d_smelt = any(w in d for w in ("smelt", "furnace")) or ("bar" in d and "smith" not in d)
+    is_t_smelt = any(w in t for w in ("smelt", "furnace", "baseline")) or ("bar" in t and not any(k in t for k in ("plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife", "2h", "chain", "skirt", "scimitar", "warhammer", "battleaxe", "mace", "claws", "shield")))
+    if is_d_smelt and is_t_smelt and d_metals and d_metals == t_metals:
+        return True
+    is_d_anvil = any(w in d for w in ("smith", "anvil", "hammer", "plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife"))
+    is_t_anvil = any(w in t for w in ("smith", "anvil", "hammer", "plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife", "scimitar", "2h"))
+    if is_d_anvil and is_t_anvil and d_metals and d_metals == t_metals:
+        overlap = d_tokens.intersection(t_tokens) - {"smithing", "smith", "bars", "bar"}
+        if overlap or not is_d_smelt:
+            return True
+    return False
+
 class FloatingToast(tk.Toplevel):
     def __init__(self, parent, title, message, duration=5000):
         super().__init__(parent)
@@ -3670,32 +3696,6 @@ class OSRSAlchDashboard(tk.Tk):
         except Exception:
             pass
         self.recalculate_guide_table()
-
-def is_activity_match(detected_act: str, target_name: str) -> bool:
-    if not detected_act or not target_name:
-        return False
-    d = detected_act.lower().strip()
-    t = target_name.lower().strip()
-    if d in t or t in d:
-        return True
-    d_tokens = set(re.findall(r"\w+", d))
-    t_tokens = set(re.findall(r"\w+", t))
-    metals = {"bronze", "iron", "steel", "silver", "gold", "mithril", "adamant", "adamantite", "rune", "runite"}
-    d_metals = {m.replace("adamantite", "adamant").replace("runite", "rune") for m in d_tokens.intersection(metals)}
-    t_metals = {m.replace("adamantite", "adamant").replace("runite", "rune") for m in t_tokens.intersection(metals)}
-    if d_metals and t_metals and d_metals != t_metals:
-        return False
-    is_d_smelt = any(w in d for w in ("smelt", "furnace")) or ("bar" in d and "smith" not in d)
-    is_t_smelt = any(w in t for w in ("smelt", "furnace", "baseline")) or ("bar" in t and not any(k in t for k in ("plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife", "2h", "chain", "skirt", "scimitar", "warhammer", "battleaxe", "mace", "claws", "shield")))
-    if is_d_smelt and is_t_smelt and d_metals and d_metals == t_metals:
-        return True
-    is_d_anvil = any(w in d for w in ("smith", "anvil", "hammer", "plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife"))
-    is_t_anvil = any(w in t for w in ("smith", "anvil", "hammer", "plate", "legs", "helm", "sword", "dagger", "axe", "dart", "knife", "scimitar", "2h"))
-    if is_d_anvil and is_t_anvil and d_metals and d_metals == t_metals:
-        overlap = d_tokens.intersection(t_tokens) - {"smithing", "smith", "bars", "bar"}
-        if overlap or not is_d_smelt:
-            return True
-    return False
 
     def _render_smithing_material_tree(self, cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open, live_rate=0, detected_activity=""):
         coal_id = 453
