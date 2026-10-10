@@ -35,4 +35,34 @@ public interface AlchBridgeConfig extends Config {
     default boolean trackAlchCasts() {
         return true;
     }
+
+    @ConfigItem(
+        keyName = "showOverlay",
+        name = "Show In-Game Overlay",
+        description = "Display live Alchs/hr and Profit/hr overlay window above inventory",
+        position = 3
+    )
+    default boolean showOverlay() {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "showProfit",
+        name = "Show Profit / Hr",
+        description = "Display estimated profit and profit/hour in the overlay",
+        position = 4
+    )
+    default boolean showProfit() {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "showMagicXp",
+        name = "Show Magic XP / Hr",
+        description = "Display Magic XP gained and XP/hour in the overlay",
+        position = 5
+    )
+    default boolean showMagicXp() {
+        return true;
+    }
 }

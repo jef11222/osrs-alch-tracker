@@ -29,6 +29,8 @@ import net.runelite.api.GameState;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.InventoryID;
+import net.runelite.api.Item;
+import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.ItemID;
 import net.runelite.api.Player;
@@ -40,18 +42,20 @@ import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.OverlayManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @PluginDescriptor(
     name = "<html>[<font color=green>A</font>] Alch Dashboard Bridge",
-    description = "Pipes live GE trades, 4h timers, cash stack, nature runes, and provides in-game Top 10 Alchs side panel",
-    tags = {"alch", "ge", "tracker", "bridge", "dashboard", "microbot", "panel"},
+    description = "Pipes live GE trades, 4h timers, cash stack, nature runes, and provides in-game Alchs/hr overlay & Top 10 Alchs side panel",
+    tags = {"alch", "ge", "tracker", "bridge", "dashboard", "microbot", "panel", "overlay"},
     enabledByDefault = true
 )
 public class AlchBridgePlugin extends Plugin {
@@ -75,6 +79,12 @@ public class AlchBridgePlugin extends Plugin {
     @Inject
     private ConfigManager configManager;
 
+    @Inject
+    private OverlayManager overlayManager;
+
+    @Inject
+    private AlchBridgeOverlay overlay;
+
     private AlchBridgePanel panel;
     private NavigationButton navButton;
 
@@ -88,6 +98,16 @@ public class AlchBridgePlugin extends Plugin {
     private int lastCoins = -1;
     private int lastNatureRunes = -1;
 
+    // Real-time In-Game Alch Session Metrics (Runs locally with 0 latency)
+    private int sessionAlchs = 0;
+    private long sessionProfit = 0;
+    private int sessionMagicXp = 0;
+    private long sessionStartTime = 0;
+    private long lastAlchTimestamp = 0;
+    private long totalActiveTimeMs = 0;
+    private String lastAlchedItem = null;
+    private final Map<Integer, Integer> lastInventoryItems = new ConcurrentHashMap<>();
+
     @Provides
     AlchBridgeConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(AlchBridgeConfig.class);
@@ -100,6 +120,11 @@ public class AlchBridgePlugin extends Plugin {
             .executor(httpExecutor)
             .connectTimeout(Duration.ofMillis(800))
             .build();
+
+        // Register in-game overlay above inventory
+        if (overlayManager != null && overlay != null) {
+            overlayManager.add(overlay);
+        }
 
         // Create in-game sidebar panel
         panel = new AlchBridgePanel(this);
@@ -124,6 +149,9 @@ public class AlchBridgePlugin extends Plugin {
 
     @Override
     protected void shutDown() {
+        if (overlayManager != null && overlay != null) {
+            overlayManager.remove(overlay);
+        }
         if (clientToolbar != null && navButton != null) {
             clientToolbar.removeNavigation(navButton);
         }
@@ -135,6 +163,8 @@ public class AlchBridgePlugin extends Plugin {
         }
         lastOfferState.clear();
         lastOfferQty.clear();
+        lastInventoryItems.clear();
+        resetSession();
         lastMagicXp = -1;
         lastCoins = -1;
         lastNatureRunes = -1;
@@ -281,30 +311,91 @@ public class AlchBridgePlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
-        if (!config.syncCashAndRunes()) {
-            return;
-        }
-
         if (event.getContainerId() == InventoryID.INVENTORY.getId()) {
             ItemContainer inv = event.getItemContainer();
+            if (inv == null) {
+                return;
+            }
+
             int coins = inv.count(ItemID.COINS_995);
             int natureRunes = inv.count(ItemID.NATURE_RUNE);
 
-            if (coins != lastCoins || natureRunes != lastNatureRunes) {
-                lastCoins = coins;
-                lastNatureRunes = natureRunes;
+            // Snapshot non-currency items: id -> quantity
+            Map<Integer, Integer> currentItems = new HashMap<>();
+            Item[] items = inv.getItems();
+            if (items != null) {
+                for (Item itm : items) {
+                    if (itm != null && itm.getId() > 0 && itm.getQuantity() > 0) {
+                        int id = itm.getId();
+                        if (id != ItemID.COINS_995 && id != ItemID.NATURE_RUNE) {
+                            currentItems.merge(id, itm.getQuantity(), Integer::sum);
+                        }
+                    }
+                }
+            }
 
+            // Real-time profit detection: coins increased after alch
+            if (lastCoins >= 0 && coins > lastCoins) {
+                int deltaCoins = coins - lastCoins;
+                int alchedId = -1;
+
+                for (Map.Entry<Integer, Integer> prev : lastInventoryItems.entrySet()) {
+                    int id = prev.getKey();
+                    int oldCount = prev.getValue();
+                    int newCount = currentItems.getOrDefault(id, 0);
+                    if (newCount == oldCount - 1) {
+                        alchedId = id;
+                        break;
+                    }
+                }
+
+                int natCost = (int) itemManager.getItemPrice(ItemID.NATURE_RUNE);
+                if (natCost <= 0) {
+                    natCost = 90;
+                }
+
+                if (alchedId > 0) {
+                    ItemComposition comp = itemManager.getItemComposition(alchedId);
+                    int unnotedId = alchedId;
+                    String itemName = comp.getName();
+                    if (comp.getNote() != -1 && comp.getLinkedNoteId() > 0) {
+                        unnotedId = comp.getLinkedNoteId();
+                        ItemComposition unnotedComp = itemManager.getItemComposition(unnotedId);
+                        if (unnotedComp != null) {
+                            itemName = unnotedComp.getName();
+                        }
+                    }
+
+                    long itemBuyPrice = itemManager.getItemPrice(unnotedId);
+                    int haPrice = deltaCoins;
+                    long profit = haPrice - itemBuyPrice - natCost;
+
+                    sessionProfit += profit;
+                    lastAlchedItem = String.format("%s (%+d gp)", itemName, profit);
+                } else {
+                    sessionProfit += (deltaCoins - natCost);
+                }
+            }
+
+            lastCoins = coins;
+            lastNatureRunes = natureRunes;
+            lastInventoryItems.clear();
+            lastInventoryItems.putAll(currentItems);
+
+            if (config.syncCashAndRunes()) {
                 Map<String, Object> data = new HashMap<>();
                 data.put("event", "INVENTORY_SYNC");
                 data.put("account", getAccountName());
                 data.put("coins", coins);
                 data.put("natureRunes", natureRunes);
                 data.put("timestamp", System.currentTimeMillis() / 1000.0);
-
                 sendPayload(data);
             }
         } else if (event.getContainerId() == InventoryID.BANK.getId()) {
             ItemContainer bank = event.getItemContainer();
+            if (bank == null) {
+                return;
+            }
             int coins = bank.count(ItemID.COINS_995);
             int natureRunes = bank.count(ItemID.NATURE_RUNE);
 
@@ -326,14 +417,8 @@ public class AlchBridgePlugin extends Plugin {
             int currentXp = event.getXp();
             if (lastMagicXp > 0) {
                 int diff = currentXp - lastMagicXp;
-                if (diff == 65) {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("event", "ALCH_CAST");
-                    data.put("account", getAccountName());
-                    data.put("xpGained", 65);
-                    data.put("magicLevel", event.getLevel());
-                    data.put("timestamp", System.currentTimeMillis() / 1000.0);
-                    sendPayload(data);
+                if (diff == 65 || diff == 31) {
+                    handleAlchCast(diff, event.getLevel());
                 }
             }
             lastMagicXp = currentXp;
@@ -350,6 +435,123 @@ public class AlchBridgePlugin extends Plugin {
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
             sendPayload(data);
         }
+    }
+
+    private void handleAlchCast(int diff, int magicLevel) {
+        long now = System.currentTimeMillis();
+        if (sessionStartTime == 0) {
+            sessionStartTime = now;
+            lastAlchTimestamp = now;
+            totalActiveTimeMs = 3000;
+        } else {
+            long gap = now - lastAlchTimestamp;
+            if (gap <= 15000) {
+                totalActiveTimeMs += gap;
+            } else {
+                totalActiveTimeMs += 3000;
+            }
+            lastAlchTimestamp = now;
+        }
+
+        sessionAlchs++;
+        sessionMagicXp += diff;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("event", "ALCH_CAST");
+        data.put("account", getAccountName());
+        data.put("xpGained", diff);
+        data.put("magicLevel", magicLevel);
+        data.put("timestamp", now / 1000.0);
+        sendPayload(data);
+    }
+
+    @Subscribe
+    public void onOverlayMenuClicked(OverlayMenuClicked event) {
+        if (event.getOverlay() == overlay) {
+            if ("Reset".equals(event.getEntry().getOption())) {
+                resetSession();
+            }
+        }
+    }
+
+    // Session Metrics Getters
+    public int getSessionAlchs() {
+        return sessionAlchs;
+    }
+
+    public long getSessionProfit() {
+        return sessionProfit;
+    }
+
+    public int getSessionMagicXp() {
+        return sessionMagicXp;
+    }
+
+    public String getLastAlchedItem() {
+        return lastAlchedItem;
+    }
+
+    public boolean isSessionActive() {
+        if (sessionAlchs == 0 || lastAlchTimestamp == 0) {
+            return false;
+        }
+        return (System.currentTimeMillis() - lastAlchTimestamp) <= 15000;
+    }
+
+    public long getActiveDurationMs() {
+        if (sessionAlchs == 0) {
+            return 0;
+        }
+        long now = System.currentTimeMillis();
+        long extra = (now - lastAlchTimestamp <= 15000) ? (now - lastAlchTimestamp) : 0;
+        return totalActiveTimeMs + extra;
+    }
+
+    public String getFormattedSessionTime() {
+        long ms = getActiveDurationMs();
+        long secs = ms / 1000;
+        long h = secs / 3600;
+        long m = (secs % 3600) / 60;
+        long s = secs % 60;
+        return String.format("%02d:%02d:%02d", h, m, s);
+    }
+
+    public int getAlchsPerHour() {
+        if (sessionAlchs == 0) {
+            return 0;
+        }
+        long ms = getActiveDurationMs();
+        double hours = Math.max(ms / 3600000.0, 3.0 / 3600.0);
+        return (int) Math.round(sessionAlchs / hours);
+    }
+
+    public long getProfitPerHour() {
+        if (sessionAlchs == 0) {
+            return 0;
+        }
+        long ms = getActiveDurationMs();
+        double hours = Math.max(ms / 3600000.0, 3.0 / 3600.0);
+        return Math.round(sessionProfit / hours);
+    }
+
+    public int getXpPerHour() {
+        if (sessionAlchs == 0) {
+            return 0;
+        }
+        long ms = getActiveDurationMs();
+        double hours = Math.max(ms / 3600000.0, 3.0 / 3600.0);
+        return (int) Math.round(sessionMagicXp / hours);
+    }
+
+    public void resetSession() {
+        sessionAlchs = 0;
+        sessionProfit = 0;
+        sessionMagicXp = 0;
+        sessionStartTime = 0;
+        lastAlchTimestamp = 0;
+        totalActiveTimeMs = 0;
+        lastAlchedItem = null;
+        log.info("Alch session stats reset");
     }
 
     private void sendAccountSnapshot() {
