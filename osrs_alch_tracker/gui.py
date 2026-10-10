@@ -686,24 +686,33 @@ class SetQuantityDialog(tk.Toplevel):
         self.destroy()
 
 W308_STAPLES = [
-    {"id": 1319, "name": "Rune 2h sword", "alch": 38400, "w308_buy": 37600, "short": "R2H"},
-    {"id": 1079, "name": "Rune platelegs", "alch": 38400, "w308_buy": 37600, "short": "R Legs"},
-    {"id": 1093, "name": "Rune plateskirt", "alch": 38400, "w308_buy": 37600, "short": "R Skirts"},
-    {"id": 1113, "name": "Rune chainbody", "alch": 30000, "w308_buy": 29350, "short": "R Chain"},
-    {"id": 1373, "name": "Rune battleaxe", "alch": 24960, "w308_buy": 24400, "short": "R Baxe"},
-    {"id": 1185, "name": "Rune sq shield", "alch": 23040, "w308_buy": 22500, "short": "R Sq"},
-    {"id": 1275, "name": "Rune pickaxe", "alch": 19200, "w308_buy": 18750, "short": "R Pick"},
-    {"id": 1333, "name": "Rune scimitar", "alch": 15360, "w308_buy": 15000, "short": "R Scim"},
-    {"id": 1289, "name": "Rune sword", "alch": 12480, "w308_buy": 12200, "short": "R Sword"},
-    {"id": 1147, "name": "Rune med helm", "alch": 11520, "w308_buy": 11250, "short": "R Med"},
-    {"id": 1213, "name": "Rune dagger", "alch": 4800, "w308_buy": 4600, "short": "R Dagger"},
-    {"id": 1123, "name": "Adamant platebody", "alch": 9984, "w308_buy": 9650, "short": "Addy Body"},
-    {"id": 1397, "name": "Air battlestaff", "alch": 9300, "w308_buy": 8950, "short": "Air Bstaff"},
-    {"id": 1393, "name": "Fire battlestaff", "alch": 9300, "w308_buy": 8950, "short": "Fire Bstaff"},
-    {"id": 2503, "name": "Black d'hide body", "alch": 8085, "w308_buy": 7750, "short": "Black Dhide"},
-    {"id": 2501, "name": "Red d'hide body", "alch": 6738, "w308_buy": 6450, "short": "Red Dhide"},
-    {"id": 2499, "name": "Blue d'hide body", "alch": 5616, "w308_buy": 5350, "short": "Blue Dhide"},
-    {"id": 1135, "name": "Green d'hide body", "alch": 4680, "w308_buy": 4450, "short": "Green Dhide"},
+    {"id": 1319, "name": "Rune 2h sword", "alch": 38400, "w308_buy": 37600, "short": "R2H", "members": False},
+    {"id": 1079, "name": "Rune platelegs", "alch": 38400, "w308_buy": 37600, "short": "R Legs", "members": False},
+    {"id": 1093, "name": "Rune plateskirt", "alch": 38400, "w308_buy": 37600, "short": "R Skirts", "members": False},
+    {"id": 1113, "name": "Rune chainbody", "alch": 30000, "w308_buy": 29350, "short": "R Chain", "members": False},
+    {"id": 1373, "name": "Rune battleaxe", "alch": 24960, "w308_buy": 24400, "short": "R Baxe", "members": False},
+    {"id": 1185, "name": "Rune sq shield", "alch": 23040, "w308_buy": 22500, "short": "R Sq", "members": False},
+    {"id": 1275, "name": "Rune pickaxe", "alch": 19200, "w308_buy": 18750, "short": "R Pick", "members": False},
+    {"id": 1333, "name": "Rune scimitar", "alch": 15360, "w308_buy": 15000, "short": "R Scim", "members": False},
+    {"id": 1289, "name": "Rune sword", "alch": 12480, "w308_buy": 12200, "short": "R Sword", "members": False},
+    {"id": 1147, "name": "Rune med helm", "alch": 11520, "w308_buy": 11250, "short": "R Med", "members": False},
+    {"id": 1213, "name": "Rune dagger", "alch": 4800, "w308_buy": 4600, "short": "R Dagger", "members": False},
+    {"id": 1123, "name": "Adamant platebody", "alch": 9984, "w308_buy": 9650, "short": "Addy Body", "members": False},
+    {"id": 1397, "name": "Air battlestaff", "alch": 9300, "w308_buy": 8950, "short": "Air Bstaff", "members": True},
+    {"id": 1393, "name": "Fire battlestaff", "alch": 9300, "w308_buy": 8950, "short": "Fire Bstaff", "members": True},
+    {"id": 1395, "name": "Water battlestaff", "alch": 9300, "w308_buy": 8900, "short": "Water Bstaff", "members": True},
+    {"id": 1399, "name": "Earth battlestaff", "alch": 9300, "w308_buy": 8850, "short": "Earth Bstaff", "members": True},
+    {"id": 2503, "name": "Black d'hide body", "alch": 8085, "w308_buy": 7750, "short": "Black Dhide", "members": True},
+    {"id": 2501, "name": "Red d'hide body", "alch": 6738, "w308_buy": 6450, "short": "Red Dhide", "members": True},
+    {"id": 2499, "name": "Blue d'hide body", "alch": 5616, "w308_buy": 5350, "short": "Blue Dhide", "members": True},
+    {"id": 1135, "name": "Green d'hide body", "alch": 4680, "w308_buy": 4450, "short": "Green Dhide", "members": True},
+    {"id": 859, "name": "Magic longbow", "alch": 1536, "w308_buy": 1200, "short": "Mage Long", "members": True},
+    {"id": 855, "name": "Yew longbow", "alch": 768, "w308_buy": 600, "short": "Yew Long", "members": True},
+    {"id": 11115, "name": "Dragonstone bracelet", "alch": 11475, "w308_buy": 11350, "short": "Dstone Brac", "members": True},
+    {"id": 11092, "name": "Diamond bracelet", "alch": 2295, "w308_buy": 1950, "short": "Dia Brac", "members": True},
+    {"id": 11085, "name": "Ruby bracelet", "alch": 1395, "w308_buy": 1100, "short": "Ruby Brac", "members": True},
+    {"id": 1215, "name": "Dragon dagger", "alch": 18000, "w308_buy": 17300, "short": "DDS", "members": True},
+    {"id": 9245, "name": "Onyx bolts (e)", "alch": 9000, "w308_buy": 8550, "short": "Onyx Bolts", "members": True},
 ]
 
 class OSRSAlchDashboard(tk.Tk):
@@ -1827,6 +1836,16 @@ class OSRSAlchDashboard(tk.Tk):
         btn_ad_multi.pack(side="left", padx=3)
         ToolTip(btn_ad_multi, "Click to copy: 'Buying R2H / Legs / Skirts 37.6k | Addy Body 9.65k Bulk - Trade Me'")
 
+        # W308 Filter: All | F2P Only | P2P Only
+        tk.Label(ad_row, text="|", fg="#444444", bg="#202023").pack(side="left", padx=4)
+        tk.Label(ad_row, text="Trades Filter:", font=("Segoe UI", 8, "bold"), fg="#888888", bg="#202023").pack(side="left", padx=(2, 2))
+        self.var_w308_mem_filter = tk.StringVar(value="all")
+        for m_lbl, m_val in (("All", "all"), ("F2P Only", "f2p"), ("P2P (Members)", "p2p")):
+            r = tk.Radiobutton(ad_row, text=m_lbl, variable=self.var_w308_mem_filter, value=m_val,
+                               command=self.on_w308_mem_filter_changed,
+                               bg="#202023", fg="#f1f1f1", selectcolor="#2d2d30", activebackground="#202023", font=("Segoe UI", 8))
+            r.pack(side="left", padx=2)
+
         # 2. Anti-Scam Bulk Trade Validator Card
         val_card = tk.Frame(container, bg="#1a1a1d", relief="solid", borderwidth=1, padx=10, pady=6)
         val_card.pack(fill="x", pady=(0, 6))
@@ -2195,6 +2214,22 @@ class OSRSAlchDashboard(tk.Tk):
             self.w308_sort_desc = True if col in ("profit_ea", "margin_pct", "max_stack", "total_spend", "expected_profit", "alch_val") else False
         self.recalculate_w308_table()
 
+    def on_w308_mem_filter_changed(self):
+        f_val = self.var_w308_mem_filter.get() if hasattr(self, "var_w308_mem_filter") else "all"
+        filtered = [
+            it for it in W308_STAPLES
+            if f_val == "all"
+            or (f_val == "f2p" and not it.get("members", False))
+            or (f_val == "p2p" and it.get("members", False))
+        ]
+        names = [it["name"] for it in filtered]
+        if hasattr(self, "cb_w308_item"):
+            self.cb_w308_item.config(values=names)
+            if names and self.var_w308_item.get() not in names:
+                self.var_w308_item.set(names[0])
+                self.on_w308_validator_item_selected()
+        self.recalculate_w308_table()
+
     def recalculate_w308_table(self):
         if not hasattr(self, "tree_w308"):
             return
@@ -2202,9 +2237,16 @@ class OSRSAlchDashboard(tk.Tk):
         nat_cost = self.get_effective_nature_price()
         cash_stack = self.get_current_cash_stack()
         search_query = self.ent_search.get().strip().lower() if hasattr(self, "ent_search") else ""
+        mem_filter = getattr(self, "var_w308_mem_filter", None)
+        f_mode = mem_filter.get() if mem_filter else "all"
 
         rows = []
         for it in W308_STAPLES:
+            is_mem = it.get("members", False)
+            if f_mode == "f2p" and is_mem:
+                continue
+            if f_mode == "p2p" and not is_mem:
+                continue
             item_name = it["name"]
             if search_query and search_query not in item_name.lower():
                 continue
@@ -3225,6 +3267,13 @@ class OSRSAlchDashboard(tk.Tk):
         self.ent_guide_margin.bind("<KeyRelease>", lambda e: self.on_guide_margin_changed())
         ToolTip(self.ent_guide_margin, "Target Safety Profit Margin per item (GP):\n• 0 gp = Exact Breakeven buy price (0 gp loss).\n• 50 / 100 / 200 gp = Max buy price needed to guarantee that profit margin.")
 
+        # Sale Price Inspector Toggle Button
+        tk.Label(guide_ctrl, text="|", fg="#444444", bg="#252528").pack(side="left", padx=4)
+        self.btn_toggle_guide_inspector = tk.Button(guide_ctrl, text="💰 Sale Price Inspector ▴", command=self.toggle_guide_inspector,
+                                                    bg="#2d2d30", fg="#f39c12", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=1, cursor="hand2")
+        self.btn_toggle_guide_inspector.pack(side="left", padx=2)
+        ToolTip(self.btn_toggle_guide_inspector, "Toggle the Manual Sale Price & Profit Inspector to test agreed/custom sale prices against live market material costs.")
+
         # Right Action Buttons
         btn_guide_batch = tk.Button(guide_ctrl, text="🛒 Add Batch to Cart", command=self.add_guide_batch_to_cart,
                                     bg="#27ae60", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=2, cursor="hand2")
@@ -3256,6 +3305,124 @@ class OSRSAlchDashboard(tk.Tk):
         self.banner_guide_xp.pack(fill="x", pady=(0, 4))
         self.lbl_guide_xp_summary = tk.Label(self.banner_guide_xp, text="🎯 Calculating progression...", font=("Segoe UI", 9), fg="#e0e0e0", bg="#202023")
         self.lbl_guide_xp_summary.pack(anchor="w")
+
+        # 2b. Manual Sale Price & Profit Inspector Card
+        self.frame_guide_inspector = tk.Frame(container, bg="#1a1a1d", relief="solid", borderwidth=1, padx=8, pady=5)
+        self.frame_guide_inspector.pack(fill="x", pady=(0, 4))
+        self.guide_inspector_visible = True
+
+        insp_head = tk.Frame(self.frame_guide_inspector, bg="#1a1a1d")
+        insp_head.pack(fill="x", pady=(0, 3))
+        tk.Label(insp_head, text="💰 Manual Sale Price & Profit Inspector", font=("Segoe UI", 9, "bold"), fg="#f39c12", bg="#1a1a1d").pack(side="left")
+        tk.Label(insp_head, text="Type your agreed sale price per item to test profitability with live market material costs!",
+                 font=("Segoe UI", 8, "italic"), fg="#888888", bg="#1a1a1d").pack(side="left", padx=(8, 0))
+        btn_close_insp = tk.Button(insp_head, text="✕ Hide", command=self.toggle_guide_inspector,
+                                   bg="#1a1a1d", fg="#888888", activeforeground="#ffffff", relief="flat", padx=4, font=("Segoe UI", 7), cursor="hand2")
+        btn_close_insp.pack(side="right")
+        ToolTip(btn_close_insp, "Hide this Inspector card (click '💰 Sale Price Inspector ▾' in top bar to reopen).")
+
+        insp_body = tk.Frame(self.frame_guide_inspector, bg="#1a1a1d")
+        insp_body.pack(fill="x")
+
+        # Left Column: Inputs
+        insp_left = tk.Frame(insp_body, bg="#1a1a1d")
+        insp_left.pack(side="left", fill="y", padx=(0, 10))
+
+        # Item Selector row
+        r_item = tk.Frame(insp_left, bg="#1a1a1d")
+        r_item.pack(fill="x", pady=1)
+        tk.Label(r_item, text="Item:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        self.var_insp_item = tk.StringVar(value="Air battlestaff")
+        insp_item_list = self.get_all_inspector_item_names()
+        self.cb_insp_item = ttk.Combobox(r_item, textvariable=self.var_insp_item, values=insp_item_list, width=17, state="readonly")
+        self.cb_insp_item.pack(side="left")
+        self.cb_insp_item.bind("<<ComboboxSelected>>", self.on_insp_item_selected)
+
+        # Selling Price row
+        r_price = tk.Frame(insp_left, bg="#1a1a1d")
+        r_price.pack(fill="x", pady=1)
+        tk.Label(r_price, text="Sell Ea:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        self.ent_insp_price = tk.Entry(r_price, width=8, bg="#252528", fg="#f1c40f", insertbackground="#ffffff", relief="flat")
+        self.ent_insp_price.insert(0, "9050")
+        self.ent_insp_price.pack(side="left")
+        self.ent_insp_price.bind("<KeyRelease>", self.calculate_guide_inspector)
+        tk.Label(r_price, text="gp", fg="#888888", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left", padx=2)
+
+        # Qty row
+        r_qty = tk.Frame(insp_left, bg="#1a1a1d")
+        r_qty.pack(fill="x", pady=1)
+        tk.Label(r_qty, text="Qty:", width=7, anchor="w", fg="#cccccc", bg="#1a1a1d", font=("Segoe UI", 8)).pack(side="left")
+        self.ent_insp_qty = tk.Entry(r_qty, width=7, bg="#252528", fg="#2ecc71", insertbackground="#ffffff", relief="flat")
+        self.ent_insp_qty.insert(0, "1000")
+        self.ent_insp_qty.pack(side="left", padx=(0, 2))
+        self.ent_insp_qty.bind("<KeyRelease>", self.calculate_guide_inspector)
+
+        for q_txt, q_val in (("100", 100), ("500", 500), ("1k", 1000), ("Max Cash", -1)):
+            btn_q = tk.Button(r_qty, text=q_txt, command=lambda v=q_val: self.set_insp_qty(v),
+                              bg="#2d2d30", fg="#3498db" if q_txt == "Max Cash" else "#cccccc", font=("Segoe UI", 7, "bold"), relief="flat", padx=3, pady=1, cursor="hand2")
+            btn_q.pack(side="left", padx=1)
+
+        # Center Column: Comparisons
+        insp_center = tk.Frame(insp_body, bg="#1a1a1d")
+        insp_center.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        self.lbl_insp_materials = tk.Label(insp_center, text="Recipe: 1x Battlestaff + 1x Air orb", font=("Segoe UI", 8), fg="#cccccc", bg="#1a1a1d", anchor="w")
+        self.lbl_insp_materials.pack(fill="x", pady=1)
+
+        c_grid = tk.Frame(insp_center, bg="#1a1a1d")
+        c_grid.pack(fill="x")
+
+        self.lbl_insp_mat_cost = tk.Label(c_grid, text="Live Mat Cost: -- gp", font=("Segoe UI", 8, "bold"), fg="#e74c3c", bg="#1a1a1d", anchor="w")
+        self.lbl_insp_mat_cost.grid(row=0, column=0, sticky="w", padx=(0, 10), pady=1)
+
+        self.lbl_insp_ge_sell = tk.Label(c_grid, text="GE Instant Net: -- gp", font=("Segoe UI", 8), fg="#3498db", bg="#1a1a1d", anchor="w")
+        self.lbl_insp_ge_sell.grid(row=0, column=1, sticky="w", padx=(0, 10), pady=1)
+
+        self.lbl_insp_alch_net = tk.Label(c_grid, text="High Alch Net: -- gp", font=("Segoe UI", 8), fg="#9b59b6", bg="#1a1a1d", anchor="w")
+        self.lbl_insp_alch_net.grid(row=1, column=0, sticky="w", padx=(0, 10), pady=1)
+
+        self.lbl_insp_w308 = tk.Label(c_grid, text="Bulk Benchmark: -- gp", font=("Segoe UI", 8), fg="#f39c12", bg="#1a1a1d", anchor="w")
+        self.lbl_insp_w308.grid(row=1, column=1, sticky="w", padx=(0, 10), pady=1)
+
+        self.lbl_insp_comparison = tk.Label(insp_center, text="Comparing your sell price with current market...", font=("Segoe UI", 8, "italic"), fg="#aaaaaa", bg="#1a1a1d", anchor="w")
+        self.lbl_insp_comparison.pack(fill="x", pady=(2, 0))
+
+        # Right Column: Results & Actions
+        insp_right = tk.Frame(insp_body, bg="#1a1a1d")
+        insp_right.pack(side="right", fill="y")
+
+        r_grid = tk.Frame(insp_right, bg="#1a1a1d")
+        r_grid.pack(fill="x")
+
+        self.lbl_insp_profit_ea = tk.Label(r_grid, text="Profit / Ea: -- gp", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#1a1a1d")
+        self.lbl_insp_profit_ea.grid(row=0, column=0, sticky="w", padx=(0, 8), pady=1)
+
+        self.lbl_insp_batch_profit = tk.Label(r_grid, text="Batch Profit: -- gp", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#1a1a1d")
+        self.lbl_insp_batch_profit.grid(row=0, column=1, sticky="w", padx=(0, 8), pady=1)
+
+        self.lbl_insp_gpxp = tk.Label(r_grid, text="GP / XP: --", font=("Segoe UI", 8, "bold"), fg="#3498db", bg="#1a1a1d")
+        self.lbl_insp_gpxp.grid(row=1, column=0, sticky="w", padx=(0, 8), pady=1)
+
+        self.lbl_insp_breakeven = tk.Label(r_grid, text="Breakeven Mat: ≤ -- gp", font=("Segoe UI", 8), fg="#cccccc", bg="#1a1a1d")
+        self.lbl_insp_breakeven.grid(row=1, column=1, sticky="w", padx=(0, 8), pady=1)
+
+        insp_actions = tk.Frame(insp_right, bg="#1a1a1d")
+        insp_actions.pack(fill="x", pady=(3, 0))
+
+        btn_insp_cart = tk.Button(insp_actions, text="🛒 Add Mats to Cart", command=self.add_insp_materials_to_cart,
+                                  bg="#27ae60", fg="#ffffff", font=("Segoe UI", 7, "bold"), relief="flat", padx=5, pady=1, cursor="hand2")
+        btn_insp_cart.pack(side="left", padx=1)
+        ToolTip(btn_insp_cart, "Add all raw materials required to produce this batch into your Shopping Cart.")
+
+        btn_insp_w308 = tk.Button(insp_actions, text="🤝 Load in W308 Hub", command=self.load_insp_into_w308,
+                                  bg="#f39c12", fg="#000000", font=("Segoe UI", 7, "bold"), relief="flat", padx=5, pady=1, cursor="hand2")
+        btn_insp_w308.pack(side="left", padx=1)
+        ToolTip(btn_insp_w308, "Switch to the World 308 Bulk Trading Hub and load this item and price into the Trade Screen Validator.")
+
+        btn_insp_ad = tk.Button(insp_actions, text="📢 Copy Sell Ad", command=self.copy_insp_trade_ad,
+                                bg="#2d2d30", fg="#3498db", font=("Segoe UI", 7, "bold"), relief="flat", padx=5, pady=1, cursor="hand2")
+        btn_insp_ad.pack(side="left", padx=1)
+        ToolTip(btn_insp_ad, "Copy ready-to-paste chat ad for selling this batch (e.g. 'Selling 1,000 Air battlestaff 9.1k ea Bulk - Trade Me').")
 
         # 3. Early Quest Skips & Shortcuts Card
         self.frame_guide_quests = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=8, pady=4)
@@ -3558,7 +3725,9 @@ class OSRSAlchDashboard(tk.Tk):
 
                 eff_alch = ((alch_val * out_qty) - nat_price) if alch_val > 0 else -99999999
                 eff_ge = (math.floor(ge_sell * 0.99) * out_qty) if ge_sell > 0 else -99999999
-                best_rev = max(eff_alch, eff_ge)
+                w308_staple = next((it_s for it_s in W308_STAPLES if it_s["id"] == item["id"] or it_s["name"].lower() == item["name"].lower()), None)
+                eff_w308 = (w308_staple["w308_buy"] * out_qty) if w308_staple else -99999999
+                best_rev = max(eff_alch, eff_ge, eff_w308)
                 if best_rev < 0:
                     best_rev = 0
 
@@ -3644,7 +3813,7 @@ class OSRSAlchDashboard(tk.Tk):
                     "eff_alch": eff_alch,
                     "eff_ge": eff_ge,
                     "best_rev": best_rev,
-                    "action_rec": "🪄 High Alch" if (eff_alch >= eff_ge and eff_alch > 0) else "🏪 Sell on GE",
+                    "action_rec": "🤝 Bulk Trade" if (eff_w308 >= eff_ge and eff_w308 >= eff_alch and eff_w308 > 0) else ("🪄 High Alch" if (eff_alch >= eff_ge and eff_alch > 0) else "🏪 Sell on GE"),
                     "chain_profit": chain_profit,
                     "diff_vs_bar": diff_vs_bar,
                     "smith_xp": smith_xp,
@@ -4146,6 +4315,9 @@ class OSRSAlchDashboard(tk.Tk):
             ge_sell = self.api.get_price(out_id, "instasell") if b.get("can_sell_ge") and out_id > 0 else 0
             profit_ge = ((int(ge_sell * 0.99) * out_qty) - mat_cost_ea) if b.get("can_sell_ge") and out_id > 0 else -99999999
 
+            w308_staple = next((it_s for it_s in W308_STAPLES if it_s["id"] == out_id or it_s["name"].lower() == b.get("item_name", "").lower()), None)
+            profit_w308 = ((w308_staple["w308_buy"] * out_qty) - mat_cost_ea) if w308_staple else -99999999
+
             if b_style == "quest":
                 action_rec = "📜 Quest Turn-in"
                 best_profit_ea = 0
@@ -4153,6 +4325,13 @@ class OSRSAlchDashboard(tk.Tk):
                 gp_xp_str = "FREE (0 GP)"
                 bracket_cost_str = "0 gp"
                 total_cost = 0
+            elif profit_w308 >= profit_ge and profit_w308 >= profit_alch and profit_w308 > -90000000:
+                action_rec = "🤝 Bulk Trade"
+                best_profit_ea = profit_w308
+                gp_per_xp = best_profit_ea / xp_ea if xp_ea > 0 else 0.0
+                gp_xp_str = f"+{gp_per_xp:.2f} GP/XP" if gp_per_xp >= 0 else f"{gp_per_xp:.2f} GP/XP"
+                total_cost = best_profit_ea * (actions_needed if actions_needed > 0 else 100)
+                bracket_cost_str = f"+{format_gp(total_cost)}" if total_cost >= 0 else f"-{format_gp(abs(total_cost))}"
             elif profit_alch >= profit_ge and b.get("can_alch"):
                 action_rec = "🪄 High Alch"
                 best_profit_ea = profit_alch
@@ -4447,6 +4626,9 @@ class OSRSAlchDashboard(tk.Tk):
             return
 
         row = next((r for r in self.guide_rows if r["id"] == row_id), None)
+        item_n = row["name"] if row else self.tree_guide.item(row_id, "text")
+        if item_n:
+            self.load_item_into_inspector(item_n)
         if not row:
             return
 
@@ -4509,6 +4691,7 @@ class OSRSAlchDashboard(tk.Tk):
         if not row:
             return
 
+        menu.add_command(label=f"💰 Inspect Custom Sale Price ({row['name']})", command=lambda n=row['name']: self.load_item_into_inspector(n))
         menu.add_command(label=f"🛒 Add Training Batch to Cart ({row['needed']:,} units)", command=self.add_guide_batch_to_cart)
         p_buy = row.get("target_buy_p", 0) or row.get("breakeven_ea", 0)
         if p_buy > 0:
@@ -4767,6 +4950,290 @@ class OSRSAlchDashboard(tk.Tk):
 
         self.recalculate_guide_table()
 
+    def get_all_inspector_item_names(self):
+        items = set()
+        for st in W308_STAPLES:
+            items.add(st["name"])
+        for r in CRAFTING_RECIPES:
+            items.add(r["name"])
+        for c in SMITHING_MATERIAL_CHAINS:
+            for it in c["items"]:
+                items.add(it["name"])
+        for sk, sdata in SKILLING_GUIDES.items():
+            for b in sdata.get("brackets", []):
+                inm = b.get("item_name", "")
+                if inm and "Quest" not in inm:
+                    items.add(inm)
+        staples_order = [s["name"] for s in W308_STAPLES]
+        remaining = sorted(list(items - set(staples_order)))
+        return staples_order + remaining
+
+    def get_recipe_for_skilling_item(self, name):
+        if not name:
+            return None
+        clean_n = name.replace("▶", "").replace("▼", "").replace("↳", "").strip()
+        if "x " in clean_n and clean_n[:3].replace("x", "").strip().isdigit():
+            clean_n = clean_n.split("x ", 1)[-1].strip()
+        base_n = clean_n.split("(")[0].strip()
+
+        for r in CRAFTING_RECIPES:
+            if r["name"].lower() in (clean_n.lower(), base_n.lower()):
+                return {
+                    "name": r["name"],
+                    "output_id": r["output_id"],
+                    "skill": "Crafting",
+                    "xp": r.get("xp", 100.0),
+                    "materials": r["materials"],
+                    "members": r.get("members", False)
+                }
+
+        for c in SMITHING_MATERIAL_CHAINS:
+            bar_id = c["bar_id"]
+            bar_name = c["bar_name"]
+            for it in c["items"]:
+                if it["name"].lower() in (clean_n.lower(), base_n.lower()):
+                    return {
+                        "name": it["name"],
+                        "output_id": it["id"],
+                        "skill": "Smithing",
+                        "xp": it["xp"],
+                        "materials": [{"id": bar_id, "name": bar_name, "qty": it["bars"]}],
+                        "members": it.get("members", False)
+                    }
+
+        for sk, sdata in SKILLING_GUIDES.items():
+            for b in sdata.get("brackets", []):
+                b_name = b.get("item_name", "") or b.get("name", "")
+                if b_name.lower() in (clean_n.lower(), base_n.lower()):
+                    return {
+                        "name": b_name,
+                        "output_id": b.get("output_id", 0),
+                        "skill": sk,
+                        "xp": b.get("xp_per_action", 50.0),
+                        "materials": b.get("materials", []),
+                        "members": b.get("members", False)
+                    }
+
+        st = next((s for s in W308_STAPLES if s["name"].lower() in (clean_n.lower(), base_n.lower())), None)
+        if st:
+            return {
+                "name": st["name"],
+                "output_id": st["id"],
+                "skill": "Skilling",
+                "xp": 100.0,
+                "materials": [],
+                "members": st.get("members", False)
+            }
+        return None
+
+    def toggle_guide_inspector(self):
+        self.guide_inspector_visible = not getattr(self, "guide_inspector_visible", True)
+        if self.guide_inspector_visible:
+            self.frame_guide_inspector.pack(fill="x", pady=(0, 4), before=self.frame_guide_quests)
+            self.btn_toggle_guide_inspector.config(text="💰 Sale Price Inspector ▴")
+            self.calculate_guide_inspector()
+        else:
+            self.frame_guide_inspector.pack_forget()
+            self.btn_toggle_guide_inspector.config(text="💰 Sale Price Inspector ▾")
+
+    def on_insp_item_selected(self, event=None):
+        item_name = self.var_insp_item.get()
+        recipe = self.get_recipe_for_skilling_item(item_name)
+        if not recipe:
+            return
+
+        out_id = recipe["output_id"]
+        st = next((s for s in W308_STAPLES if s["id"] == out_id or s["name"].lower() == item_name.lower()), None)
+        ge_sell = self.api.get_price(out_id, "instasell") or 0
+        ge_net = math.floor(ge_sell * 0.99) if ge_sell > 0 else 0
+        alch_val = self.api.mapping.get(str(out_id), {}).get("highalch", 0)
+        alch_net = max(0, alch_val - self.get_effective_nature_price())
+
+        suggested_price = st["w308_buy"] if st else (ge_net if ge_net > 0 else alch_net)
+        if suggested_price > 0:
+            self.ent_insp_price.delete(0, tk.END)
+            self.ent_insp_price.insert(0, str(suggested_price))
+
+        self.calculate_guide_inspector()
+
+    def calculate_guide_inspector(self, event=None):
+        if not hasattr(self, "lbl_insp_mat_cost"):
+            return
+        item_name = self.var_insp_item.get()
+        recipe = self.get_recipe_for_skilling_item(item_name)
+        if not recipe:
+            self.lbl_insp_materials.config(text=f"No recipe found for '{item_name}'")
+            return
+
+        try:
+            sell_price = int(self.ent_insp_price.get().strip().replace(",", ""))
+        except Exception:
+            sell_price = 0
+
+        try:
+            qty = int(self.ent_insp_qty.get().strip().replace(",", ""))
+        except Exception:
+            qty = 1000
+        if qty <= 0:
+            qty = 1
+
+        out_id = recipe["output_id"]
+        strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+
+        mat_cost_ea = 0
+        mat_parts = []
+        for m in recipe["materials"]:
+            p = self.api.get_price(m["id"], strat) or 100
+            mat_cost_ea += p * m["qty"]
+            mat_parts.append(f"{m['qty']}x {m['name']} (@ {p:,})")
+
+        rec_str = " + ".join(mat_parts) if mat_parts else "Raw materials / Base item"
+        self.lbl_insp_materials.config(text=f"Recipe: {rec_str}")
+        self.lbl_insp_mat_cost.config(text=f"Live Mat Cost: {mat_cost_ea:,} gp")
+
+        ge_sell = self.api.get_price(out_id, "instasell") or 0
+        ge_net = math.floor(ge_sell * 0.99) if ge_sell > 0 else 0
+        self.lbl_insp_ge_sell.config(text=f"GE Instant Net: {ge_net:,} gp" if ge_net > 0 else "GE Instant Net: --")
+
+        alch_val = self.api.mapping.get(str(out_id), {}).get("highalch", 0)
+        alch_net = max(0, alch_val - self.get_effective_nature_price()) if alch_val > 0 else 0
+        self.lbl_insp_alch_net.config(text=f"High Alch Net: {alch_net:,} gp" if alch_net > 0 else "High Alch Net: --")
+
+        st = next((s for s in W308_STAPLES if s["id"] == out_id or s["name"].lower() == item_name.lower()), None)
+        w308_p = st["w308_buy"] if st else 0
+        self.lbl_insp_w308.config(text=f"Bulk Benchmark: {w308_p:,} gp" if w308_p > 0 else "Bulk Benchmark: None")
+
+        profit_ea = sell_price - mat_cost_ea
+        batch_profit = profit_ea * qty
+        xp_ea = recipe["xp"]
+        gp_xp = (profit_ea / xp_ea) if xp_ea > 0 else 0.0
+
+        if profit_ea > 0:
+            p_col = "#2ecc71"
+            self.lbl_insp_profit_ea.config(text=f"Profit / Ea: +{profit_ea:,} gp", fg=p_col)
+            self.lbl_insp_batch_profit.config(text=f"Batch Profit: +{format_gp(batch_profit)}", fg=p_col)
+            self.lbl_insp_gpxp.config(text=f"GP / XP: +{gp_xp:.2f} (Profitable!)", fg=p_col)
+            comp_text = f"⭐ Profitable Training! Selling at {sell_price:,} gp nets +{profit_ea:,} gp profit/ea over material costs (+{format_gp(batch_profit)} total)!"
+        elif profit_ea == 0:
+            p_col = "#f1c40f"
+            self.lbl_insp_profit_ea.config(text="Breakeven (0 gp)", fg=p_col)
+            self.lbl_insp_batch_profit.config(text="Batch Profit: 0 gp", fg=p_col)
+            self.lbl_insp_gpxp.config(text="GP / XP: FREE (0.00)", fg=p_col)
+            comp_text = f"⚖️ 100% Free Training! Training {recipe['skill']} completely free of cost (Breakeven sell price)!"
+        else:
+            loss_ea = abs(profit_ea)
+            loss_batch = abs(batch_profit)
+            p_col = "#f39c12" if abs(gp_xp) <= 3.0 else "#e74c3c"
+            self.lbl_insp_profit_ea.config(text=f"Profit / Ea: -{loss_ea:,} gp", fg=p_col)
+            self.lbl_insp_batch_profit.config(text=f"Batch Profit: -{format_gp(loss_batch)}", fg=p_col)
+            tier_str = "Subsidized XP" if abs(gp_xp) <= 3.0 else "Costly XP"
+            self.lbl_insp_gpxp.config(text=f"GP / XP: {gp_xp:.2f} ({tier_str})", fg=p_col)
+            comp_text = f"⚡ Training Cost: Selling at {sell_price:,} gp costs {loss_ea:,} gp/ea to gain {xp_ea:.1f} XP ({abs(gp_xp):.2f} GP/XP)."
+
+        diff_vs_ge = sell_price - ge_net if ge_net > 0 else 0
+        if ge_net > 0 and diff_vs_ge > 0:
+            comp_text += f" (Beats GE instant sell by +{diff_vs_ge:,} gp/ea — saves 1% tax & 4h limit!)"
+        elif ge_net > 0 and diff_vs_ge < 0:
+            comp_text += f" (GE instant net is {abs(diff_vs_ge):,} gp higher: {ge_net:,} gp)"
+
+        self.lbl_insp_breakeven.config(text=f"Breakeven Mat: ≤ {sell_price:,} gp")
+        self.lbl_insp_comparison.config(text=comp_text)
+
+    def set_insp_qty(self, val):
+        if val == -1:
+            cash = self.get_current_cash_stack()
+            item_name = self.var_insp_item.get()
+            recipe = self.get_recipe_for_skilling_item(item_name)
+            strat = self.var_strat.get().split()[0] if hasattr(self, "var_strat") else "smart"
+            mat_cost_ea = 0
+            if recipe and recipe.get("materials"):
+                for m in recipe["materials"]:
+                    p = self.api.get_price(m["id"], strat) or 100
+                    mat_cost_ea += p * m["qty"]
+            target_qty = (cash // mat_cost_ea) if mat_cost_ea > 0 else 100
+            val = max(1, target_qty)
+        self.ent_insp_qty.delete(0, tk.END)
+        self.ent_insp_qty.insert(0, str(val))
+        self.calculate_guide_inspector()
+
+    def load_item_into_inspector(self, name):
+        recipe = self.get_recipe_for_skilling_item(name)
+        if not recipe:
+            return
+        if not getattr(self, "guide_inspector_visible", True):
+            self.toggle_guide_inspector()
+        self.var_insp_item.set(recipe["name"])
+        self.on_insp_item_selected()
+
+    def add_insp_materials_to_cart(self):
+        item_name = self.var_insp_item.get()
+        recipe = self.get_recipe_for_skilling_item(item_name)
+        if not recipe or not recipe.get("materials"):
+            FloatingToast(self, "No Recipe", f"No raw ingredients registered for '{item_name}'.", 3000)
+            return
+        try:
+            qty = int(self.ent_insp_qty.get().strip().replace(",", ""))
+        except Exception:
+            qty = 1000
+        added_parts = []
+        for m in recipe["materials"]:
+            mid_str = str(m["id"])
+            mdata = self.api.mapping.get(mid_str, {})
+            tot_req = m["qty"] * qty
+            limit = mdata.get("limit", 10000) or 10000
+            batch_amt = min(tot_req, limit)
+            self.state.cart_items[mid_str] = batch_amt
+            added_parts.append(f"{batch_amt:,}x {m['name']}")
+        self.recalculate_alch_table()
+        self.update_cart_display()
+        FloatingToast(self, "🛒 Materials Added", f"Added materials for {qty:,}x {recipe['name']}:\n" + ", ".join(added_parts), 4000)
+
+    def load_insp_into_w308(self):
+        item_name = self.var_insp_item.get()
+        recipe = self.get_recipe_for_skilling_item(item_name)
+        st = next((s for s in W308_STAPLES if s["name"].lower() == item_name.lower()), None)
+        if not st and recipe:
+            st = next((s for s in W308_STAPLES if s["id"] == recipe.get("output_id", 0)), None)
+
+        try:
+            price = int(self.ent_insp_price.get().strip().replace(",", ""))
+        except Exception:
+            price = 0
+        try:
+            qty = int(self.ent_insp_qty.get().strip().replace(",", ""))
+        except Exception:
+            qty = 1000
+
+        self.notebook.select(self.tab_hub_alch)
+        self.switch_alch_subview("w308")
+
+        if st:
+            self.var_w308_item.set(st["name"])
+            self.ent_w308_price.delete(0, tk.END)
+            self.ent_w308_price.insert(0, str(price if price > 0 else st["w308_buy"]))
+            self.ent_w308_qty.delete(0, tk.END)
+            self.ent_w308_qty.insert(0, str(qty if qty > 0 else 100))
+            self.calculate_w308_trade_validator()
+            FloatingToast(self, "W308 Hub Loaded", f"Transferred {st['name']} ({qty:,} units @ {price:,} gp) into W308 Bulk Validator!", 3000)
+        else:
+            FloatingToast(self, "W308 Hub", f"Switched to W308 Hub! (Note: '{item_name}' is not in standard W308 trade staples).", 3000)
+
+    def copy_insp_trade_ad(self):
+        item_name = self.var_insp_item.get()
+        recipe = self.get_recipe_for_skilling_item(item_name)
+        st = next((s for s in W308_STAPLES if s["name"].lower() == item_name.lower()), None)
+        short_name = st["short"] if st else item_name
+        try:
+            qty = int(self.ent_insp_qty.get().strip().replace(",", ""))
+        except Exception:
+            qty = 1000
+        try:
+            price = int(self.ent_insp_price.get().strip().replace(",", ""))
+        except Exception:
+            price = 0
+        p_str = f"{price / 1000:.1f}k" if price % 1000 != 0 else f"{price // 1000}k" if price >= 1000 else f"{price} gp"
+        ad_str = f"Selling {qty:,} {short_name} {p_str} ea Bulk - Trade Me" if qty > 0 else f"Selling {short_name} {p_str} ea Bulk - Trade Me"
+        self.copy_to_clipboard(ad_str, f"Copied custom selling ad: '{ad_str}'")
 
     def build_timers_tab(self):
         container = ttk.Frame(self.tab_timers)
