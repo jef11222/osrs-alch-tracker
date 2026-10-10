@@ -2607,9 +2607,10 @@ class OSRSAlchDashboard(tk.Tk):
         ToolTip(self.cb_bond_playtime, "Select how many hours per day you plan to actively play/alch.")
 
         tk.Label(ctrl_pace_row, text="⚡ Earning Method:", font=("Segoe UI", 9, "bold"), fg="#e0e0e0", bg="#202023").pack(side="left", padx=(0, 4))
-        self.var_bond_mode = tk.StringVar(value="F2P Pure High Alch (~780k gp/hr)")
+        self.var_bond_mode = tk.StringVar(value="⚡ Live Active Session Rate")
         self.cb_bond_mode = ttk.Combobox(ctrl_pace_row, textvariable=self.var_bond_mode,
                                          values=[
+                                             "⚡ Live Active Session Rate",
                                              "F2P Pure High Alch (~780k gp/hr)",
                                              "F2P Mixed Flipping & Alch (~600k gp/hr)",
                                              "P2P Members High Alch (~1,200k gp/hr)",
@@ -2618,7 +2619,7 @@ class OSRSAlchDashboard(tk.Tk):
                                          width=36, state="readonly")
         self.cb_bond_mode.pack(side="left", padx=(0, 6))
         self.cb_bond_mode.bind("<<ComboboxSelected>>", lambda e: self.recalculate_bond_roadmap())
-        ToolTip(self.cb_bond_mode, "Hourly gold earning benchmark based on method and membership status.")
+        ToolTip(self.cb_bond_mode, "Hourly gold earning benchmark based on live session tracking or method presets.")
 
         # Pace Result Stat Cards
         pace_cards = tk.Frame(sec3_card, bg="#202023")
@@ -2733,7 +2734,16 @@ class OSRSAlchDashboard(tk.Tk):
             active_acc = self.var_account.get() if hasattr(self, "var_account") else ""
             if active_acc and active_acc in self.state.accounts:
                 acc_data = self.state.accounts[active_acc]
-                wealth = acc_data.get("coins", 0) + acc_data.get("bank_coins", 0)
+                tot_wealth = acc_data.get("total_wealth", 0)
+                if tot_wealth > 0:
+                    wealth = tot_wealth
+                else:
+                    wealth = acc_data.get("coins", 0) + acc_data.get("bank_coins", 0) + acc_data.get("batch_gross_gp", 0)
+            elif self.state.accounts:
+                wealth = sum(
+                    acc.get("total_wealth", 0) or (acc.get("coins", 0) + acc.get("bank_coins", 0) + acc.get("batch_gross_gp", 0))
+                    for acc in self.state.accounts.values()
+                )
             if wealth == 0:
                 wealth = self.state.config.get("cash_stack", 5000000)
         if wealth == 0 and hasattr(self, "ent_cash"):
@@ -2744,7 +2754,7 @@ class OSRSAlchDashboard(tk.Tk):
             self.ent_bond_wealth.insert(0, format_gp(wealth))
             self.recalculate_bond_roadmap()
             if not silent:
-                self.show_status_message(f"Synced account wealth: {format_gp(wealth)}")
+                self.show_status_message(f"Synced account net wealth: {format_gp(wealth)}")
 
     def refresh_bond_data(self, silent=False):
         try:
@@ -2876,7 +2886,23 @@ class OSRSAlchDashboard(tk.Tk):
             daily_hrs = 12.0
 
         mode_raw = self.var_bond_mode.get() if hasattr(self, "var_bond_mode") else ""
-        if "780k" in mode_raw:
+        active_acc = self.var_account.get() if hasattr(self, "var_account") else ""
+        alchs_per_hr = 1200
+        if active_acc and hasattr(self, "state") and active_acc in self.state.accounts:
+            a_hr = self.state.accounts[active_acc].get("alchs_per_hour", 0)
+            if a_hr > 0:
+                alchs_per_hr = a_hr
+
+        if "Live" in mode_raw:
+            live_rate = 0
+            if active_acc and hasattr(self, "state") and active_acc in self.state.accounts:
+                live_rate = self.state.accounts[active_acc].get("profit_per_hour", 0)
+            if live_rate <= 0 and hasattr(self, "state") and self.state.accounts:
+                live_rate = max((acc.get("profit_per_hour", 0) for acc in self.state.accounts.values()), default=0)
+            if live_rate <= 0:
+                live_rate = getattr(self, "live_session_profit_hr", 0)
+            rate = max(100000, int(live_rate)) if live_rate > 0 else 780000
+        elif "780k" in mode_raw:
             rate = 780000
         elif "600k" in mode_raw:
             rate = 600000
@@ -2890,7 +2916,7 @@ class OSRSAlchDashboard(tk.Tk):
         needed_gp = max(0, total_goal - wealth)
         hrs_needed = (needed_gp / rate) if rate > 0 else 0.0
         days_needed = (hrs_needed / daily_hrs) if daily_hrs > 0 else 0.0
-        casts_needed = int(hrs_needed * 1200)
+        casts_needed = int(hrs_needed * alchs_per_hr)
         magic_xp = casts_needed * 65
 
         if hasattr(self, "card_bond_gp_needed"):
@@ -9106,7 +9132,19 @@ class OSRSAlchDashboard(tk.Tk):
                 }
             coins = data.get("coins")
             nats = data.get("natureRunes")
-            self.state.update_account(account, coins=coins, nature_runes=nats, world=world, is_members=is_mem, levels=levels, xp={k: v for k, v in xp.items() if v is not None}, skilling=skilling)
+            batch_gross = data.get("batchGrossGp")
+            tot_wealth = data.get("totalWealth")
+            b_item = data.get("batchItemName")
+            b_qty = data.get("batchItemQty")
+            prof_hr = data.get("profitPerHour")
+            alchs_hr = data.get("alchsPerHour")
+            self.state.update_account(
+                account, coins=coins, nature_runes=nats, world=world, is_members=is_mem,
+                levels=levels, xp={k: v for k, v in xp.items() if v is not None}, skilling=skilling,
+                batch_gross_gp=batch_gross, total_wealth=tot_wealth,
+                batch_item_name=b_item, batch_item_qty=b_qty,
+                profit_per_hour=prof_hr, alchs_per_hour=alchs_hr
+            )
             if is_active:
                 self._apply_active_account_data()
                 if hasattr(self, "lbl_bridge_status"):
@@ -9114,25 +9152,46 @@ class OSRSAlchDashboard(tk.Tk):
                 self.recalculate_all()
                 if hasattr(self, "recalculate_guide_table"):
                     self.recalculate_guide_table()
+                if hasattr(self, "recalculate_bond_roadmap"):
+                    self.recalculate_bond_roadmap()
 
         elif event_type == "INVENTORY_SYNC":
             coins = data.get("coins")
             nats = data.get("natureRunes")
-            self.state.update_account(account, coins=coins, nature_runes=nats)
+            batch_gross = data.get("batchGrossGp")
+            tot_wealth = data.get("totalWealth")
+            b_item = data.get("batchItemName")
+            b_qty = data.get("batchItemQty")
+            prof_hr = data.get("profitPerHour")
+            alchs_hr = data.get("alchsPerHour")
+            self.state.update_account(
+                account, coins=coins, nature_runes=nats,
+                batch_gross_gp=batch_gross, total_wealth=tot_wealth,
+                batch_item_name=b_item, batch_item_qty=b_qty,
+                profit_per_hour=prof_hr, alchs_per_hour=alchs_hr
+            )
             if is_active:
                 self._apply_active_account_data()
                 self.recalculate_alch_table()
+                if hasattr(self, "recalculate_bond_roadmap"):
+                    self.recalculate_bond_roadmap()
 
         elif event_type == "BANK_SYNC":
             bank_coins = data.get("bankCoins")
             bank_nats = data.get("bankNatureRunes")
+            tot_wealth = data.get("totalWealth")
             acc = self.state.accounts.get(account, {})
             if bank_coins is not None:
                 acc["bank_coins"] = bank_coins
             if bank_nats is not None:
                 acc["bank_nats"] = bank_nats
+            if tot_wealth is not None:
+                acc["total_wealth"] = tot_wealth
+            self.state.save_accounts()
             if is_active:
                 self._apply_active_account_data()
+                if hasattr(self, "recalculate_bond_roadmap"):
+                    self.recalculate_bond_roadmap()
 
         elif event_type == "SKILLS_SYNC":
             levels = {
@@ -9273,8 +9332,18 @@ class OSRSAlchDashboard(tk.Tk):
                         FloatingToast(self, f"🤝 Trade Sale [{account}]", f"Sold {qty:,}x {item_name} @ {unit_price:,} gp ea (Profit: +{format_gp(profit)})")
 
         elif event_type == "ALCH_CAST":
+            batch_gross = data.get("batchGrossGp")
+            tot_wealth = data.get("totalWealth")
+            prof_hr = data.get("profitPerHour")
+            alchs_hr = data.get("alchsPerHour")
+            self.state.update_account(
+                account, batch_gross_gp=batch_gross, total_wealth=tot_wealth,
+                profit_per_hour=prof_hr, alchs_per_hour=alchs_hr
+            )
             if is_active:
                 self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")
+                if hasattr(self, "recalculate_bond_roadmap"):
+                    self.recalculate_bond_roadmap()
 
 if __name__ == "__main__":
     app = OSRSAlchDashboard()

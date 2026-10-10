@@ -138,7 +138,9 @@ class AppState:
         except Exception as e:
             print(f"Error saving accounts: {e}")
 
-    def update_account(self, name, coins=None, nature_runes=None, world=None, is_members=None, levels=None, xp=None, skilling=None):
+    def update_account(self, name, coins=None, nature_runes=None, world=None, is_members=None, levels=None, xp=None, skilling=None,
+                       batch_gross_gp=None, total_wealth=None, batch_item_name=None, batch_item_qty=None,
+                       profit_per_hour=None, alchs_per_hour=None):
         if not name or name == "Unknown":
             return
         if name not in self.accounts:
@@ -169,6 +171,18 @@ class AppState:
             acc.setdefault("xp", {}).update(xp)
         if skilling:
             acc.setdefault("skilling", {}).update(skilling)
+        if batch_gross_gp is not None:
+            acc["batch_gross_gp"] = max(0, int(batch_gross_gp))
+        if total_wealth is not None:
+            acc["total_wealth"] = max(0, int(total_wealth))
+        if batch_item_name is not None:
+            acc["batch_item_name"] = str(batch_item_name)
+        if batch_item_qty is not None:
+            acc["batch_item_qty"] = max(0, int(batch_item_qty))
+        if profit_per_hour is not None:
+            acc["profit_per_hour"] = int(profit_per_hour)
+        if alchs_per_hour is not None:
+            acc["alchs_per_hour"] = int(alchs_per_hour)
         self.save_accounts()
 
     def add_timer(self, item_id, item_name, qty, account="Default"):

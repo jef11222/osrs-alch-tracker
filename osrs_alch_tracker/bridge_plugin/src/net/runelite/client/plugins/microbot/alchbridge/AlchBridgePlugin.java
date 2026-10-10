@@ -515,6 +515,12 @@ public class AlchBridgePlugin extends Plugin {
                 data.put("account", getAccountName());
                 data.put("coins", coins);
                 data.put("natureRunes", natureRunes);
+                data.put("totalWealth", getTotalWealth());
+                data.put("batchGrossGp", batchGrossGp);
+                data.put("batchItemName", batchItemName != null ? batchItemName : "");
+                data.put("batchItemQty", batchItemQty);
+                data.put("profitPerHour", getProfitPerHour());
+                data.put("alchsPerHour", getAlchsPerHour());
                 data.put("timestamp", System.currentTimeMillis() / 1000.0);
                 sendPayload(data);
             }
@@ -535,6 +541,7 @@ public class AlchBridgePlugin extends Plugin {
             data.put("account", getAccountName());
             data.put("bankCoins", coins);
             data.put("bankNatureRunes", natureRunes);
+            data.put("totalWealth", getTotalWealth());
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
             sendPayload(data);
@@ -949,6 +956,10 @@ public class AlchBridgePlugin extends Plugin {
         data.put("account", getAccountName());
         data.put("xpGained", diff);
         data.put("magicLevel", magicLevel);
+        data.put("totalWealth", getTotalWealth());
+        data.put("batchGrossGp", batchGrossGp);
+        data.put("profitPerHour", getProfitPerHour());
+        data.put("alchsPerHour", getAlchsPerHour());
         data.put("timestamp", now / 1000.0);
         sendPayload(data);
     }
@@ -1568,6 +1579,7 @@ public class AlchBridgePlugin extends Plugin {
             ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
             if (inv != null) {
                 detectSkillingFromInventory(inv);
+                scanInventoryBatch(inv);
             }
 
             lastSkillXpMap.put(Skill.CRAFTING, client.getSkillExperience(Skill.CRAFTING));
@@ -1607,6 +1619,12 @@ public class AlchBridgePlugin extends Plugin {
                 data.put("coins", inv.count(ItemID.COINS_995));
                 data.put("natureRunes", inv.count(ItemID.NATURE_RUNE));
             }
+            data.put("totalWealth", getTotalWealth());
+            data.put("batchGrossGp", batchGrossGp);
+            data.put("batchItemName", batchItemName != null ? batchItemName : "");
+            data.put("batchItemQty", batchItemQty);
+            data.put("profitPerHour", getProfitPerHour());
+            data.put("alchsPerHour", getAlchsPerHour());
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
             sendPayload(data);
