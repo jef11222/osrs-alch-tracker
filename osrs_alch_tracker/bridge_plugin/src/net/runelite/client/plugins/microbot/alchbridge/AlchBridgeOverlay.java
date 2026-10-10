@@ -76,6 +76,17 @@ public class AlchBridgeOverlay extends OverlayPanel {
             .rightColor(new Color(0, 220, 255))
             .build());
 
+        // Remaining Batch ETA (if items detected in inventory)
+        if (plugin.getBatchItemQty() > 0) {
+            long remSec = plugin.getBatchEstSeconds();
+            String timeStr = formatDuration(remSec);
+            panelComponent.getChildren().add(LineComponent.builder()
+                .left("Batch ETA:")
+                .right(String.format("%s (%,d)", timeStr, plugin.getBatchItemQty()))
+                .rightColor(new Color(255, 183, 77)) // Soft Orange
+                .build());
+        }
+
         // Cost Basis Mode (W308 Trade vs Live GE)
         CostBasisMode mode = plugin.getCostBasisMode();
         String basisText;
@@ -176,6 +187,20 @@ public class AlchBridgeOverlay extends OverlayPanel {
         }
 
         return super.render(graphics);
+    }
+
+    private String formatDuration(long seconds) {
+        if (seconds <= 0) return "0s";
+        long h = seconds / 3600;
+        long m = (seconds % 3600) / 60;
+        long s = seconds % 60;
+        if (h > 0) {
+            return String.format("%dh %02dm", h, m);
+        } else if (m > 0) {
+            return String.format("%dm %02ds", m, s);
+        } else {
+            return String.format("%ds", s);
+        }
     }
 
     private String formatGp(long amount) {

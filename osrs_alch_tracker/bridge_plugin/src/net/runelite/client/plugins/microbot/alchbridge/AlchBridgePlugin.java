@@ -125,6 +125,20 @@ public class AlchBridgePlugin extends Plugin {
     private int lastAlchedItemId = -1;
     private final Map<Integer, Integer> liveTrackerPrices = new ConcurrentHashMap<>();
 
+    // Inventory Batch Scanning & ETA
+    private String batchItemName = null;
+    private int batchItemQty = 0;
+    private boolean batchIsNoted = false;
+    private int batchHaPrice = 0;
+    private int batchBuyCost = 0;
+    private int batchProfitEa = 0;
+    private long batchTotalProfit = 0;
+    private long batchTotalXp = 0;
+    private long batchGrossGp = 0;
+    private long batchEstSeconds = 0;
+    private int batchNatureRunes = 0;
+    private String batchFireSource = "--";
+
     // Two-Way Trade Tracking (Buy & Sell)
     private int pendingTradeCoinsOffered = 0;
     private int pendingTradeCoinsReceived = 0;
@@ -179,6 +193,7 @@ public class AlchBridgePlugin extends Plugin {
 
         if (client.getGameState() == GameState.LOGGED_IN) {
             sendAccountSnapshot();
+            scanInventoryBatch(null);
         }
     }
 
@@ -437,6 +452,7 @@ public class AlchBridgePlugin extends Plugin {
             lastNatureRunes = natureRunes;
             lastInventoryItems.clear();
             lastInventoryItems.putAll(currentItems);
+            scanInventoryBatch(inv);
 
             if (config.syncCashAndRunes()) {
                 Map<String, Object> data = new HashMap<>();
@@ -507,6 +523,8 @@ public class AlchBridgePlugin extends Plugin {
                 pendingTradeItemsReceived.putAll(map);
                 lastTradeActivityTime = System.currentTimeMillis();
             }
+        } else if (event.getContainerId() == InventoryID.EQUIPMENT.getId()) {
+            scanInventoryBatch(null);
         }
     }
 
@@ -594,6 +612,7 @@ public class AlchBridgePlugin extends Plugin {
 
         // Immediately recalculate rates on cast completion
         recalculateRates(now);
+        scanInventoryBatch(null);
 
         Map<String, Object> data = new HashMap<>();
         data.put("event", "ALCH_CAST");
@@ -752,6 +771,132 @@ public class AlchBridgePlugin extends Plugin {
 
     public long getTotalCoins() {
         return Math.max(0L, (long) lastCoins) + Math.max(0L, (long) lastBankCoins);
+    }
+
+    public String getBatchItemName() {
+        return batchItemName;
+    }
+
+    public int getBatchItemQty() {
+        return batchItemQty;
+    }
+
+    public long getBatchEstSeconds() {
+        return batchEstSeconds;
+    }
+
+    public void scanInventoryBatch(ItemContainer inv) {
+        if (client == null || client.getGameState() != GameState.LOGGED_IN) {
+            return;
+        }
+        if (inv == null) {
+            inv = client.getItemContainer(InventoryID.INVENTORY);
+        }
+        if (inv == null) {
+            return;
+        }
+
+        int natRunes = inv.count(ItemID.NATURE_RUNE);
+
+        int bestId = -1;
+        int bestUnnotedId = -1;
+        int bestQty = 0;
+        int bestHaPrice = 0;
+        String bestName = null;
+        boolean bestIsNote = false;
+
+        Item[] items = inv.getItems();
+        if (items != null) {
+            for (Item itm : items) {
+                if (itm == null || itm.getId() <= 0 || itm.getQuantity() <= 0) continue;
+                int id = itm.getId();
+                if (id == ItemID.COINS_995 || id == ItemID.NATURE_RUNE || id == ItemID.FIRE_RUNE) continue;
+
+                ItemComposition comp = itemManager.getItemComposition(id);
+                if (comp == null) continue;
+
+                int unnotedId = (comp.getNote() != -1 && comp.getLinkedNoteId() > 0) ? comp.getLinkedNoteId() : id;
+                ItemComposition unnotedComp = (unnotedId != id) ? itemManager.getItemComposition(unnotedId) : comp;
+                if (unnotedComp == null) continue;
+
+                int haPrice = unnotedComp.getHaPrice();
+                if (haPrice > 0) {
+                    int qty = itm.getQuantity();
+                    if (qty > bestQty || (qty == bestQty && haPrice > bestHaPrice)) {
+                        bestQty = qty;
+                        bestId = id;
+                        bestUnnotedId = unnotedId;
+                        bestHaPrice = haPrice;
+                        bestName = unnotedComp.getName();
+                        bestIsNote = (comp.getNote() != -1);
+                    }
+                }
+            }
+        }
+
+        String fireSource = checkFireSource(inv);
+
+        int natCost = (int) itemManager.getItemPrice(ItemID.NATURE_RUNE);
+        if (natCost <= 0) natCost = 140;
+
+        int buyCost = bestUnnotedId > 0 ? (int) getItemBuyCost(bestUnnotedId) : 0;
+        int profitEa = (bestHaPrice > 0 && buyCost > 0) ? (bestHaPrice - buyCost - natCost) : (bestHaPrice - natCost);
+
+        double rate = (cachedAlchsPerHour > 600) ? (double) cachedAlchsPerHour : 1200.0;
+        long estSecs = bestQty > 0 ? Math.round((bestQty / rate) * 3600.0) : 0;
+
+        this.batchItemName = bestName;
+        this.batchItemQty = bestQty;
+        this.batchIsNoted = bestIsNote;
+        this.batchHaPrice = bestHaPrice;
+        this.batchBuyCost = buyCost;
+        this.batchProfitEa = profitEa;
+        this.batchTotalProfit = (long) profitEa * (long) bestQty;
+        this.batchTotalXp = (long) bestQty * 65L;
+        this.batchGrossGp = (long) bestHaPrice * (long) bestQty;
+        this.batchEstSeconds = estSecs;
+        this.batchNatureRunes = natRunes;
+        this.batchFireSource = fireSource;
+
+        if (panel != null) {
+            panel.updateInventoryBatch(
+                bestName, bestQty, bestIsNote, bestHaPrice, profitEa,
+                estSecs, natRunes, fireSource, cachedAlchsPerHour
+            );
+        }
+    }
+
+    private String checkFireSource(ItemContainer inv) {
+        if (client == null) return "--";
+        ItemContainer equip = client.getItemContainer(InventoryID.EQUIPMENT);
+        if (equip != null) {
+            Item[] eqItems = equip.getItems();
+            if (eqItems != null) {
+                for (Item itm : eqItems) {
+                    if (itm != null && itm.getId() > 0) {
+                        ItemComposition comp = itemManager.getItemComposition(itm.getId());
+                        if (comp != null) {
+                            String name = comp.getName().toLowerCase();
+                            if (name.contains("fire staff") || name.contains("staff of fire") ||
+                                name.contains("fire battlestaff") || name.contains("mystic fire") ||
+                                name.contains("lava") || name.contains("smoke") || name.contains("steam") ||
+                                name.contains("tome of fire") || name.contains("bryophyta")) {
+                                return "Staff [OK]";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (inv != null) {
+            int fireRunes = inv.count(ItemID.FIRE_RUNE);
+            if (fireRunes >= 5) {
+                return String.format("%,d Fire [OK]", fireRunes);
+            }
+        }
+
+        return "Missing [!]";
     }
 
     public long getBondPrice() {
@@ -985,6 +1130,7 @@ public class AlchBridgePlugin extends Plugin {
         cachedProfitPerHour = 0;
         cachedXpPerHour = 0;
         lastRateUpdateTime = 0;
+        scanInventoryBatch(null);
         log.info("Alch session stats reset");
     }
 

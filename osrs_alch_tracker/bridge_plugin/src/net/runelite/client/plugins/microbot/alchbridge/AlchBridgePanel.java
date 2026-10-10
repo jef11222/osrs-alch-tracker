@@ -39,6 +39,15 @@ public class AlchBridgePanel extends PluginPanel {
     private final JPanel listContainer = new JPanel();
     private final NumberFormat numFmt = NumberFormat.getInstance(Locale.US);
 
+    // Inventory Batch UI Elements
+    private final JPanel batchCard = new JPanel();
+    private final JLabel batchTitleLabel = new JLabel("Alch Batch (Inventory)");
+    private final JLabel batchItemLabel = new JLabel("No alchable stack detected");
+    private final JLabel batchRunesLabel = new JLabel("Withdraw items to view batch ETA");
+    private final JLabel batchEtaLabel = new JLabel("Est. Completion: --");
+    private final JLabel batchProfitLabel = new JLabel("Batch Profit: --");
+    private final JLabel batchGrossLabel = new JLabel("Magic XP: -- | Gross: --");
+
     public AlchBridgePanel(AlchBridgePlugin plugin) {
         super(false);
         setLayout(new BorderLayout());
@@ -81,7 +90,15 @@ public class AlchBridgePanel extends PluginPanel {
         headerPanel.add(bannerLabel);
         headerPanel.add(btnRow);
 
-        add(headerPanel, BorderLayout.NORTH);
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        topContainer.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        topContainer.add(headerPanel);
+        topContainer.add(Box.createVerticalStrut(6));
+        topContainer.add(createBatchCard());
+        topContainer.add(Box.createVerticalStrut(4));
+
+        add(topContainer, BorderLayout.NORTH);
 
         // Content List Container
         listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
@@ -259,6 +276,137 @@ public class AlchBridgePanel extends PluginPanel {
 
         bannerLabel.setText("✓ " + bannerMsg);
         bannerLabel.setForeground(PROFIT_GREEN);
+    }
+
+    private JPanel createBatchCard() {
+        batchCard.setLayout(new BoxLayout(batchCard, BoxLayout.Y_AXIS));
+        batchCard.setBackground(CARD_BG);
+        batchCard.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(0, 6, 0, 6),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(55, 55, 62), 1),
+                new EmptyBorder(7, 8, 7, 8)
+            )
+        ));
+
+        batchTitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        batchTitleLabel.setForeground(GOLD);
+        batchTitleLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        batchItemLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        batchItemLabel.setForeground(Color.LIGHT_GRAY);
+        batchItemLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        batchRunesLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        batchRunesLabel.setForeground(new Color(170, 170, 170));
+        batchRunesLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        batchEtaLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        batchEtaLabel.setForeground(Color.GRAY);
+        batchEtaLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        batchProfitLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        batchProfitLabel.setForeground(Color.GRAY);
+        batchProfitLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        batchGrossLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        batchGrossLabel.setForeground(new Color(130, 130, 130));
+        batchGrossLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        batchCard.add(batchTitleLabel);
+        batchCard.add(Box.createVerticalStrut(3));
+        batchCard.add(batchItemLabel);
+        batchCard.add(Box.createVerticalStrut(2));
+        batchCard.add(batchRunesLabel);
+        batchCard.add(Box.createVerticalStrut(3));
+        batchCard.add(batchEtaLabel);
+        batchCard.add(Box.createVerticalStrut(2));
+        batchCard.add(batchProfitLabel);
+        batchCard.add(Box.createVerticalStrut(2));
+        batchCard.add(batchGrossLabel);
+
+        return batchCard;
+    }
+
+    public void updateInventoryBatch(
+        String itemName, int qty, boolean isNoted, int haPrice,
+        int profitEa, long estSeconds, int natRunes, String fireSource, int alchsPerHour
+    ) {
+        SwingUtilities.invokeLater(() -> {
+            if (itemName == null || qty <= 0) {
+                batchTitleLabel.setText("Alch Batch (Inventory)");
+                batchItemLabel.setText("No alchable stack detected");
+                batchItemLabel.setForeground(Color.GRAY);
+                batchRunesLabel.setText("Withdraw items to view batch ETA");
+                batchRunesLabel.setForeground(new Color(110, 110, 110));
+                batchEtaLabel.setText("Est. Completion: --");
+                batchEtaLabel.setForeground(Color.GRAY);
+                batchProfitLabel.setText("Batch Profit: --");
+                batchProfitLabel.setForeground(Color.GRAY);
+                batchGrossLabel.setText("Magic XP: -- | Gross: --");
+                batchGrossLabel.setForeground(new Color(110, 110, 110));
+                return;
+            }
+
+            batchTitleLabel.setText("Alch Batch (Inventory)");
+            String notedTag = isNoted ? " (noted)" : "";
+            batchItemLabel.setText(String.format("%,dx %s%s", qty, itemName, notedTag));
+            batchItemLabel.setForeground(Color.WHITE);
+
+            // Nature runes & Fire status
+            String natStatus;
+            if (natRunes >= qty) {
+                natStatus = String.format("Nats: %,d/%,d [OK]", natRunes, qty);
+            } else {
+                int def = qty - natRunes;
+                natStatus = String.format("Nats: %,d/%,d [Need %,d]", natRunes, qty, def);
+            }
+            batchRunesLabel.setText(String.format("%s | Fire: %s", natStatus, fireSource));
+            batchRunesLabel.setForeground(natRunes >= qty ? new Color(189, 195, 199) : new Color(255, 183, 77));
+
+            // Est. Completion ETA
+            String timeStr = formatDuration(estSeconds);
+            String speedTag = (alchsPerHour > 600) ? String.format("@ %,d/hr", alchsPerHour) : "@ 1.2k/hr";
+            batchEtaLabel.setText(String.format("Est. Completion: %s (%s)", timeStr, speedTag));
+            batchEtaLabel.setForeground(new Color(0, 220, 255));
+
+            // Profit & XP
+            long totalProfit = (long) profitEa * (long) qty;
+            String profStr = totalProfit >= 0 ? ("+" + formatGp(totalProfit)) : formatGp(totalProfit);
+            String profEaStr = profitEa >= 0 ? ("+" + numFmt.format(profitEa)) : numFmt.format(profitEa);
+            batchProfitLabel.setText(String.format("Batch Profit: %s (%s ea)", profStr, profEaStr));
+            batchProfitLabel.setForeground(totalProfit >= 0 ? PROFIT_GREEN : new Color(231, 76, 60));
+
+            long grossGp = (long) haPrice * (long) qty;
+            long totalXp = (long) qty * 65L;
+            batchGrossLabel.setText(String.format("Magic XP: +%,d XP | Gross: %s", totalXp, formatGp(grossGp)));
+            batchGrossLabel.setForeground(new Color(160, 160, 160));
+        });
+    }
+
+    private String formatDuration(long seconds) {
+        if (seconds <= 0) return "0s";
+        long h = seconds / 3600;
+        long m = (seconds % 3600) / 60;
+        long s = seconds % 60;
+        if (h > 0) {
+            return String.format("%dh %02dm", h, m);
+        } else if (m > 0) {
+            return String.format("%dm %02ds", m, s);
+        } else {
+            return String.format("%ds", s);
+        }
+    }
+
+    private String formatGp(long amount) {
+        long abs = Math.abs(amount);
+        if (abs >= 1_000_000) {
+            return String.format("%.2fM gp", amount / 1_000_000.0);
+        } else if (abs >= 1_000) {
+            return String.format("%.1fk gp", amount / 1_000.0);
+        } else {
+            return String.format("%,d gp", amount);
+        }
     }
 
     private long parseLong(Object obj) {
