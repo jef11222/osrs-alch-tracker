@@ -700,6 +700,7 @@ class OSRSAlchDashboard(tk.Tk):
         self.alch_rows = []
         self.craft_rows = []
         self.rec_rows = []
+        self.bond_data = {}
         self.is_fetching = False
         self.seconds_until_refresh = self.state.config.get("auto_refresh_mins", 2) * 60
 
@@ -879,7 +880,12 @@ class OSRSAlchDashboard(tk.Tk):
         self.notebook.add(self.tab_overnight, text="🌙 Overnight Planner")
         self.build_overnight_tab()
 
-        # Tab 4: Craft & Alch
+        # Tab 4: Bond Roadmap & Sustainer
+        self.tab_bond = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_bond, text="🎟️ Bond Roadmap")
+        self.build_bond_tab()
+
+        # Tab 5: Craft & Alch
         self.tab_craft = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_craft, text="🔨 Craft & Alch")
         self.build_craft_tab()
@@ -1560,6 +1566,506 @@ class OSRSAlchDashboard(tk.Tk):
             "#11": "Night Market Analysis:\nDetailed rationale based on 48h/7d timeseries market behavior."
         }
         HeadingToolTip(self.tree_overnight, overnight_col_tooltips)
+
+    def build_bond_tab(self):
+        container = ttk.Frame(self.tab_bond)
+        container.pack(fill="both", expand=True, padx=6, pady=4)
+
+        # 1. Header & Market Strategy Banner
+        self.bond_banner_card = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=10, pady=6)
+        self.bond_banner_card.pack(fill="x", pady=(2, 6))
+
+        b_top = tk.Frame(self.bond_banner_card, bg="#202023")
+        b_top.pack(fill="x")
+
+        lbl_b_title = tk.Label(b_top, text="🎟️ Old School Bond Roadmap & 14-Day Freedom Engine", font=("Segoe UI", 11, "bold"), fg="#f1c40f", bg="#202023")
+        lbl_b_title.pack(side="left", padx=(0, 10))
+        ToolTip(lbl_b_title, "Track live Old School Bond market prices (Item ID 13190), plan your transition to Members,\nand simulate perpetual membership sustainment using High Alchemy profits.")
+
+        lbl_b_badge = tk.Label(b_top, text="⚡ Live OSRS Wiki Ticker", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#202023")
+        lbl_b_badge.pack(side="left", padx=(0, 12))
+
+        btn_refresh_bond = tk.Button(b_top, text="🔄 Refresh Bond Market", command=self.refresh_bond_data,
+                                     bg="#3498db", fg="#ffffff", font=("Segoe UI", 8, "bold"), relief="flat", padx=8, pady=1, cursor="hand2")
+        btn_refresh_bond.pack(side="right")
+        ToolTip(btn_refresh_bond, "Refresh live bond prices and timeseries analysis directly from the OSRS Wiki API.")
+
+        self.lbl_bond_tip = tk.Label(
+            self.bond_banner_card,
+            text="💡 Overnight Dip Sniping: Never insta-buy a bond during daytime peak hours. Bidding at the overnight valley (01:00–06:00 UTC) saves ~300k–550k gp compared to insta-buying!",
+            font=("Segoe UI", 9, "italic"), fg="#e0e0e0", bg="#202023"
+        )
+        self.lbl_bond_tip.pack(anchor="w", pady=(4, 0))
+
+        # Main scrollable canvas so everything fits on any resolution
+        canvas = tk.Canvas(container, bg="#1e1e1e", highlightthickness=0)
+        v_scroll = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        scroll_content = tk.Frame(canvas, bg="#1e1e1e")
+
+        scroll_content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas_win = canvas.create_window((0, 0), window=scroll_content, anchor="nw")
+        def _on_bond_canvas_resize(e):
+            canvas.itemconfig(canvas_win, width=e.width)
+        canvas.bind("<Configure>", _on_bond_canvas_resize)
+        canvas.configure(yscrollcommand=v_scroll.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        v_scroll.pack(side="right", fill="y")
+
+        # -------------------------------------------------------------
+        # Section 1: Live Bond Ticker & Overnight Dip Sniper Cards
+        # -------------------------------------------------------------
+        sec1_frame = tk.Frame(scroll_content, bg="#1e1e1e")
+        sec1_frame.pack(fill="x", pady=(0, 6))
+
+        # 4 Stat Cards
+        cards_row = tk.Frame(sec1_frame, bg="#1e1e1e")
+        cards_row.pack(fill="x")
+
+        # Card 1: Insta-Buy (Ask)
+        c1 = tk.Frame(cards_row, bg="#252528", relief="solid", borderwidth=1, padx=12, pady=8)
+        c1.pack(side="left", expand=True, fill="both", padx=4)
+        tk.Label(c1, text="🛒 Insta-Buy (Ask)", font=("Segoe UI", 9), fg="#aaaaaa", bg="#252528").pack(anchor="w")
+        self.card_bond_ask = tk.Label(c1, text="-- gp", font=("Segoe UI", 13, "bold"), fg="#e74c3c", bg="#252528")
+        self.card_bond_ask.pack(anchor="w", pady=(2, 0))
+        ToolTip(c1, "Current Grand Exchange Insta-Buy price (Lowest active sell offer).\nAvoid buying at this price unless you need immediate membership!")
+
+        # Card 2: Patient Dip Bid (Recommended)
+        c2 = tk.Frame(cards_row, bg="#252528", relief="solid", borderwidth=1, padx=12, pady=8)
+        c2.pack(side="left", expand=True, fill="both", padx=4)
+        c2_top = tk.Frame(c2, bg="#252528")
+        c2_top.pack(fill="x")
+        tk.Label(c2_top, text="🎯 Patient Dip Bid", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#252528").pack(side="left")
+        btn_copy_bid = tk.Button(c2_top, text="📋 Copy Bid", command=self.copy_bond_bid,
+                                 bg="#2ecc71", fg="#000000", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=0, cursor="hand2")
+        btn_copy_bid.pack(side="right")
+        ToolTip(btn_copy_bid, "Copy the recommended patient bond bid price to clipboard for easy pasting into the GE offer window.")
+        self.card_bond_bid = tk.Label(c2, text="-- gp", font=("Segoe UI", 13, "bold"), fg="#2ecc71", bg="#252528")
+        self.card_bond_bid.pack(anchor="w", pady=(2, 0))
+        ToolTip(c2, "Recommended patient GE buy bid based on 48h percentile dip analysis.\nLeave this offer active overnight to catch undercut dumps!")
+
+        # Card 3: Patient Savings
+        c3 = tk.Frame(cards_row, bg="#252528", relief="solid", borderwidth=1, padx=12, pady=8)
+        c3.pack(side="left", expand=True, fill="both", padx=4)
+        tk.Label(c3, text="💰 Patient Bid Savings", font=("Segoe UI", 9), fg="#aaaaaa", bg="#252528").pack(anchor="w")
+        self.card_bond_savings = tk.Label(c3, text="-- gp", font=("Segoe UI", 13, "bold"), fg="#00d2d3", bg="#252528")
+        self.card_bond_savings.pack(anchor="w", pady=(2, 0))
+        ToolTip(c3, "Total gold saved by placing a patient bid instead of insta-buying from impatient sellers.")
+
+        # Card 4: 7-Day Range & Daily Volume
+        c4 = tk.Frame(cards_row, bg="#252528", relief="solid", borderwidth=1, padx=12, pady=8)
+        c4.pack(side="left", expand=True, fill="both", padx=4)
+        tk.Label(c4, text="📊 7-Day Range & Vol", font=("Segoe UI", 9), fg="#aaaaaa", bg="#252528").pack(anchor="w")
+        self.card_bond_range = tk.Label(c4, text="-- gp", font=("Segoe UI", 11, "bold"), fg="#f39c12", bg="#252528")
+        self.card_bond_range.pack(anchor="w", pady=(2, 0))
+        ToolTip(c4, "7-day low to high price band and average daily trading volume (~12k bonds traded per day).")
+
+        # -------------------------------------------------------------
+        # Section 2: Two-Stage Freedom Progress Bar
+        # -------------------------------------------------------------
+        sec2_card = tk.Frame(scroll_content, bg="#202023", relief="solid", borderwidth=1, padx=12, pady=8)
+        sec2_card.pack(fill="x", pady=(4, 6))
+
+        s2_header = tk.Frame(sec2_card, bg="#202023")
+        s2_header.pack(fill="x")
+        tk.Label(s2_header, text="🚀 Two-Stage Freedom Progress Bar", font=("Segoe UI", 10, "bold"), fg="#f1c40f", bg="#202023").pack(side="left")
+        tk.Label(s2_header, text="[Stage 1: Bond Ticket  ➔  Stage 2: P2P Operating Cushion]", font=("Segoe UI", 9), fg="#aaaaaa", bg="#202023").pack(side="left", padx=8)
+
+        # Control Row: Wealth Entry & Cushion Selector
+        ctrl_wealth_row = tk.Frame(sec2_card, bg="#202023")
+        ctrl_wealth_row.pack(fill="x", pady=(6, 6))
+
+        tk.Label(ctrl_wealth_row, text="💰 Account Wealth:", font=("Segoe UI", 9, "bold"), fg="#e0e0e0", bg="#202023").pack(side="left", padx=(0, 4))
+        self.ent_bond_wealth = tk.Entry(ctrl_wealth_row, width=12, bg="#1e1e1e", fg="#2ecc71", insertbackground="#ffffff", relief="flat", font=("Segoe UI", 9, "bold"))
+        self.ent_bond_wealth.pack(side="left", padx=(0, 6))
+        self.ent_bond_wealth.bind("<FocusOut>", lambda e: self.recalculate_bond_roadmap())
+        self.ent_bond_wealth.bind("<Return>", lambda e: self.recalculate_bond_roadmap())
+        ToolTip(self.ent_bond_wealth, "Your total account wealth (Cash in inventory/bank + active alch supplies).\nSupports 9.5m, 12m, etc. Edit directly or click Auto-Sync!")
+
+        btn_sync_wealth = tk.Button(ctrl_wealth_row, text="🔄 Auto-Sync From Game", command=self.sync_bond_wealth,
+                                    bg="#252528", fg="#2ecc71", font=("Segoe UI", 8, "bold"), relief="flat", padx=6, pady=1, cursor="hand2")
+        btn_sync_wealth.pack(side="left", padx=(0, 16))
+        ToolTip(btn_sync_wealth, "Automatically pull current coins and account cash balance from RuneLite live tracking.")
+
+        tk.Label(ctrl_wealth_row, text="🛡️ Operating Cushion:", font=("Segoe UI", 9, "bold"), fg="#e0e0e0", bg="#202023").pack(side="left", padx=(0, 4))
+        self.var_bond_cushion = tk.StringVar(value="8,000,000 gp (Recommended Balanced)")
+        self.cb_bond_cushion = ttk.Combobox(ctrl_wealth_row, textvariable=self.var_bond_cushion,
+                                            values=[
+                                                "3,000,000 gp (Bare Minimum)",
+                                                "5,000,000 gp (Lean / Aggressive)",
+                                                "8,000,000 gp (Recommended Balanced)",
+                                                "12,000,000 gp (Safe Operating Cushion)",
+                                                "15,000,000 gp (High-Roller Capital)"
+                                            ],
+                                            width=32, state="readonly")
+        self.cb_bond_cushion.pack(side="left", padx=(0, 6))
+        self.cb_bond_cushion.bind("<<ComboboxSelected>>", lambda e: self.recalculate_bond_roadmap())
+        ToolTip(self.cb_bond_cushion, "Operating capital to keep AFTER buying the Bond.\nWhy keep a cushion? If you spend all coins on a bond, you enter Members with 0 gp and cannot buy high-margin P2P items.\nWith 8M cushion, you can immediately utilize all 8 GE slots for 1.2M+ gp/hr profit!")
+
+        # Dual Progress Canvas
+        self.canvas_bond_prog = tk.Canvas(sec2_card, bg="#1e1e1e", height=32, highlightthickness=1, highlightbackground="#3e3e42")
+        self.canvas_bond_prog.pack(fill="x", pady=(4, 6))
+        self.canvas_bond_prog.bind("<Configure>", lambda e: self.draw_bond_progress())
+
+        # Status Pill / Banner
+        self.lbl_bond_stage_status = tk.Label(
+            sec2_card,
+            text="Calculating Freedom Progress...",
+            font=("Segoe UI", 9, "bold"), fg="#ffffff", bg="#252528", padx=10, pady=5, relief="flat"
+        )
+        self.lbl_bond_stage_status.pack(fill="x", pady=(2, 0))
+
+        # -------------------------------------------------------------
+        # Section 3: Time-to-Goal Engine & Pace Calculator
+        # -------------------------------------------------------------
+        sec3_card = tk.Frame(scroll_content, bg="#202023", relief="solid", borderwidth=1, padx=12, pady=8)
+        sec3_card.pack(fill="x", pady=(4, 6))
+
+        s3_header = tk.Frame(sec3_card, bg="#202023")
+        s3_header.pack(fill="x")
+        tk.Label(s3_header, text="⏱️ Time-to-Goal Engine & Daily Pace Calculator", font=("Segoe UI", 10, "bold"), fg="#f1c40f", bg="#202023").pack(side="left")
+
+        # Pace Controls
+        ctrl_pace_row = tk.Frame(sec3_card, bg="#202023")
+        ctrl_pace_row.pack(fill="x", pady=(6, 6))
+
+        tk.Label(ctrl_pace_row, text="🎮 Daily Playtime:", font=("Segoe UI", 9, "bold"), fg="#e0e0e0", bg="#202023").pack(side="left", padx=(0, 4))
+        self.var_bond_playtime = tk.StringVar(value="12 Hours / Day (Hardcore Speedrun)")
+        self.cb_bond_playtime = ttk.Combobox(ctrl_pace_row, textvariable=self.var_bond_playtime,
+                                             values=[
+                                                 "2 Hours / Day (Casual)",
+                                                 "4 Hours / Day (Steady)",
+                                                 "6 Hours / Day (Dedicated)",
+                                                 "8 Hours / Day (Grinder)",
+                                                 "12 Hours / Day (Hardcore Speedrun)"
+                                             ],
+                                             width=30, state="readonly")
+        self.cb_bond_playtime.pack(side="left", padx=(0, 16))
+        self.cb_bond_playtime.bind("<<ComboboxSelected>>", lambda e: self.recalculate_bond_roadmap())
+        ToolTip(self.cb_bond_playtime, "Select how many hours per day you plan to actively play/alch.")
+
+        tk.Label(ctrl_pace_row, text="⚡ Earning Method:", font=("Segoe UI", 9, "bold"), fg="#e0e0e0", bg="#202023").pack(side="left", padx=(0, 4))
+        self.var_bond_mode = tk.StringVar(value="F2P Pure High Alch (~780k gp/hr)")
+        self.cb_bond_mode = ttk.Combobox(ctrl_pace_row, textvariable=self.var_bond_mode,
+                                         values=[
+                                             "F2P Pure High Alch (~780k gp/hr)",
+                                             "F2P Mixed Flipping & Alch (~600k gp/hr)",
+                                             "P2P Members High Alch (~1,200k gp/hr)",
+                                             "P2P Members Alch + Herb Runs (~1,600k gp/hr)"
+                                         ],
+                                         width=36, state="readonly")
+        self.cb_bond_mode.pack(side="left", padx=(0, 6))
+        self.cb_bond_mode.bind("<<ComboboxSelected>>", lambda e: self.recalculate_bond_roadmap())
+        ToolTip(self.cb_bond_mode, "Hourly gold earning benchmark based on method and membership status.")
+
+        # Pace Result Stat Cards
+        pace_cards = tk.Frame(sec3_card, bg="#202023")
+        pace_cards.pack(fill="x", pady=(4, 6))
+
+        # Stat 1: Remaining GP
+        p1 = tk.Frame(pace_cards, bg="#252528", relief="solid", borderwidth=1, padx=10, pady=6)
+        p1.pack(side="left", expand=True, fill="both", padx=3)
+        tk.Label(p1, text="Remaining GP Needed", font=("Segoe UI", 8), fg="#aaaaaa", bg="#252528").pack(anchor="w")
+        self.card_bond_gp_needed = tk.Label(p1, text="-- gp", font=("Segoe UI", 12, "bold"), fg="#f39c12", bg="#252528")
+        self.card_bond_gp_needed.pack(anchor="w", pady=(2, 0))
+
+        # Stat 2: Total Hours
+        p2 = tk.Frame(pace_cards, bg="#252528", relief="solid", borderwidth=1, padx=10, pady=6)
+        p2.pack(side="left", expand=True, fill="both", padx=3)
+        tk.Label(p2, text="Total Grind Hours", font=("Segoe UI", 8), fg="#aaaaaa", bg="#252528").pack(anchor="w")
+        self.card_bond_hrs_needed = tk.Label(p2, text="-- hrs", font=("Segoe UI", 12, "bold"), fg="#3498db", bg="#252528")
+        self.card_bond_hrs_needed.pack(anchor="w", pady=(2, 0))
+
+        # Stat 3: Calendar Days
+        p3 = tk.Frame(pace_cards, bg="#252528", relief="solid", borderwidth=1, padx=10, pady=6)
+        p3.pack(side="left", expand=True, fill="both", padx=3)
+        tk.Label(p3, text="Days to Freedom Goal", font=("Segoe UI", 8, "bold"), fg="#2ecc71", bg="#252528").pack(anchor="w")
+        self.card_bond_days_needed = tk.Label(p3, text="-- Days", font=("Segoe UI", 13, "bold"), fg="#2ecc71", bg="#252528")
+        self.card_bond_days_needed.pack(anchor="w", pady=(2, 0))
+
+        # Stat 4: Casts & Magic XP
+        p4 = tk.Frame(pace_cards, bg="#252528", relief="solid", borderwidth=1, padx=10, pady=6)
+        p4.pack(side="left", expand=True, fill="both", padx=3)
+        tk.Label(p4, text="High Alchs / XP Gained", font=("Segoe UI", 8), fg="#aaaaaa", bg="#252528").pack(anchor="w")
+        self.card_bond_casts_needed = tk.Label(p4, text="-- casts", font=("Segoe UI", 11, "bold"), fg="#9b59b6", bg="#252528")
+        self.card_bond_casts_needed.pack(anchor="w", pady=(2, 0))
+
+        # Pro-Tip Callout: World 308 Anvil GE Limit Bypass Secret
+        w308_box = tk.Frame(sec3_card, bg="#1a252f", relief="solid", borderwidth=1, padx=10, pady=6)
+        w308_box.pack(fill="x", pady=(4, 0))
+        tk.Label(w308_box, text="⚡ F2P Speed Secret — How to Alch 12h/Day Without Hitting GE Limits:", font=("Segoe UI", 9, "bold"), fg="#3498db", bg="#1a252f").pack(anchor="w")
+        tk.Label(
+            w308_box,
+            text="In F2P, the GE limits you to 70 rune items every 4 hours. To alch continuously without waiting for GE limits, visit World 308 at Varrock West Bank (Clan Chat: 'W308 Anvil'). High-level smithers sell thousands of noted Rune 2h swords and battleaxes directly in unlimited bulk for GE mid/low! Zero buy limits!",
+            font=("Segoe UI", 8, "italic"), fg="#ecf0f1", bg="#1a252f", wraplength=950, justify="left"
+        ).pack(anchor="w", pady=(2, 0))
+
+        # -------------------------------------------------------------
+        # Section 4: 14-Day Perpetual Membership Sustainer Simulator
+        # -------------------------------------------------------------
+        sec4_card = tk.Frame(scroll_content, bg="#202023", relief="solid", borderwidth=1, padx=12, pady=8)
+        sec4_card.pack(fill="x", pady=(4, 10))
+
+        s4_header = tk.Frame(sec4_card, bg="#202023")
+        s4_header.pack(fill="x")
+        tk.Label(s4_header, text="♾️ 14-Day Perpetual Membership Sustainer Simulator", font=("Segoe UI", 10, "bold"), fg="#f1c40f", bg="#202023").pack(side="left")
+        tk.Label(s4_header, text="[Shows why your FIRST bond is the only hard one — subsequent bonds are 100% self-funding!]", font=("Segoe UI", 9), fg="#aaaaaa", bg="#202023").pack(side="left", padx=8)
+
+        # Sustainer Treeview Table
+        cols_sust = ("daily", "total_hrs", "gross_gp", "bond_cov", "surplus_gp", "milestone")
+        self.tree_bond_sustainer = ttk.Treeview(sec4_card, columns=cols_sust, show="headings", height=6)
+        self.tree_bond_sustainer.heading("daily", text="Daily Alch Time")
+        self.tree_bond_sustainer.heading("total_hrs", text="14-Day Hours")
+        self.tree_bond_sustainer.heading("gross_gp", text="Gross P2P Revenue")
+        self.tree_bond_sustainer.heading("bond_cov", text="Next Bond Paid?")
+        self.tree_bond_sustainer.heading("surplus_gp", text="14-Day Bank Surplus")
+        self.tree_bond_sustainer.heading("milestone", text="Player Gear & Wealth Milestone")
+
+        self.tree_bond_sustainer.column("daily", width=140, anchor="w")
+        self.tree_bond_sustainer.column("total_hrs", width=95, anchor="center")
+        self.tree_bond_sustainer.column("gross_gp", width=130, anchor="e")
+        self.tree_bond_sustainer.column("bond_cov", width=115, anchor="center")
+        self.tree_bond_sustainer.column("surplus_gp", width=140, anchor="e")
+        self.tree_bond_sustainer.column("milestone", width=340, anchor="w")
+
+        self.tree_bond_sustainer.tag_configure("break_even", foreground="#3498db")
+        self.tree_bond_sustainer.tag_configure("steady", foreground="#2ecc71")
+        self.tree_bond_sustainer.tag_configure("rapid", foreground="#2ecc71", font=("Segoe UI", 9, "bold"))
+        self.tree_bond_sustainer.tag_configure("boss", foreground="#f1c40f", font=("Segoe UI", 9, "bold"))
+        self.tree_bond_sustainer.tag_configure("master", foreground="#00d2d3", font=("Segoe UI", 9, "bold"))
+
+        self.tree_bond_sustainer.pack(fill="x", pady=(6, 6))
+
+        sust_col_tooltips = {
+            "#1": "Daily Active Alch Time:\nHow much time you spend High Alching per day in Members.",
+            "#2": "14-Day Total Hours:\nCumulative alching hours across the full 14-day membership period.",
+            "#3": "Gross P2P Revenue:\nTotal gold earned at conservative P2P alching rate of ~1.2M gp/hr.",
+            "#4": "Next Bond Paid:\nWhether the 14-day earnings completely pay off the next 11.0M Bond.",
+            "#5": "14-Day Bank Surplus:\nNet profit left in your bank AFTER purchasing the next 14-day bond!",
+            "#6": "Milestones:\nIconic OSRS items you can easily afford with your 14-day surplus gold."
+        }
+        HeadingToolTip(self.tree_bond_sustainer, sust_col_tooltips)
+
+        # Bottom Freedom Takeaway Box
+        freedom_box = tk.Frame(sec4_card, bg="#1b4332", relief="solid", borderwidth=1, padx=10, pady=6)
+        freedom_box.pack(fill="x", pady=(2, 0))
+        tk.Label(freedom_box, text="🏆 The Infinite Membership Guarantee:", font=("Segoe UI", 9, "bold"), fg="#2ecc71", bg="#1b4332").pack(anchor="w")
+        tk.Label(
+            freedom_box,
+            text="Once you cross into Members with your 8M cushion, you only need ~35 to 45 minutes of alching per day to fund perpetual membership forever. At 12 hours a day, you pay off the next bond in under 1 single day, leaving 13 days of pure compounding profit to build an endgame 100M+ bank!",
+            font=("Segoe UI", 8), fg="#d8f3dc", bg="#1b4332", wraplength=950, justify="left"
+        ).pack(anchor="w", pady=(2, 0))
+
+        # Initial populate
+        self.sync_bond_wealth(silent=True)
+        self.refresh_bond_data(silent=True)
+
+    def copy_bond_bid(self):
+        data = getattr(self, "bond_data", {})
+        bid = data.get("safe_bid") or 10600000
+        self.copy_to_clipboard(str(bid), f"Copied patient Bond bid: {bid:,} gp to clipboard!")
+
+    def sync_bond_wealth(self, silent=False):
+        wealth = 0
+        if hasattr(self, "state") and self.state:
+            active_acc = self.var_account.get() if hasattr(self, "var_account") else ""
+            if active_acc and active_acc in self.state.accounts:
+                acc_data = self.state.accounts[active_acc]
+                wealth = acc_data.get("coins", 0) + acc_data.get("bank_coins", 0)
+            if wealth == 0:
+                wealth = self.state.config.get("cash_stack", 5000000)
+        if wealth == 0 and hasattr(self, "ent_cash"):
+            wealth = parse_cash_input(self.ent_cash.get())
+
+        if hasattr(self, "ent_bond_wealth"):
+            self.ent_bond_wealth.delete(0, tk.END)
+            self.ent_bond_wealth.insert(0, format_gp(wealth))
+            self.recalculate_bond_roadmap()
+            if not silent:
+                self.show_status_message(f"Synced account wealth: {format_gp(wealth)}")
+
+    def refresh_bond_data(self, silent=False):
+        try:
+            self.bond_data = self.api.get_bond_data(force_refresh=True)
+            self.update_bond_display()
+            self.recalculate_bond_roadmap()
+            if not silent:
+                self.show_status_message("Bond market prices updated successfully!")
+        except Exception as e:
+            print(f"[Bond] Refresh error: {e}")
+
+    def update_bond_display(self):
+        data = getattr(self, "bond_data", {})
+        if not data:
+            return
+        if hasattr(self, "card_bond_ask"):
+            self.card_bond_ask.config(text=format_gp(data.get("insta_buy", 0)))
+        if hasattr(self, "card_bond_bid"):
+            self.card_bond_bid.config(text=format_gp(data.get("safe_bid", 0)))
+        if hasattr(self, "card_bond_savings"):
+            self.card_bond_savings.config(text=f"+{format_gp(data.get('patient_savings', 0))} (Save)")
+        if hasattr(self, "card_bond_range"):
+            f7 = data.get("floor_7d", 0)
+            p7 = data.get("peak_7d", 0)
+            vol = data.get("daily_vol", 0)
+            self.card_bond_range.config(text=f"{format_gp(f7)} - {format_gp(p7)} ({vol:,}/d)")
+
+    def draw_bond_progress(self):
+        if not hasattr(self, "canvas_bond_prog"):
+            return
+        c = self.canvas_bond_prog
+        c.delete("all")
+        w = c.winfo_width()
+        h = c.winfo_height()
+        if w < 50:
+            w = 700
+        if h < 20:
+            h = 32
+
+        data = getattr(self, "bond_data", {})
+        bond_cost = data.get("safe_bid") or 11000000
+
+        cushion_raw = self.var_bond_cushion.get() if hasattr(self, "var_bond_cushion") else "8,000,000"
+        cushion_val = parse_cash_input(cushion_raw.split()[0])
+        if cushion_val <= 0:
+            cushion_val = 8000000
+
+        total_goal = bond_cost + cushion_val
+        wealth_str = self.ent_bond_wealth.get() if hasattr(self, "ent_bond_wealth") else "0"
+        wealth = parse_cash_input(wealth_str)
+
+        split_ratio = bond_cost / total_goal if total_goal > 0 else 0.6
+        x_split = int(w * split_ratio)
+
+        # Background
+        c.create_rectangle(0, 0, w, h, fill="#252528", outline="")
+
+        if wealth >= bond_cost:
+            # Stage 1 complete
+            c.create_rectangle(0, 0, x_split, h, fill="#2ecc71", outline="")
+            # Stage 2 cushion
+            cushion_acc = wealth - bond_cost
+            cushion_ratio = min(1.0, cushion_acc / cushion_val) if cushion_val > 0 else 1.0
+            x_cushion = x_split + int((w - x_split) * cushion_ratio)
+            cushion_color = "#f1c40f" if cushion_ratio < 1.0 else "#00d2d3"
+            if x_cushion > x_split:
+                c.create_rectangle(x_split, 0, x_cushion, h, fill=cushion_color, outline="")
+        else:
+            # Stage 1 accumulating
+            bond_ratio = max(0.0, wealth / bond_cost) if bond_cost > 0 else 0.0
+            x_bond = int(x_split * bond_ratio)
+            if x_bond > 0:
+                c.create_rectangle(0, 0, x_bond, h, fill="#3498db", outline="")
+
+        # Split line
+        c.create_line(x_split, 0, x_split, h, fill="#555555", width=2)
+
+        bond_pct = min(100.0, (wealth / bond_cost) * 100.0) if bond_cost > 0 else 0.0
+        cush_acc = max(0, wealth - bond_cost)
+        cush_pct = min(100.0, (cush_acc / cushion_val) * 100.0) if cushion_val > 0 else 0.0
+
+        txt_stage1 = f"🎟️ Stage 1: Bond {format_gp(bond_cost)} ({bond_pct:.1f}%)"
+        txt_stage2 = f"🛡️ Stage 2: Cushion {format_gp(cushion_val)} ({cush_pct:.1f}%)"
+
+        c.create_text(max(60, x_split // 2), h // 2, text=txt_stage1, font=("Segoe UI", 9, "bold"), fill="#ffffff")
+        c.create_text(min(w - 60, x_split + (w - x_split) // 2), h // 2, text=txt_stage2, font=("Segoe UI", 9, "bold"), fill="#ffffff")
+
+    def recalculate_bond_roadmap(self):
+        if not hasattr(self, "ent_bond_wealth"):
+            return
+
+        data = getattr(self, "bond_data", {})
+        bond_cost = data.get("safe_bid") or 11000000
+
+        cushion_raw = self.var_bond_cushion.get() if hasattr(self, "var_bond_cushion") else "8,000,000"
+        cushion_val = parse_cash_input(cushion_raw.split()[0])
+        if cushion_val <= 0:
+            cushion_val = 8000000
+
+        total_goal = bond_cost + cushion_val
+        wealth = parse_cash_input(self.ent_bond_wealth.get())
+
+        self.draw_bond_progress()
+
+        # Update Freedom Status Pill
+        if wealth < bond_cost:
+            rem_bond = bond_cost - wealth
+            self.lbl_bond_stage_status.config(
+                text=f"🔒 Stage 1: Accumulating First Bond — Need {format_gp(rem_bond)} more to reach Bond purchase threshold ({wealth / bond_cost * 100:.1f}% reached).",
+                bg="#1a252f", fg="#3498db"
+            )
+        elif wealth < total_goal:
+            rem_cush = total_goal - wealth
+            self.lbl_bond_stage_status.config(
+                text=f"⚠️ Stage 2: Bond Cost Secured! Building Operating Cushion — Need {format_gp(rem_cush)} more before redeeming so you don't enter Members broke!",
+                bg="#3d2b00", fg="#f39c12"
+            )
+        else:
+            self.lbl_bond_stage_status.config(
+                text=f"🎉 FREEDOM ACHIEVED! You have {format_gp(wealth)} (Bond {format_gp(bond_cost)} + Full {format_gp(cushion_val)} Cushion). Ready for Members!",
+                bg="#1b4332", fg="#2ecc71"
+            )
+
+        # Pace calculations
+        play_raw = self.var_bond_playtime.get() if hasattr(self, "var_bond_playtime") else "12"
+        try:
+            daily_hrs = float(play_raw.split()[0])
+        except Exception:
+            daily_hrs = 12.0
+
+        mode_raw = self.var_bond_mode.get() if hasattr(self, "var_bond_mode") else ""
+        if "780k" in mode_raw:
+            rate = 780000
+        elif "600k" in mode_raw:
+            rate = 600000
+        elif "1,600k" in mode_raw:
+            rate = 1600000
+        elif "1,200k" in mode_raw:
+            rate = 1200000
+        else:
+            rate = 780000
+
+        needed_gp = max(0, total_goal - wealth)
+        hrs_needed = (needed_gp / rate) if rate > 0 else 0.0
+        days_needed = (hrs_needed / daily_hrs) if daily_hrs > 0 else 0.0
+        casts_needed = int(hrs_needed * 1200)
+        magic_xp = casts_needed * 65
+
+        if hasattr(self, "card_bond_gp_needed"):
+            self.card_bond_gp_needed.config(text=format_gp(needed_gp))
+        if hasattr(self, "card_bond_hrs_needed"):
+            self.card_bond_hrs_needed.config(text=f"{hrs_needed:.1f} Hours")
+        if hasattr(self, "card_bond_days_needed"):
+            self.card_bond_days_needed.config(text=f"{days_needed:.1f} Days ({days_needed * 24:.0f}h calendar)")
+        if hasattr(self, "card_bond_casts_needed"):
+            self.card_bond_casts_needed.config(text=f"{casts_needed:,} alchs (+{magic_xp:,} XP)")
+
+        # Sustainer treeview
+        if hasattr(self, "tree_bond_sustainer"):
+            for item in self.tree_bond_sustainer.get_children():
+                self.tree_bond_sustainer.delete(item)
+
+            sust_specs = [
+                ("35 - 45 mins / day", 9.2, 1.2, "✅ 100% Fully Paid", "🪙 Infinite Membership (Zero real cash ever again)", "break_even"),
+                ("2 Hours / day", 28.0, 1.2, "✅ 100% Fully Paid", "⚔️ Mid-Tier Gear (Abyssal whip, Fury, Dragon boots)", "steady"),
+                ("4 Hours / day", 56.0, 1.2, "✅ 100% Fully Paid", "🛡️ High-Tier Gear (Bandos tassets, Ahrim's, Blowpipe)", "rapid"),
+                ("6 Hours / day", 84.0, 1.2, "✅ 100% Fully Paid", "💎 100M+ Bank (Full Zenyte jewelry, Fang)", "rapid"),
+                ("8 Hours / day", 112.0, 1.2, "✅ 100% Fully Paid", "🏹 Bossing Ready (Bow of Faerdhinen, Crystal armour)", "boss"),
+                ("12 Hours / day", 168.0, 1.2, "✅ 100% Fully Paid", "👑 Economy Master (+190M liquid surplus every 14 days!)", "master"),
+            ]
+
+            for daily_label, hrs_14d, rate_m, status_txt, milestone_txt, tag in sust_specs:
+                gross_gp = int(hrs_14d * rate_m * 1_000_000)
+                surplus_gp = max(0, gross_gp - bond_cost)
+                surplus_str = f"+{format_gp(surplus_gp)}" if surplus_gp > 0 else "+0 gp"
+                self.tree_bond_sustainer.insert("", "end", values=(
+                    daily_label,
+                    f"{hrs_14d:.1f} hrs",
+                    format_gp(gross_gp),
+                    status_txt,
+                    surplus_str,
+                    milestone_txt
+                ), tags=(tag,))
 
     def build_craft_tab(self):
         sub_top = tk.Frame(self.tab_craft, bg="#252528")
@@ -3842,6 +4348,8 @@ class OSRSAlchDashboard(tk.Tk):
         self.recalculate_rec_table()
         if hasattr(self, "recalculate_overnight_table"):
             self.recalculate_overnight_table()
+        if hasattr(self, "recalculate_bond_roadmap"):
+            self.recalculate_bond_roadmap()
         self.recalculate_craft_table()
         if hasattr(self, "recalculate_ge_craft_table"):
             self.recalculate_ge_craft_table()
@@ -3908,6 +4416,12 @@ class OSRSAlchDashboard(tk.Tk):
         search_query = self.ent_search.get().strip() if hasattr(self, "ent_search") else ""
         if search_query:
             self.on_global_search_changed()
+        try:
+            curr_tab = self.notebook.tab(self.notebook.select(), "text")
+            if "Bond Roadmap" in curr_tab and hasattr(self, "recalculate_bond_roadmap"):
+                self.recalculate_bond_roadmap()
+        except Exception:
+            pass
 
     def recalculate_alch_table(self):
         nat_cost = self.get_effective_nature_price()

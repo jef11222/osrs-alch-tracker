@@ -20,6 +20,10 @@ MAPPING_CACHE_TTL = 86400 * 3 # 3 days cache for static mapping
 OVERNIGHT_CACHE_FILE = os.path.join(CACHE_DIR, "overnight_cache.json")
 OVERNIGHT_CACHE_TTL = 1800 # 30 minutes cache for overnight timeseries dips
 
+BOND_ITEM_ID = 13190
+BOND_CACHE_FILE = os.path.join(CACHE_DIR, "bond_cache.json")
+BOND_CACHE_TTL = 900 # 15 minutes cache for bond market stats
+
 NATURE_RUNE_ID = 561
 FIRE_RUNE_ID = 554
 
@@ -493,4 +497,108 @@ class OSRSPricesAPI:
             pass
 
         return results
+
+    def get_bond_data(self, force_refresh=False):
+        """Fetches live Old School Bond (13190) prices, spread, and 7-day percentile dip analysis."""
+        now = time.time()
+        if not force_refresh and os.path.exists(BOND_CACHE_FILE):
+            try:
+                with open(BOND_CACHE_FILE, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                if now - cached.get("_timestamp", 0) < BOND_CACHE_TTL:
+                    return cached.get("data", {})
+            except Exception:
+                pass
+
+        insta_buy = 0
+        insta_sell = 0
+        try:
+            latest_res = fetch_url_json(f"https://prices.runescape.wiki/api/v1/osrs/latest?id={BOND_ITEM_ID}")
+            item_data = latest_res.get("data", {}).get(str(BOND_ITEM_ID), {})
+            insta_buy = item_data.get("high") or 0
+            insta_sell = item_data.get("low") or 0
+        except Exception as e:
+            print(f"[API] Error fetching live bond latest: {e}")
+
+        series = []
+        floor_7d = 0
+        peak_7d = 0
+        daily_vol = 0
+        safe_bid = 0
+        deep_bid = 0
+        try:
+            ts_res = fetch_url_json(f"https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=1h&id={BOND_ITEM_ID}")
+            series = ts_res.get("data", [])
+            if series:
+                # 48h data
+                h48 = series[-48:] if len(series) >= 48 else series
+                lows_48 = [c["avgLowPrice"] for c in h48 if c.get("avgLowPrice") and c["avgLowPrice"] > 0]
+                vols_48 = [c.get("lowPriceVolume", 0) + c.get("highPriceVolume", 0) for c in h48]
+                if vols_48:
+                    daily_vol = sum(vols_48) // 2 if len(h48) >= 24 else sum(vols_48)
+
+                # 7d data (168 hours)
+                w168 = series[-168:] if len(series) >= 168 else series
+                lows_7d = [c["avgLowPrice"] for c in w168 if c.get("avgLowPrice") and c["avgLowPrice"] > 0]
+                highs_7d = [c["avgHighPrice"] for c in w168 if c.get("avgHighPrice") and c["avgHighPrice"] > 0]
+                if lows_7d:
+                    floor_7d = min(lows_7d)
+                if highs_7d:
+                    peak_7d = max(highs_7d)
+
+                if lows_48:
+                    safe_bid = calc_percentile(lows_48, 25) + 10_000
+                    deep_bid = calc_percentile(lows_48, 10) + 10_000
+                    if floor_7d > 0:
+                        deep_bid = max(deep_bid, floor_7d + 10_000)
+        except Exception as e:
+            print(f"[API] Error fetching bond timeseries: {e}")
+
+        # Fallbacks
+        if insta_buy == 0 and series:
+            for s in reversed(series):
+                if s.get("avgHighPrice"):
+                    insta_buy = s["avgHighPrice"]
+                    break
+        if insta_sell == 0 and series:
+            for s in reversed(series):
+                if s.get("avgLowPrice"):
+                    insta_sell = s["avgLowPrice"]
+                    break
+
+        if safe_bid == 0:
+            safe_bid = max(insta_sell + 10_000, int(insta_buy * 0.96)) if insta_buy > 0 else 11_000_000
+        if deep_bid == 0:
+            deep_bid = max(insta_sell - 50_000, int(insta_buy * 0.94)) if insta_buy > 0 else 10_700_000
+        if floor_7d == 0:
+            floor_7d = int(safe_bid * 0.97)
+        if peak_7d == 0:
+            peak_7d = int(insta_buy * 1.05) if insta_buy > 0 else 12_500_000
+        if daily_vol == 0:
+            daily_vol = 12_000
+
+        patient_savings = max(0, insta_buy - safe_bid) if insta_buy > safe_bid else (insta_buy - insta_sell if insta_buy > insta_sell else 0)
+
+        result_data = {
+            "id": BOND_ITEM_ID,
+            "name": "Old School Bond",
+            "insta_buy": insta_buy,
+            "insta_sell": insta_sell,
+            "safe_bid": safe_bid,
+            "deep_bid": deep_bid,
+            "patient_savings": patient_savings,
+            "floor_7d": floor_7d,
+            "peak_7d": peak_7d,
+            "daily_vol": daily_vol,
+            "timestamp": now
+        }
+
+        try:
+            with open(BOND_CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump({"_timestamp": now, "data": result_data}, f)
+        except Exception:
+            pass
+
+        return result_data
+
 

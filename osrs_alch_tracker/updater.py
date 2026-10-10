@@ -12,7 +12,7 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.3.41"
+APP_VERSION = "1.3.42"
 GITHUB_REPO = "jef11222/osrs-alch-tracker"
 
 
