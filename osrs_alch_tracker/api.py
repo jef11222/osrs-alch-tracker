@@ -365,36 +365,38 @@ class OSRSPricesAPI:
         """
         Returns (bid, ask) tuple for an item ensuring bid <= ask.
         If basis == '5m' (default), uses 5-minute volume-weighted averages when available,
-        falling back to /latest if 5m data is absent.
+        falling back to /latest or merging seamlessly if one side (low/high) is missing.
         """
         iid_str = str(item_id)
-        if basis == "5m" and hasattr(self, "five_min_prices"):
-            finfo = self.five_min_prices.get(iid_str, {})
-            avg_low = finfo.get("avg_low")
-            avg_high = finfo.get("avg_high")
-            if avg_low and avg_high:
-                return int(round(min(avg_low, avg_high))), int(round(max(avg_low, avg_high)))
-            elif avg_low:
-                return int(round(avg_low)), int(round(avg_low))
-            elif avg_high:
-                return int(round(avg_high)), int(round(avg_high))
-
         pdata = self.latest_prices.get(iid_str, {})
-        low = pdata.get("low")
-        high = pdata.get("high")
-        if low and high:
-            bid = min(low, high)
-            ask = max(low, high)
-        elif low:
-            bid = low
-            ask = low
-        elif high:
-            bid = high
-            ask = high
+        lat_low = pdata.get("low")
+        lat_high = pdata.get("high")
+
+        finfo = self.five_min_prices.get(iid_str, {}) if hasattr(self, "five_min_prices") else {}
+        avg_low = finfo.get("avg_low")
+        avg_high = finfo.get("avg_high")
+
+        if basis == "5m":
+            # Prioritize 5m volume average, cleanly fall back to latest 1-tick trade
+            bid = avg_low if avg_low is not None else lat_low
+            ask = avg_high if avg_high is not None else lat_high
         else:
-            bid = 0
-            ask = 0
-        return bid, ask
+            # basis == "latest": prioritize latest 1-tick trade, fall back to 5m volume average
+            bid = lat_low if lat_low is not None else avg_low
+            ask = lat_high if lat_high is not None else avg_high
+
+        if bid is not None and ask is not None:
+            b = int(round(bid))
+            a = int(round(ask))
+            return min(b, a), max(b, a)
+        elif bid is not None:
+            b = int(round(bid))
+            return b, b
+        elif ask is not None:
+            a = int(round(ask))
+            return a, a
+        else:
+            return 0, 0
 
     def get_overnight_data(self, force_refresh=False):
         """

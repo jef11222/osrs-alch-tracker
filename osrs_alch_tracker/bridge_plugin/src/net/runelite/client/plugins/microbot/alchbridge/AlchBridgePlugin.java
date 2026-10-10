@@ -123,6 +123,7 @@ public class AlchBridgePlugin extends Plugin {
     private String lastW308TradeItemName = null;
     private int lastW308TradePrice = 0;
     private int lastAlchedItemId = -1;
+    private final Map<Integer, Integer> liveTrackerPrices = new ConcurrentHashMap<>();
 
     // Two-Way Trade Tracking (Buy & Sell)
     private int pendingTradeCoinsOffered = 0;
@@ -220,6 +221,21 @@ public class AlchBridgePlugin extends Plugin {
                     if (resp.statusCode() == 200) {
                         Type listType = new TypeToken<List<Map<String, Object>>>(){}.getType();
                         List<Map<String, Object>> items = gson.fromJson(resp.body(), listType);
+                        if (items != null) {
+                            for (Map<String, Object> it : items) {
+                                Object idObj = it.get("id");
+                                Object priceObj = it.get("buy_price");
+                                if (idObj != null && priceObj != null) {
+                                    try {
+                                        int id = ((Number) idObj).intValue();
+                                        int price = ((Number) priceObj).intValue();
+                                        if (id > 0 && price > 0) {
+                                            liveTrackerPrices.put(id, price);
+                                        }
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        }
                         if (panel != null) {
                             panel.updateTop10(items, true);
                         }
@@ -692,8 +708,16 @@ public class AlchBridgePlugin extends Plugin {
             if (tradePrice != null && tradePrice > 0) {
                 return tradePrice;
             }
+            Integer livePrice = liveTrackerPrices.get(unnotedId);
+            if (livePrice != null && livePrice > 0) {
+                return livePrice;
+            }
             return Math.max(0, itemManager.getItemPrice(unnotedId));
         } else {
+            Integer livePrice = liveTrackerPrices.get(unnotedId);
+            if (livePrice != null && livePrice > 0) {
+                return livePrice;
+            }
             return Math.max(0, itemManager.getItemPrice(unnotedId));
         }
     }
