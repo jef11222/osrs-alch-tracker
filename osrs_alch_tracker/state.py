@@ -140,7 +140,7 @@ class AppState:
 
     def update_account(self, name, coins=None, nature_runes=None, world=None, is_members=None, levels=None, xp=None, skilling=None,
                        batch_gross_gp=None, total_wealth=None, batch_item_name=None, batch_item_qty=None,
-                       profit_per_hour=None, alchs_per_hour=None):
+                       profit_per_hour=None, alchs_per_hour=None, bank_coins=None, bank_nature_runes=None):
         if not name or name == "Unknown":
             return
         if name not in self.accounts:
@@ -183,6 +183,10 @@ class AppState:
             acc["profit_per_hour"] = int(profit_per_hour)
         if alchs_per_hour is not None:
             acc["alchs_per_hour"] = int(alchs_per_hour)
+        if bank_coins is not None:
+            acc["bank_coins"] = max(0, int(bank_coins))
+        if bank_nature_runes is not None:
+            acc["bank_nature_runes"] = max(0, int(bank_nature_runes))
         self.save_accounts()
 
     def add_timer(self, item_id, item_name, qty, account="Default"):

@@ -809,6 +809,11 @@ class OSRSAlchDashboard(tk.Tk):
         self._logged_ge_offers = set()
         self._ge_cart_slots = {}
         self._ge_tracked_items = set()
+
+        # Immediate sync from local container exports and active account data
+        self._sync_from_container_export()
+        self._apply_active_account_data()
+
         self.bridge_server = BridgeServer(port=18833, event_callback=self._on_bridge_event_async)
         self.bridge_server.start()
 
@@ -840,6 +845,89 @@ class OSRSAlchDashboard(tk.Tk):
 
         # Initial load in background thread
         self.trigger_refresh()
+
+    def _sync_from_container_export(self):
+        """Reads RuneLite/Microbot container_inventory.json and container_bank.json if available. Returns True if data changed."""
+        try:
+            inv_path = os.path.expanduser(r"~/.runelite/Data Exports/container_inventory.json")
+            if not os.path.exists(inv_path):
+                return False
+
+            inv_mtime = os.path.getmtime(inv_path)
+            last_mtime = getattr(self, "_last_inv_mtime", 0)
+            if inv_mtime == last_mtime:
+                return False
+            self._last_inv_mtime = inv_mtime
+
+            coins = None
+            nats = None
+            with open(inv_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        item = json.loads(line)
+                        iid = item.get("id")
+                        qty = item.get("quantity", 0)
+                        name = item.get("name", "")
+                        if iid == 995 or name == "Coins":
+                            coins = qty
+                        elif iid == 561 or name == "Nature rune":
+                            nats = qty
+                    except Exception:
+                        continue
+
+            bank_path = os.path.expanduser(r"~/.runelite/Data Exports/container_bank.json")
+            bank_coins = None
+            bank_nats = None
+            if os.path.exists(bank_path):
+                try:
+                    with open(bank_path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            try:
+                                item = json.loads(line)
+                                iid = item.get("id")
+                                qty = item.get("quantity", 0)
+                                name = item.get("name", "")
+                                if iid == 995 or name == "Coins":
+                                    bank_coins = qty
+                                elif iid == 561 or name == "Nature rune":
+                                    bank_nats = qty
+                            except Exception:
+                                continue
+                except Exception:
+                    pass
+
+            sel = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
+            acc_name = sel if (sel and sel != "All Accounts") else (self.state.config.get("monitored_character") or "Default")
+            if acc_name == "All Accounts":
+                acc_name = "jef112" if "jef112" in self.state.accounts else ("Default" if not self.state.accounts else max(self.state.accounts.keys()))
+
+            acc_data = self.state.accounts.setdefault(acc_name, {"name": acc_name})
+            changed = False
+
+            if coins is not None and acc_data.get("coins") != coins:
+                acc_data["coins"] = coins
+                changed = True
+            if nats is not None and acc_data.get("nature_runes") != nats:
+                acc_data["nature_runes"] = nats
+                changed = True
+            if bank_coins is not None and acc_data.get("bank_coins") != bank_coins:
+                acc_data["bank_coins"] = bank_coins
+                changed = True
+            if bank_nats is not None and acc_data.get("bank_nats") != bank_nats:
+                acc_data["bank_nats"] = bank_nats
+                changed = True
+
+            if changed:
+                self.state.save_accounts()
+            return changed
+        except Exception:
+            return False
 
     def setup_styles(self):
         self.configure(bg="#1e1e1e")
@@ -5857,6 +5945,10 @@ class OSRSAlchDashboard(tk.Tk):
         self.lbl_nat_target.config(text=f"🎯 Offer: {bid} gp")
         self.lbl_nat_details.config(text=f"Ask: {ask} gp | Limit: 18,000")
 
+        # Sync from container export and active account before recalculating
+        self._sync_from_container_export()
+        self._apply_active_account_data()
+
         # Recalculate tables
         self.recalculate_all()
 
@@ -8769,6 +8861,16 @@ class OSRSAlchDashboard(tk.Tk):
     # ------------------ TIMERS & SETTINGS ------------------
 
     def timer_tick(self):
+        # Periodic container fallback sync (every 3 seconds)
+        if not hasattr(self, "_last_container_check"):
+            self._last_container_check = 0
+        now = time.time()
+        if now - self._last_container_check >= 3.0:
+            self._last_container_check = now
+            if self._sync_from_container_export():
+                self._apply_active_account_data()
+                self.recalculate_all()
+
         if self.state.config.get("auto_refresh_mins", 2) > 0 and not self.is_fetching:
             self.seconds_until_refresh -= 1
             if self.seconds_until_refresh <= 0:
@@ -8995,6 +9097,7 @@ class OSRSAlchDashboard(tk.Tk):
             self.recalculate_guide_table()
 
     def _apply_active_account_data(self):
+        self._sync_from_container_export()
         sel = self.var_account.get() if hasattr(self, "var_account") else "All Accounts"
         target_acc = None
         if sel != "All Accounts" and sel in self.state.accounts:
@@ -9059,13 +9162,16 @@ class OSRSAlchDashboard(tk.Tk):
                     self.ent_guide_cur_lvl.insert(0, str(levels[g_sk]))
 
         self._sync_cart_from_ge()
+        if hasattr(self, "recalculate_w308_table"):
+            self.recalculate_w308_table()
 
     def _sync_cart_from_ge(self):
         curr_sel = self.var_account.get() if getattr(self, "var_account", None) else "All Accounts"
         if curr_sel:
             curr_sel = curr_sel.replace('\u00a0', ' ').strip()
         active_ge_items = {}
-        for k, info in self._ge_cart_slots.items():
+        slots = getattr(self, "_ge_cart_slots", {})
+        for k, info in slots.items():
             acc = info.get("account")
             if not acc:
                 acc = k.rsplit("_", 1)[0]
@@ -9173,6 +9279,8 @@ class OSRSAlchDashboard(tk.Tk):
             if is_active:
                 self._apply_active_account_data()
                 self.recalculate_alch_table()
+                if hasattr(self, "recalculate_w308_table"):
+                    self.recalculate_w308_table()
                 if hasattr(self, "recalculate_bond_roadmap"):
                     self.recalculate_bond_roadmap()
 
@@ -9190,6 +9298,8 @@ class OSRSAlchDashboard(tk.Tk):
             self.state.save_accounts()
             if is_active:
                 self._apply_active_account_data()
+                if hasattr(self, "recalculate_w308_table"):
+                    self.recalculate_w308_table()
                 if hasattr(self, "recalculate_bond_roadmap"):
                     self.recalculate_bond_roadmap()
 

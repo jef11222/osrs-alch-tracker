@@ -222,9 +222,16 @@ public class AlchBridgePlugin extends Plugin {
             .build();
         clientToolbar.addNavigation(navButton);
 
-        // Start background poller to fetch Top 10 items from Python tracker every 3 seconds
+        // Start background poller to fetch Top 10 items and sync live account snapshot every 4 seconds
         pollerExecutor = Executors.newSingleThreadScheduledExecutor();
-        pollerExecutor.scheduleWithFixedDelay(this::fetchTop10Async, 1, 3, TimeUnit.SECONDS);
+        pollerExecutor.scheduleWithFixedDelay(() -> {
+            fetchTop10Async();
+            try {
+                if (client != null && client.getGameState() == GameState.LOGGED_IN) {
+                    sendAccountSnapshot();
+                }
+            } catch (Exception ignored) {}
+        }, 1, 4, TimeUnit.SECONDS);
 
         log.info("Alch Dashboard Bridge plugin started (Port: {})", config.bridgePort());
 
