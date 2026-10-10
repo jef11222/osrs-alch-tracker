@@ -155,19 +155,19 @@ public class AlchBridgeOverlay extends OverlayPanel {
                 .build());
         }
 
-        // Bond Progress & Live ETA
+        // Bond Progress & Live ETA (Portfolio Net Worth: Cash + Inventory Alchables)
         if (plugin.isBondTrackerEnabled()) {
-            long totalCoins = plugin.getTotalCoins();
+            long totalWealth = plugin.getTotalWealth();
             long bondPrice = plugin.getBondPrice();
-            double bondPct = bondPrice > 0 ? ((double) totalCoins / (double) bondPrice * 100.0) : 0.0;
+            double bondPct = bondPrice > 0 ? ((double) totalWealth / (double) bondPrice * 100.0) : 0.0;
             String bondText;
             Color bondColor;
 
-            if (totalCoins >= bondPrice) {
-                bondText = String.format("Ready! (%.1fM)", totalCoins / 1_000_000.0);
+            if (totalWealth >= bondPrice) {
+                bondText = String.format("Ready! (%.1fM)", totalWealth / 1_000_000.0);
                 bondColor = new Color(46, 204, 113); // Bright Green
             } else {
-                bondText = String.format("%.1fM / %.1fM (%.1f%%)", totalCoins / 1_000_000.0, bondPrice / 1_000_000.0, bondPct);
+                bondText = String.format("%.1fM / %.1fM (%.1f%%)", totalWealth / 1_000_000.0, bondPrice / 1_000_000.0, bondPct);
                 bondColor = bondPct >= 50.0 ? new Color(255, 193, 7) : new Color(255, 152, 0); // Gold or Orange
             }
 
@@ -178,8 +178,8 @@ public class AlchBridgeOverlay extends OverlayPanel {
                 .build());
 
             long profitPerHour = plugin.getProfitPerHour();
-            if (totalCoins < bondPrice && profitPerHour > 0) {
-                long remGp = bondPrice - totalCoins;
+            if (totalWealth < bondPrice && profitPerHour > 0) {
+                long remGp = bondPrice - totalWealth;
                 double hrs = (double) remGp / (double) profitPerHour;
                 String etaText = hrs >= 24.0 ? String.format("~%.1f days", hrs / 24.0) : String.format("~%.1f hrs", hrs);
                 panelComponent.getChildren().add(LineComponent.builder()

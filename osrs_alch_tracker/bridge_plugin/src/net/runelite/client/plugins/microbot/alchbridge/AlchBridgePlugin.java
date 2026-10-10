@@ -122,6 +122,7 @@ public class AlchBridgePlugin extends Plugin {
     // Cost Basis & Trade Tracking (W308 vs GE)
     private CostBasisMode activeCostBasisOverride = null;
     private final Map<Integer, Integer> lastW308TradePrices = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> lastGeBuyPrices = new ConcurrentHashMap<>();
     private String lastW308TradeItemName = null;
     private int lastW308TradePrice = 0;
     private int lastAlchedItemId = -1;
@@ -379,7 +380,7 @@ public class AlchBridgePlugin extends Plugin {
         lastOfferState.put(slot, stateName);
         lastOfferQty.put(slot, qtySold);
 
-        // Track BUY offers (active BUYING, completed BOUGHT, or cancelled partial CANCELLED_BUY)
+            // Track BUY offers (active BUYING, completed BOUGHT, or cancelled partial CANCELLED_BUY)
         if (state == GrandExchangeOfferState.BUYING 
             || state == GrandExchangeOfferState.BOUGHT 
             || state == GrandExchangeOfferState.CANCELLED_BUY) {
@@ -387,6 +388,21 @@ public class AlchBridgePlugin extends Plugin {
             if (itemId <= 0) {
                 return;
             }
+            int unnotedId = itemId;
+            try {
+                ItemComposition comp = itemManager.getItemComposition(itemId);
+                if (comp != null && comp.getNote() != -1 && comp.getLinkedNoteId() > 0) {
+                    unnotedId = comp.getLinkedNoteId();
+                }
+            } catch (Exception ignored) {}
+
+            if (qtySold > 0 && offer.getSpent() > 0) {
+                int unitP = (int) Math.round((double) offer.getSpent() / (double) qtySold);
+                if (unitP > 0) {
+                    lastGeBuyPrices.put(unnotedId, unitP);
+                }
+            }
+
             String itemName = itemManager.getItemComposition(itemId).getName();
 
             Map<String, Object> data = new HashMap<>();
@@ -479,7 +495,10 @@ public class AlchBridgePlugin extends Plugin {
                     sessionProfit = calculateSessionProfit();
                     lastAlchedItem = String.format("%s (%+d gp)", itemName, profit);
                 } else {
-                    sessionUnknownItemProfit += (deltaCoins - natCost);
+                    // Safe fallback so unknown/unindexed alched items never count full gross coins as profit
+                    long itemBuyPrice = Math.max(0, deltaCoins - 550);
+                    long profit = Math.max(0, deltaCoins - itemBuyPrice - natCost);
+                    sessionUnknownItemProfit += profit;
                     sessionProfit = calculateSessionProfit();
                 }
             }
@@ -965,9 +984,10 @@ public class AlchBridgePlugin extends Plugin {
         // Hard mechanical cap in OSRS: 5 ticks = 3.0s = 1,200 casts/hr max
         cachedAlchsPerHour = Math.min(1200, Math.max(0, calculatedRate));
 
-        // Stable Profit / Hour based on actual average return per cast
-        double avgProfit = (double) sessionProfit / (double) sessionAlchs;
-        cachedProfitPerHour = Math.round(cachedAlchsPerHour * avgProfit);
+        // Stable Profit / Hour based strictly on physical alching returns (never corrupted by trade flips)
+        long alchProfit = calculateAlchProfit();
+        double avgAlchProfit = (sessionAlchs > 0) ? ((double) alchProfit / (double) sessionAlchs) : 0.0;
+        cachedProfitPerHour = Math.round(cachedAlchsPerHour * avgAlchProfit);
 
         // Magic XP / Hour
         cachedXpPerHour = cachedAlchsPerHour * 65;
@@ -1032,35 +1052,61 @@ public class AlchBridgePlugin extends Plugin {
         CostBasisMode mode = getCostBasisMode();
         if (mode == CostBasisMode.W308_TRADE) {
             int manual = config.manualTradeBuyPrice();
-            if (manual > 0) {
-                return manual;
-            }
+            if (manual > 0) return manual;
             Integer tradePrice = lastW308TradePrices.get(unnotedId);
-            if (tradePrice != null && tradePrice > 0) {
-                return tradePrice;
-            }
+            if (tradePrice != null && tradePrice > 0) return tradePrice;
+            Integer geBuy = lastGeBuyPrices.get(unnotedId);
+            if (geBuy != null && geBuy > 0) return geBuy;
             Integer livePrice = liveTrackerPrices.get(unnotedId);
-            if (livePrice != null && livePrice > 0) {
-                return livePrice;
-            }
-            return Math.max(0, itemManager.getItemPrice(unnotedId));
+            if (livePrice != null && livePrice > 0) return livePrice;
+            long p = itemManager.getItemPrice(unnotedId);
+            if (p > 0) return p;
         } else {
+            Integer geBuy = lastGeBuyPrices.get(unnotedId);
+            if (geBuy != null && geBuy > 0) return geBuy;
             Integer livePrice = liveTrackerPrices.get(unnotedId);
-            if (livePrice != null && livePrice > 0) {
-                return livePrice;
-            }
-            return Math.max(0, itemManager.getItemPrice(unnotedId));
+            if (livePrice != null && livePrice > 0) return livePrice;
+            long p = itemManager.getItemPrice(unnotedId);
+            if (p > 0) return p;
+            Integer tradePrice = lastW308TradePrices.get(unnotedId);
+            if (tradePrice != null && tradePrice > 0) return tradePrice;
         }
+
+        // Safe fallback for alchable items so buy cost is NEVER assumed to be 0 gp
+        try {
+            ItemComposition comp = itemManager.getItemComposition(unnotedId);
+            if (comp != null && comp.getHaPrice() > 1000) {
+                return Math.max(1, comp.getHaPrice() - 550);
+            }
+        } catch (Exception ignored) {}
+
+        return 0;
     }
 
-    public long calculateSessionProfit() {
+    public long calculateAlchProfit() {
         long totalBuyCost = 0;
         for (Map.Entry<Integer, Integer> entry : sessionAlchedItemCounts.entrySet()) {
             int id = entry.getKey();
             int count = entry.getValue();
             totalBuyCost += getItemBuyCost(id) * count;
         }
-        return (sessionTotalHighAlchGp - sessionTotalNatCost - totalBuyCost) + sessionUnknownItemProfit + sessionTradeProfit;
+        return (sessionTotalHighAlchGp - sessionTotalNatCost - totalBuyCost) + sessionUnknownItemProfit;
+    }
+
+    public long calculateSessionProfit() {
+        return calculateAlchProfit() + sessionTradeProfit;
+    }
+
+    public long getTotalWealth() {
+        return getTotalCoins() + Math.max(0L, batchGrossGp);
+    }
+
+    public long getBatchGrossGp() {
+        return batchGrossGp;
+    }
+
+    public long getBatchTotalProfit() {
+        return batchTotalProfit;
     }
 
     public int getActiveW308Price() {
@@ -1378,6 +1424,9 @@ public class AlchBridgePlugin extends Plugin {
                 if (qty > 0) {
                     int unitSellPrice = (int) Math.round((double) totalCoins / (double) qty);
                     long buyCost = getItemBuyCost(unnotedId);
+                    if (buyCost <= 0) {
+                        buyCost = Math.max(1, unitSellPrice - 100);
+                    }
                     long flipProfit = (unitSellPrice - buyCost) * qty;
                     sessionTradeProfit += flipProfit;
                     sessionProfit = calculateSessionProfit();
@@ -1418,6 +1467,9 @@ public class AlchBridgePlugin extends Plugin {
                     int allocatedCoins = (int) Math.round(totalCoins * proportion);
                     int unitSellPrice = qty > 0 ? (int) Math.round((double) allocatedCoins / (double) qty) : 0;
                     long buyCost = getItemBuyCost(unnotedId);
+                    if (buyCost <= 0) {
+                        buyCost = Math.max(1, unitSellPrice - 100);
+                    }
                     long flipProfit = (unitSellPrice - buyCost) * qty;
                     sessionTradeProfit += flipProfit;
 
