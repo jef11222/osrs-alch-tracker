@@ -185,6 +185,14 @@ public class AlchBridgePlugin extends Plugin {
     private long sessionStartWealth = 0;
     private Boolean bondTrackerOverride = null;
 
+    // Real-time Skilling Progression & Activity Auto-Detection
+    private Skill detectedSkill = null;
+    private String detectedActivityName = "";
+    private double liveSkillingXpHr = 0.0;
+    private long lastSkillingDropTime = 0;
+    private final Map<Skill, Integer> lastSkillXpMap = new ConcurrentHashMap<>();
+    private final java.util.ArrayDeque<long[]> recentSkillingXpDrops = new java.util.ArrayDeque<>();
+
     @Provides
     AlchBridgeConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(AlchBridgeConfig.class);
@@ -591,8 +599,9 @@ public class AlchBridgePlugin extends Plugin {
     @Subscribe
     public void onStatChanged(StatChanged event) {
         Skill skill = event.getSkill();
+        int currentXp = event.getXp();
+
         if (skill == Skill.MAGIC && config.trackAlchCasts()) {
-            int currentXp = event.getXp();
             if (lastMagicXp > 0) {
                 int diff = currentXp - lastMagicXp;
                 if (diff == 65 || diff == 31) {
@@ -603,16 +612,215 @@ public class AlchBridgePlugin extends Plugin {
         }
 
         if (skill == Skill.CRAFTING || skill == Skill.FLETCHING || skill == Skill.MAGIC || skill == Skill.SMITHING) {
-            Map<String, Object> data = new HashMap<>();
-            data.put("event", "SKILLS_SYNC");
-            data.put("account", getAccountName());
-            data.put("crafting", client.getRealSkillLevel(Skill.CRAFTING));
-            data.put("smithing", client.getRealSkillLevel(Skill.SMITHING));
-            data.put("fletching", client.getRealSkillLevel(Skill.FLETCHING));
-            data.put("magic", client.getRealSkillLevel(Skill.MAGIC));
-            data.put("timestamp", System.currentTimeMillis() / 1000.0);
-            sendPayload(data);
+            Integer prevXp = lastSkillXpMap.get(skill);
+            if (prevXp != null && prevXp > 0) {
+                int diff = currentXp - prevXp;
+                if (diff > 0) {
+                    handleSkillingXpDrop(skill, diff);
+                }
+            }
+            lastSkillXpMap.put(skill, currentXp);
+
+            sendSkillsSync(skill);
         }
+    }
+
+    private void handleSkillingXpDrop(Skill skill, int diff) {
+        long now = System.currentTimeMillis();
+        lastSkillingDropTime = now;
+        detectedSkill = skill;
+        detectedActivityName = identifySkillingActivity(skill, diff);
+
+        recentSkillingXpDrops.addLast(new long[]{now, diff});
+        while (!recentSkillingXpDrops.isEmpty() && (now - recentSkillingXpDrops.peekFirst()[0] > 300000L)) {
+            recentSkillingXpDrops.removeFirst();
+        }
+
+        if (recentSkillingXpDrops.size() >= 2) {
+            long windowMs = now - recentSkillingXpDrops.peekFirst()[0];
+            if (windowMs >= 8000L) {
+                long sumXp = 0;
+                for (long[] d : recentSkillingXpDrops) {
+                    sumXp += d[1];
+                }
+                liveSkillingXpHr = (sumXp / (windowMs / 1000.0)) * 3600.0;
+            }
+        }
+    }
+
+    private void sendSkillsSync(Skill activeSkill) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("event", "SKILLS_SYNC");
+        data.put("account", getAccountName());
+        data.put("crafting", client.getRealSkillLevel(Skill.CRAFTING));
+        data.put("smithing", client.getRealSkillLevel(Skill.SMITHING));
+        data.put("fletching", client.getRealSkillLevel(Skill.FLETCHING));
+        data.put("magic", client.getRealSkillLevel(Skill.MAGIC));
+        data.put("crafting_xp", client.getSkillExperience(Skill.CRAFTING));
+        data.put("smithing_xp", client.getSkillExperience(Skill.SMITHING));
+        data.put("fletching_xp", client.getSkillExperience(Skill.FLETCHING));
+        data.put("magic_xp", client.getSkillExperience(Skill.MAGIC));
+
+        Skill targetSkill = (detectedSkill != null) ? detectedSkill : activeSkill;
+        if (targetSkill != null) {
+            int curXp = client.getSkillExperience(targetSkill);
+            int curLvl = client.getRealSkillLevel(targetSkill);
+            int nextLvlXp = getXpForLevel(Math.min(99, curLvl + 1));
+            int remXp = Math.max(0, nextLvlXp - curXp);
+            int estSecs = (liveSkillingXpHr > 1000) ? (int) Math.round((remXp / liveSkillingXpHr) * 3600.0) : 0;
+
+            data.put("active_skill", targetSkill.getName());
+            data.put("detected_activity", detectedActivityName != null ? detectedActivityName : "");
+            data.put("skilling_xp_hr", (int) Math.round(liveSkillingXpHr));
+            data.put("rem_xp_next", remXp);
+            data.put("est_secs_next", estSecs);
+
+            if (panel != null) {
+                panel.updateSkillingProgression(
+                    targetSkill.getName(),
+                    detectedActivityName,
+                    curLvl,
+                    Math.min(99, curLvl + 1),
+                    remXp,
+                    liveSkillingXpHr,
+                    estSecs
+                );
+            }
+        }
+
+        data.put("timestamp", System.currentTimeMillis() / 1000.0);
+        sendPayload(data);
+    }
+
+    private String identifySkillingActivity(Skill skill, int xpGained) {
+        if (skill == Skill.SMITHING) {
+            if (xpGained == 125) return "Bronze Platebody";
+            if (xpGained == 250) return "Iron Platebody";
+            if (xpGained == 375) return "Steel Platebody";
+            if (xpGained == 500) return "Mithril Platebody";
+            if (xpGained == 625) return "Adamant Platebody";
+            if (xpGained == 750) return "Rune Platebody";
+            if (xpGained == 75) return "Bronze Platelegs/Skirt";
+            if (xpGained == 150) return "Iron Platelegs/Skirt";
+            if (xpGained == 225) return "Steel Platelegs/Skirt";
+            if (xpGained == 300) return "Mithril Platelegs/Skirt";
+            if (xpGained == 450) return "Rune Platelegs/Skirt";
+            if (xpGained == 56 || xpGained == 57) return "Gold Bar (Smelting)";
+            if (xpGained == 30) return "Steel Bar (Smelting)";
+            if (xpGained == 17 || xpGained == 18) return "Iron Bar (Smelting)";
+            if (xpGained == 22 || xpGained == 23) return "Silver Bar (Smelting)";
+            if (xpGained == 6 || xpGained == 7) return "Bronze Bar (Smelting)";
+            return "Smithing Anvil/Furnace";
+        } else if (skill == Skill.CRAFTING) {
+            if (xpGained == 50) return "Cutting Sapphires";
+            if (xpGained == 67 || xpGained == 68) return "Cutting Emeralds";
+            if (xpGained == 85) return "Cutting Rubies";
+            if (xpGained == 107 || xpGained == 108) return "Cutting Diamonds";
+            if (xpGained == 20) return "Blowing Beer Glass";
+            if (xpGained == 52 || xpGained == 53) return "Blowing Unpowered Orbs";
+            if (xpGained == 100) return "Blowing Lantern Lenses";
+            if (xpGained == 186) return "Green D'hide Bodies";
+            if (xpGained == 210) return "Blue D'hide Bodies";
+            if (xpGained == 234) return "Red D'hide Bodies";
+            if (xpGained == 258) return "Black D'hide Bodies";
+            if (xpGained == 105) return "Leather Bodies";
+            return "Crafting Items";
+        } else if (skill == Skill.FLETCHING) {
+            if (xpGained == 5) return "Arrow Shafts";
+            if (xpGained == 33 || xpGained == 34) return "Fletching Willow Longbows (u)";
+            if (xpGained == 41 || xpGained == 42) return "Stringing Willow Shortbows";
+            if (xpGained == 58) return "Fletching Maple Longbows (u)";
+            if (xpGained == 67 || xpGained == 68) return "Fletching Yew Longbows (u)";
+            if (xpGained == 75) return "Stringing Yew Longbows";
+            if (xpGained == 83 || xpGained == 84) return "Fletching Magic Longbows (u)";
+            if (xpGained == 91 || xpGained == 92) return "Stringing Magic Longbows";
+            if (xpGained == 25) return "Fletching Mithril Darts";
+            if (xpGained == 30) return "Fletching Adamant Darts";
+            if (xpGained == 40) return "Fletching Broad Bolts";
+            return "Fletching Items";
+        } else if (skill == Skill.MAGIC) {
+            if (xpGained == 65) return "High Level Alchemy";
+            if (xpGained == 31) return "Low Level Alchemy";
+            if (xpGained == 83) return "Superheat Item";
+            return "Magic Training";
+        }
+        return skill.getName();
+    }
+
+    private void detectSkillingFromInventory(ItemContainer inv) {
+        if (inv == null) return;
+        boolean hasHammer = inv.count(ItemID.HAMMER) > 0;
+        boolean hasChisel = inv.count(ItemID.CHISEL) > 0;
+        boolean hasKnife = inv.count(ItemID.KNIFE) > 0;
+        boolean hasGlassPipe = inv.count(ItemID.GLASSBLOWING_PIPE) > 0;
+
+        if (hasHammer) {
+            if (inv.count(ItemID.RUNITE_BAR) > 0) {
+                detectedSkill = Skill.SMITHING;
+                detectedActivityName = "Smithing Rune Bars";
+            } else if (inv.count(ItemID.ADAMANTITE_BAR) > 0) {
+                detectedSkill = Skill.SMITHING;
+                detectedActivityName = "Smithing Adamant Bars";
+            } else if (inv.count(ItemID.MITHRIL_BAR) > 0) {
+                detectedSkill = Skill.SMITHING;
+                detectedActivityName = "Smithing Mithril Bars";
+            } else if (inv.count(ItemID.STEEL_BAR) > 0) {
+                detectedSkill = Skill.SMITHING;
+                detectedActivityName = "Smithing Steel Bars";
+            } else if (inv.count(ItemID.IRON_BAR) > 0) {
+                detectedSkill = Skill.SMITHING;
+                detectedActivityName = "Smithing Iron Bars";
+            } else if (inv.count(ItemID.BRONZE_BAR) > 0) {
+                detectedSkill = Skill.SMITHING;
+                detectedActivityName = "Smithing Bronze Bars";
+            }
+        } else if (hasGlassPipe && inv.count(ItemID.MOLTEN_GLASS) > 0) {
+            detectedSkill = Skill.CRAFTING;
+            detectedActivityName = "Blowing Molten Glass";
+        } else if (hasChisel) {
+            if (inv.count(ItemID.UNCUT_DIAMOND) > 0) {
+                detectedSkill = Skill.CRAFTING;
+                detectedActivityName = "Cutting Diamonds";
+            } else if (inv.count(ItemID.UNCUT_RUBY) > 0) {
+                detectedSkill = Skill.CRAFTING;
+                detectedActivityName = "Cutting Rubies";
+            } else if (inv.count(ItemID.UNCUT_EMERALD) > 0) {
+                detectedSkill = Skill.CRAFTING;
+                detectedActivityName = "Cutting Emeralds";
+            } else if (inv.count(ItemID.UNCUT_SAPPHIRE) > 0) {
+                detectedSkill = Skill.CRAFTING;
+                detectedActivityName = "Cutting Sapphires";
+            }
+        } else if (hasKnife) {
+            if (inv.count(ItemID.MAGIC_LOGS) > 0) {
+                detectedSkill = Skill.FLETCHING;
+                detectedActivityName = "Fletching Magic Logs";
+            } else if (inv.count(ItemID.YEW_LOGS) > 0) {
+                detectedSkill = Skill.FLETCHING;
+                detectedActivityName = "Fletching Yew Logs";
+            } else if (inv.count(ItemID.MAPLE_LOGS) > 0) {
+                detectedSkill = Skill.FLETCHING;
+                detectedActivityName = "Fletching Maple Logs";
+            } else if (inv.count(ItemID.WILLOW_LOGS) > 0) {
+                detectedSkill = Skill.FLETCHING;
+                detectedActivityName = "Fletching Willow Logs";
+            }
+        } else if (inv.count(ItemID.BOW_STRING) > 0) {
+            detectedSkill = Skill.FLETCHING;
+            detectedActivityName = "Stringing Bows";
+        } else if (inv.count(ItemID.IRON_ORE) > 0 || inv.count(ItemID.COAL) > 0 || inv.count(ItemID.GOLD_ORE) > 0 || inv.count(ItemID.SILVER_ORE) > 0) {
+            detectedSkill = Skill.SMITHING;
+            detectedActivityName = "Smelting Bars";
+        }
+    }
+
+    public static int getXpForLevel(int lvl) {
+        if (lvl <= 1) return 0;
+        int points = 0;
+        for (int i = 1; i < lvl; i++) {
+            points += Math.floor(i + 300.0 * Math.pow(2.0, i / 7.0));
+        }
+        return points / 4;
     }
 
     private void handleAlchCast(int diff, int magicLevel) {
@@ -831,6 +1039,8 @@ public class AlchBridgePlugin extends Plugin {
             return;
         }
 
+        detectSkillingFromInventory(inv);
+
         int natRunes = inv.count(ItemID.NATURE_RUNE);
         String fireSource = checkFireSource(inv);
 
@@ -935,6 +1145,22 @@ public class AlchBridgePlugin extends Plugin {
                 entries, totalQty, totalProfit, totalGross,
                 estSecs, natRunes, fireSource, cachedAlchsPerHour
             );
+            if (detectedSkill != null) {
+                int curXp = client.getSkillExperience(detectedSkill);
+                int curLvl = client.getRealSkillLevel(detectedSkill);
+                int nextLvlXp = getXpForLevel(Math.min(99, curLvl + 1));
+                int remXp = Math.max(0, nextLvlXp - curXp);
+                long skillingEstSecs = (liveSkillingXpHr > 1000) ? (long) Math.round((remXp / liveSkillingXpHr) * 3600.0) : 0;
+                panel.updateSkillingProgression(
+                    detectedSkill.getName(),
+                    detectedActivityName,
+                    curLvl,
+                    Math.min(99, curLvl + 1),
+                    remXp,
+                    liveSkillingXpHr,
+                    skillingEstSecs
+                );
+            }
         }
     }
 
@@ -1203,6 +1429,11 @@ public class AlchBridgePlugin extends Plugin {
         cachedXpPerHour = 0;
         lastRateUpdateTime = 0;
         batchDistinctTypes = 0;
+        detectedSkill = null;
+        detectedActivityName = "";
+        liveSkillingXpHr = 0.0;
+        lastSkillingDropTime = 0;
+        recentSkillingXpDrops.clear();
         scanInventoryBatch(null);
         log.info("Alch session stats reset");
     }
@@ -1218,6 +1449,24 @@ public class AlchBridgePlugin extends Plugin {
             data.put("smithing", client.getRealSkillLevel(Skill.SMITHING));
             data.put("fletching", client.getRealSkillLevel(Skill.FLETCHING));
             data.put("magic", client.getRealSkillLevel(Skill.MAGIC));
+            data.put("crafting_xp", client.getSkillExperience(Skill.CRAFTING));
+            data.put("smithing_xp", client.getSkillExperience(Skill.SMITHING));
+            data.put("fletching_xp", client.getSkillExperience(Skill.FLETCHING));
+            data.put("magic_xp", client.getSkillExperience(Skill.MAGIC));
+
+            if (detectedSkill != null) {
+                int curXp = client.getSkillExperience(detectedSkill);
+                int curLvl = client.getRealSkillLevel(detectedSkill);
+                int nextLvlXp = getXpForLevel(Math.min(99, curLvl + 1));
+                int remXp = Math.max(0, nextLvlXp - curXp);
+                int estSecs = (liveSkillingXpHr > 1000) ? (int) Math.round((remXp / liveSkillingXpHr) * 3600.0) : 0;
+
+                data.put("active_skill", detectedSkill.getName());
+                data.put("detected_activity", detectedActivityName != null ? detectedActivityName : "");
+                data.put("skilling_xp_hr", (int) Math.round(liveSkillingXpHr));
+                data.put("rem_xp_next", remXp);
+                data.put("est_secs_next", estSecs);
+            }
 
             ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
             if (inv != null) {
@@ -1331,5 +1580,32 @@ public class AlchBridgePlugin extends Plugin {
                 .exceptionally(ex -> null); // Non-blocking: quietly drop if dashboard is closed
         } catch (Exception ignored) {
         }
+    }
+
+    public boolean isSkillingActive() {
+        if (detectedSkill == null) return false;
+        long now = System.currentTimeMillis();
+        return (now - lastSkillingDropTime < 60000L);
+    }
+
+    public Skill getDetectedSkill() {
+        return detectedSkill;
+    }
+
+    public String getDetectedActivityName() {
+        return detectedActivityName != null ? detectedActivityName : "";
+    }
+
+    public double getLiveSkillingXpHr() {
+        return liveSkillingXpHr;
+    }
+
+    public long getSkillingRemSecsNext() {
+        if (detectedSkill == null || liveSkillingXpHr < 1000) return 0;
+        int curXp = client.getSkillExperience(detectedSkill);
+        int curLvl = client.getRealSkillLevel(detectedSkill);
+        int nextLvlXp = getXpForLevel(Math.min(99, curLvl + 1));
+        int remXp = Math.max(0, nextLvlXp - curXp);
+        return (long) Math.round((remXp / liveSkillingXpHr) * 3600.0);
     }
 }

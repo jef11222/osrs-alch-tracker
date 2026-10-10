@@ -17,10 +17,329 @@ def get_level_for_xp(xp):
     """Calculates the current OSRS level corresponding to an XP amount."""
     if xp <= 0:
         return 1
-    for lvl in range(1, 127):
-        if get_xp_for_level(lvl + 1) > xp:
-            return lvl
-    return 126
+import math
+
+def format_skilling_duration(seconds):
+    """Formats duration in seconds into human-readable OSRS time (e.g. 45s, 17m 30s, 1h 15m, 2d 4h)."""
+    if seconds <= 0:
+        return "0s"
+    h = int(seconds) // 3600
+    m = (int(seconds) % 3600) // 60
+    s = int(seconds) % 60
+    if h >= 24:
+        d = h // 24
+        rem_h = h % 24
+        return f"{d}d {rem_h}h"
+    elif h > 0:
+        return f"{h}h {m:02d}m"
+    elif m > 0:
+        return f"{m}m {s:02d}s"
+    else:
+        return f"{s}s"
+
+def calculate_skilling_cycle(skill, method_name, xp_per_action, mats=None):
+    """
+    Calculates the tick-accurate physical loop for a skilling recipe:
+    - Actions per inventory batch
+    - Animation / processing duration (seconds)
+    - Walking time round-trip (seconds)
+    - Banking / preset overhead (seconds)
+    Returns:
+    {
+        "actions_per_inv": int,
+        "action_secs": float,
+        "walk_secs": float,
+        "bank_secs": float,
+        "cycle_secs": float,
+        "actions_per_hour": float,
+        "xp_per_hour": float,
+        "station_name": str,
+        "walk_desc": str
+    }
+    """
+    name_lower = (method_name or "").lower()
+    skill_lower = (skill or "").lower()
+
+    if skill_lower == "smithing":
+        if "quest" in name_lower:
+            return {
+                "actions_per_inv": 1,
+                "action_secs": 0.0,
+                "walk_secs": 0.0,
+                "bank_secs": 0.0,
+                "cycle_secs": 1.0,
+                "actions_per_hour": 1.0,
+                "xp_per_hour": xp_per_action,
+                "station_name": "Quest NPC",
+                "walk_desc": "Instant quest turn-in"
+            }
+        elif "blast furnace" in name_lower:
+            station_name = "Blast Furnace"
+            walk_desc = "Conveyor belt <-> Bank chest (~12 running tiles)"
+            actions_per_inv = 28
+            action_secs = 3.0
+            walk_secs = 7.2
+            bank_secs = 3.6
+            cycle_secs = action_secs + walk_secs + bank_secs
+            actions_per_hr = (3600.0 / cycle_secs) * actions_per_inv
+            return {
+                "actions_per_inv": actions_per_inv,
+                "action_secs": action_secs,
+                "walk_secs": walk_secs,
+                "bank_secs": bank_secs,
+                "cycle_secs": cycle_secs,
+                "actions_per_hour": actions_per_hr,
+                "xp_per_hour": actions_per_hr * xp_per_action,
+                "station_name": station_name,
+                "walk_desc": walk_desc
+            }
+        elif "furnace" in name_lower or "smelt" in name_lower:
+            station_name = "Edgeville Furnace"
+            walk_desc = "Edgeville Bank <-> Furnace (~10 running tiles)"
+            walk_secs = 6.0
+            bank_secs = 4.0
+            if "bronze" in name_lower:
+                actions_per_inv = 14
+            elif "steel" in name_lower:
+                actions_per_inv = 9
+            elif "mithril" in name_lower:
+                actions_per_inv = 5
+            elif "adamant" in name_lower:
+                actions_per_inv = 4
+            elif "rune" in name_lower:
+                actions_per_inv = 3
+            else:
+                actions_per_inv = 28
+            action_secs = actions_per_inv * 2.4
+            cycle_secs = action_secs + walk_secs + bank_secs
+            actions_per_hr = (3600.0 / cycle_secs) * actions_per_inv
+            return {
+                "actions_per_inv": actions_per_inv,
+                "action_secs": action_secs,
+                "walk_secs": walk_secs,
+                "bank_secs": bank_secs,
+                "cycle_secs": cycle_secs,
+                "actions_per_hour": actions_per_hr,
+                "xp_per_hour": actions_per_hr * xp_per_action,
+                "station_name": station_name,
+                "walk_desc": walk_desc
+            }
+        else:
+            station_name = "Varrock West Anvil"
+            walk_desc = "Varrock West Bank <-> Anvil (~8 running tiles)"
+            walk_secs = 4.8
+            bank_secs = 4.0
+            if "platebody" in name_lower:
+                actions_per_inv = 5
+                action_secs = 5 * 3.0
+            elif "legs" in name_lower or "skirt" in name_lower or "2h" in name_lower:
+                actions_per_inv = 9
+                action_secs = 9 * 3.0
+            elif "dart" in name_lower:
+                actions_per_inv = 27
+                action_secs = 27 * 2.4
+            elif "knife" in name_lower:
+                actions_per_inv = 27
+                action_secs = 27 * 2.4
+            else:
+                actions_per_inv = 9
+                action_secs = 9 * 3.0
+            cycle_secs = action_secs + walk_secs + bank_secs
+            actions_per_hr = (3600.0 / cycle_secs) * actions_per_inv
+            return {
+                "actions_per_inv": actions_per_inv,
+                "action_secs": action_secs,
+                "walk_secs": walk_secs,
+                "bank_secs": bank_secs,
+                "cycle_secs": cycle_secs,
+                "actions_per_hour": actions_per_hr,
+                "xp_per_hour": actions_per_hr * xp_per_action,
+                "station_name": station_name,
+                "walk_desc": walk_desc
+            }
+
+    elif skill_lower == "crafting":
+        if "jewelry" in name_lower or "ring" in name_lower or "necklace" in name_lower or "amulet" in name_lower or "bracelet" in name_lower:
+            station_name = "Edgeville Furnace"
+            walk_desc = "Edgeville Bank <-> Furnace (~10 running tiles)"
+            actions_per_inv = 13 if ("cut" in name_lower or "gem" in name_lower or "sapphire" in name_lower or "emerald" in name_lower or "ruby" in name_lower or "diamond" in name_lower) else 27
+            action_secs = actions_per_inv * 1.8
+            walk_secs = 6.0
+            bank_secs = 4.0
+        elif "cut" in name_lower or "gem" in name_lower or "sapphire" in name_lower or "emerald" in name_lower or "ruby" in name_lower or "diamond" in name_lower:
+            station_name = "Bank Booth"
+            walk_desc = "Bank-standing (0 tiles)"
+            actions_per_inv = 27
+            action_secs = 27 * 1.2
+            walk_secs = 0.0
+            bank_secs = 3.5
+        elif "glass" in name_lower or "orb" in name_lower or "lens" in name_lower or "vial" in name_lower:
+            station_name = "Bank Booth"
+            walk_desc = "Bank-standing (0 tiles)"
+            actions_per_inv = 27
+            action_secs = 27 * 1.8
+            walk_secs = 0.0
+            bank_secs = 3.5
+        elif "leather" in name_lower or "d'hide" in name_lower or "body" in name_lower or "chaps" in name_lower or "vambraces" in name_lower:
+            station_name = "Bank Booth"
+            walk_desc = "Bank-standing (0 tiles)"
+            actions_per_inv = 8 if "body" in name_lower else 12
+            action_secs = actions_per_inv * 1.8
+            walk_secs = 0.0
+            bank_secs = 3.5
+        else:
+            station_name = "Bank Booth"
+            walk_desc = "Bank-standing (0 tiles)"
+            actions_per_inv = 27
+            action_secs = 27 * 1.8
+            walk_secs = 0.0
+            bank_secs = 3.5
+        cycle_secs = action_secs + walk_secs + bank_secs
+        actions_per_hr = (3600.0 / cycle_secs) * actions_per_inv
+        return {
+            "actions_per_inv": actions_per_inv,
+            "action_secs": action_secs,
+            "walk_secs": walk_secs,
+            "bank_secs": bank_secs,
+            "cycle_secs": cycle_secs,
+            "actions_per_hour": actions_per_hr,
+            "xp_per_hour": actions_per_hr * xp_per_action,
+            "station_name": station_name,
+            "walk_desc": walk_desc
+        }
+
+    elif skill_lower == "fletching":
+        station_name = "Bank Booth"
+        walk_desc = "Bank-standing (0 tiles)"
+        walk_secs = 0.0
+        bank_secs = 3.0
+        if "string" in name_lower and ("longbow" in name_lower or "shortbow" in name_lower):
+            actions_per_inv = 14
+            action_secs = 14 * 1.8
+        elif "dart" in name_lower or "arrow" in name_lower or "bolt" in name_lower:
+            actions_per_inv = 200
+            action_secs = 12.0
+            bank_secs = 2.0
+        else:
+            actions_per_inv = 27
+            action_secs = 27 * 1.8
+        cycle_secs = action_secs + walk_secs + bank_secs
+        actions_per_hr = (3600.0 / cycle_secs) * actions_per_inv
+        return {
+            "actions_per_inv": actions_per_inv,
+            "action_secs": action_secs,
+            "walk_secs": walk_secs,
+            "bank_secs": bank_secs,
+            "cycle_secs": cycle_secs,
+            "actions_per_hour": actions_per_hr,
+            "xp_per_hour": actions_per_hr * xp_per_action,
+            "station_name": station_name,
+            "walk_desc": walk_desc
+        }
+
+    elif skill_lower == "magic":
+        if "alch" in name_lower:
+            station_name = "Anywhere (Noted Stack)"
+            walk_desc = "Bank-standing or running (0 tiles)"
+            actions_per_inv = 1000
+            action_secs = 3.0
+            walk_secs = 0.0
+            bank_secs = 0.0
+            cycle_secs = 3.0
+            actions_per_hr = 1200.0
+            return {
+                "actions_per_inv": actions_per_inv,
+                "action_secs": action_secs,
+                "walk_secs": walk_secs,
+                "bank_secs": bank_secs,
+                "cycle_secs": cycle_secs,
+                "actions_per_hour": actions_per_hr,
+                "xp_per_hour": 1200.0 * xp_per_action,
+                "station_name": station_name,
+                "walk_desc": walk_desc
+            }
+        else:
+            station_name = "Bank Booth"
+            walk_desc = "Bank-standing (0 tiles)"
+            actions_per_inv = 27
+            action_secs = 27 * 1.8
+            walk_secs = 0.0
+            bank_secs = 3.0
+            cycle_secs = action_secs + walk_secs + bank_secs
+            actions_per_hr = (3600.0 / cycle_secs) * actions_per_inv
+            return {
+                "actions_per_inv": actions_per_inv,
+                "action_secs": action_secs,
+                "walk_secs": walk_secs,
+                "bank_secs": bank_secs,
+                "cycle_secs": cycle_secs,
+                "actions_per_hour": actions_per_hr,
+                "xp_per_hour": actions_per_hr * xp_per_action,
+                "station_name": station_name,
+                "walk_desc": walk_desc
+            }
+
+    # Generic fallback
+    return {
+        "actions_per_inv": 27,
+        "action_secs": 27 * 2.0,
+        "walk_secs": 4.0,
+        "bank_secs": 3.5,
+        "cycle_secs": 61.5,
+        "actions_per_hour": 1580.0,
+        "xp_per_hour": 1580.0 * xp_per_action,
+        "station_name": "Standard Station",
+        "walk_desc": "Standard loop"
+    }
+
+def get_progression_eta(cur_lvl, cur_xp, target_lvl, xp_per_action, cycle_info, live_rate=0):
+    """
+    Computes exact progression metrics:
+    - Rem XP to next level
+    - Rem XP to target goal level
+    - Actions needed to next level & goal level
+    - Inventories / trips needed to next level & goal level
+    - Time in seconds to next level & goal level (using live_rate if active, else cycle_info['xp_per_hour'])
+    """
+    lvl_start_xp = get_xp_for_level(cur_lvl)
+    lvl_next_xp = get_xp_for_level(cur_lvl + 1)
+    effective_cur_xp = max(lvl_start_xp, cur_xp) if cur_xp > 0 else lvl_start_xp
+
+    rem_xp_next = max(0, lvl_next_xp - effective_cur_xp)
+    lvl_span = max(1, lvl_next_xp - lvl_start_xp)
+    pct_to_next = min(100.0, max(0.0, ((effective_cur_xp - lvl_start_xp) / lvl_span) * 100.0))
+
+    goal_xp = get_xp_for_level(target_lvl)
+    rem_xp_goal = max(0, goal_xp - effective_cur_xp)
+
+    actions_per_inv = max(1, cycle_info.get("actions_per_inv", 27))
+    actions_next = math.ceil(rem_xp_next / xp_per_action) if (xp_per_action > 0 and rem_xp_next > 0) else 0
+    actions_goal = math.ceil(rem_xp_goal / xp_per_action) if (xp_per_action > 0 and rem_xp_goal > 0) else 0
+
+    trips_next = math.ceil(actions_next / actions_per_inv) if actions_per_inv > 0 else 0
+    trips_goal = math.ceil(actions_goal / actions_per_inv) if actions_per_inv > 0 else 0
+
+    effective_rate = float(live_rate) if (live_rate and float(live_rate) > 5000.0) else float(cycle_info.get("xp_per_hour", 50000.0))
+    if effective_rate <= 0:
+        effective_rate = 50000.0
+
+    secs_next = int(round((rem_xp_next / effective_rate) * 3600.0)) if rem_xp_next > 0 else 0
+    secs_goal = int(round((rem_xp_goal / effective_rate) * 3600.0)) if rem_xp_goal > 0 else 0
+
+    return {
+        "rem_xp_next": rem_xp_next,
+        "rem_xp_goal": rem_xp_goal,
+        "actions_next": actions_next,
+        "actions_goal": actions_goal,
+        "trips_next": trips_next,
+        "trips_goal": trips_goal,
+        "secs_next": secs_next,
+        "secs_goal": secs_goal,
+        "pct_to_next": pct_to_next,
+        "time_str_next": format_skilling_duration(secs_next),
+        "time_str_goal": format_skilling_duration(secs_goal),
+        "effective_rate": int(effective_rate)
+    }
 
 SKILLING_GUIDES = {
     "Smithing": {

@@ -48,6 +48,14 @@ public class AlchBridgePanel extends PluginPanel {
     private final JLabel batchProfitLabel = new JLabel("Batch Profit: --");
     private final JLabel batchGrossLabel = new JLabel("Magic XP: -- | Gross: --");
 
+    // Skilling Progression UI Elements
+    private final JPanel skillingCard = new JPanel();
+    private final JLabel skillingTitleLabel = new JLabel("⚡ Skilling Progression");
+    private final JLabel skillingActivityLabel = new JLabel("Auto-detecting activity...");
+    private final JLabel skillingLevelLabel = new JLabel("Level: -- → --");
+    private final JLabel skillingEtaLabel = new JLabel("Est. Next Lvl: --");
+    private final JLabel skillingRateLabel = new JLabel("Pace: --");
+
     public AlchBridgePanel(AlchBridgePlugin plugin) {
         super(false);
         setLayout(new BorderLayout());
@@ -96,6 +104,8 @@ public class AlchBridgePanel extends PluginPanel {
         topContainer.add(headerPanel);
         topContainer.add(Box.createVerticalStrut(6));
         topContainer.add(createBatchCard());
+        topContainer.add(Box.createVerticalStrut(4));
+        topContainer.add(createSkillingProgressionCard());
         topContainer.add(Box.createVerticalStrut(4));
 
         add(topContainer, BorderLayout.NORTH);
@@ -326,6 +336,90 @@ public class AlchBridgePanel extends PluginPanel {
         batchCard.add(batchGrossLabel);
 
         return batchCard;
+    }
+
+    private JPanel createSkillingProgressionCard() {
+        skillingCard.setLayout(new BoxLayout(skillingCard, BoxLayout.Y_AXIS));
+        skillingCard.setBackground(CARD_BG);
+        skillingCard.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(0, 6, 0, 6),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(41, 128, 185), 1),
+                new EmptyBorder(7, 8, 7, 8)
+            )
+        ));
+
+        skillingTitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        skillingTitleLabel.setForeground(new Color(0, 229, 255));
+        skillingTitleLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        skillingActivityLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        skillingActivityLabel.setForeground(Color.LIGHT_GRAY);
+        skillingActivityLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        skillingLevelLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        skillingLevelLabel.setForeground(new Color(170, 170, 170));
+        skillingLevelLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        skillingEtaLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        skillingEtaLabel.setForeground(new Color(105, 240, 174));
+        skillingEtaLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        skillingRateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        skillingRateLabel.setForeground(new Color(160, 160, 160));
+        skillingRateLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        skillingCard.add(skillingTitleLabel);
+        skillingCard.add(Box.createVerticalStrut(3));
+        skillingCard.add(skillingActivityLabel);
+        skillingCard.add(Box.createVerticalStrut(2));
+        skillingCard.add(skillingLevelLabel);
+        skillingCard.add(Box.createVerticalStrut(3));
+        skillingCard.add(skillingEtaLabel);
+        skillingCard.add(Box.createVerticalStrut(2));
+        skillingCard.add(skillingRateLabel);
+
+        return skillingCard;
+    }
+
+    public void updateSkillingProgression(
+        String skillName, String activityName,
+        int curLvl, int nextLvl, int remXp,
+        double xpHr, long estSeconds
+    ) {
+        SwingUtilities.invokeLater(() -> {
+            if (skillName == null || skillName.isEmpty()) {
+                skillingActivityLabel.setText("Auto-detecting activity...");
+                skillingActivityLabel.setForeground(Color.GRAY);
+                skillingLevelLabel.setText("Level: -- → --");
+                skillingEtaLabel.setText("Est. Next Lvl: --");
+                skillingRateLabel.setText("Pace: --");
+                return;
+            }
+
+            skillingTitleLabel.setText("⚡ " + skillName + " Progression");
+            skillingActivityLabel.setText(activityName != null && !activityName.isEmpty() ? activityName : (skillName + " Training"));
+            skillingActivityLabel.setForeground(Color.WHITE);
+
+            skillingLevelLabel.setText(String.format("Level %d → %d (%s XP left)", curLvl, nextLvl, numFmt.format(remXp)));
+            skillingLevelLabel.setForeground(new Color(220, 220, 220));
+
+            if (estSeconds > 0) {
+                skillingEtaLabel.setText(String.format("Est. Next Lvl: %s", formatDuration(estSeconds)));
+                skillingEtaLabel.setForeground(new Color(105, 240, 174));
+            } else {
+                skillingEtaLabel.setText("Est. Next Lvl: Calculating...");
+                skillingEtaLabel.setForeground(Color.GRAY);
+            }
+
+            if (xpHr > 1000) {
+                skillingRateLabel.setText(String.format("Live Pace: %,d XP/hr", (int) Math.round(xpHr)));
+                skillingRateLabel.setForeground(new Color(255, 235, 59));
+            } else {
+                skillingRateLabel.setText("Pace: Warming up...");
+                skillingRateLabel.setForeground(new Color(140, 140, 140));
+            }
+        });
     }
 
     public void updateInventoryBatch(

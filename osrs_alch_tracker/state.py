@@ -138,7 +138,7 @@ class AppState:
         except Exception as e:
             print(f"Error saving accounts: {e}")
 
-    def update_account(self, name, coins=None, nature_runes=None, world=None, is_members=None, levels=None):
+    def update_account(self, name, coins=None, nature_runes=None, world=None, is_members=None, levels=None, xp=None, skilling=None):
         if not name or name == "Unknown":
             return
         if name not in self.accounts:
@@ -149,6 +149,8 @@ class AppState:
                 "world": 301,
                 "is_members": True,
                 "levels": {"Crafting": 99, "Smithing": 99, "Fletching": 99, "Magic": 99, "Herblore": 99, "Cooking": 99},
+                "xp": {},
+                "skilling": {},
                 "last_seen": time.time()
             }
         acc = self.accounts[name]
@@ -162,7 +164,11 @@ class AppState:
         if is_members is not None:
             acc["is_members"] = bool(is_members)
         if levels:
-            acc["levels"].update(levels)
+            acc.setdefault("levels", {}).update(levels)
+        if xp:
+            acc.setdefault("xp", {}).update(xp)
+        if skilling:
+            acc.setdefault("skilling", {}).update(skilling)
         self.save_accounts()
 
     def add_timer(self, item_id, item_name, qty, account="Default"):

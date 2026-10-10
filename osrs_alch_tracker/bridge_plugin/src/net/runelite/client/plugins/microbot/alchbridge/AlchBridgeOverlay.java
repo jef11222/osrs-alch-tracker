@@ -87,6 +87,31 @@ public class AlchBridgeOverlay extends OverlayPanel {
                 .build());
         }
 
+        // Live Skilling Progression (Auto-detected activity, XP/hr, and Next Lvl ETA)
+        if (plugin.isSkillingActive()) {
+            panelComponent.getChildren().add(LineComponent.builder()
+                .left("Training:")
+                .right(plugin.getDetectedActivityName())
+                .rightColor(new Color(0, 229, 255))
+                .build());
+
+            if (plugin.getLiveSkillingXpHr() > 1000) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Skill XP/hr:")
+                    .right(String.format("%,d / hr", (int) Math.round(plugin.getLiveSkillingXpHr())))
+                    .rightColor(new Color(255, 235, 59))
+                    .build());
+            }
+
+            if (plugin.getSkillingRemSecsNext() > 0) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Next Lvl ETA:")
+                    .right(formatDuration(plugin.getSkillingRemSecsNext()))
+                    .rightColor(new Color(105, 240, 174))
+                    .build());
+            }
+        }
+
         // Cost Basis Mode (W308 Trade vs Live GE)
         CostBasisMode mode = plugin.getCostBasisMode();
         String basisText;

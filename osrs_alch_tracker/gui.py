@@ -16,7 +16,7 @@ except ImportError:
 from api import OSRSPricesAPI, NATURE_RUNE_ID
 from crafting import CRAFTING_RECIPES
 from ge_crafting import GE_PROFIT_RECIPES
-from skilling_guide import SKILLING_GUIDES, SMITHING_MATERIAL_CHAINS, get_xp_for_level, get_level_for_xp
+from skilling_guide import SKILLING_GUIDES, SMITHING_MATERIAL_CHAINS, get_xp_for_level, get_level_for_xp, calculate_skilling_cycle, get_progression_eta, format_skilling_duration
 from state import AppState
 from updater import APP_VERSION, check_for_updates, UpdateDialog, WhatsNewDialog
 from bridge_server import BridgeServer
@@ -3301,10 +3301,29 @@ class OSRSAlchDashboard(tk.Tk):
         ToolTip(btn_guide_expand, "➕ Expand All Rows:\nExpands all skilling brackets to reveal individual raw ingredients and buy ceilings underneath.")
 
         # 2. Dynamic Progress & XP Summary Banner
-        self.banner_guide_xp = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=8, pady=4)
+        self.banner_guide_xp = tk.Frame(container, bg="#202023", relief="solid", borderwidth=1, padx=8, pady=5)
         self.banner_guide_xp.pack(fill="x", pady=(0, 4))
-        self.lbl_guide_xp_summary = tk.Label(self.banner_guide_xp, text="🎯 Calculating progression...", font=("Segoe UI", 9), fg="#e0e0e0", bg="#202023")
-        self.lbl_guide_xp_summary.pack(anchor="w")
+
+        top_prog_row = tk.Frame(self.banner_guide_xp, bg="#202023")
+        top_prog_row.pack(fill="x")
+        self.lbl_guide_xp_summary = tk.Label(top_prog_row, text="🎯 Calculating progression...", font=("Segoe UI", 9, "bold"), fg="#e0e0e0", bg="#202023")
+        self.lbl_guide_xp_summary.pack(side="left")
+
+        self.lbl_guide_eta_badge = tk.Label(top_prog_row, text="⏱️ Est. Next Lvl: --", font=("Segoe UI", 9, "bold"), fg="#00e5ff", bg="#202023")
+        self.lbl_guide_eta_badge.pack(side="right")
+
+        # Visual progress bar canvas
+        self.canvas_guide_prog = tk.Canvas(self.banner_guide_xp, height=14, bg="#151518", highlightthickness=1, highlightbackground="#35353a")
+        self.canvas_guide_prog.pack(fill="x", pady=(3, 3))
+        self.canvas_guide_prog.bind("<Configure>", lambda e: self._draw_guide_progress_bar())
+
+        bot_prog_row = tk.Frame(self.banner_guide_xp, bg="#202023")
+        bot_prog_row.pack(fill="x")
+        self.lbl_guide_pace_summary = tk.Label(bot_prog_row, text="⚡ Pace: Calculating...", font=("Segoe UI", 8), fg="#aaaaaa", bg="#202023")
+        self.lbl_guide_pace_summary.pack(side="left")
+
+        self.lbl_guide_trips_summary = tk.Label(bot_prog_row, text="🎒 Trips: --", font=("Segoe UI", 8), fg="#cccccc", bg="#202023")
+        self.lbl_guide_trips_summary.pack(side="right")
 
         # 2b. Manual Sale Price & Profit Inspector Card
         self.frame_guide_inspector = tk.Frame(container, bg="#1a1a1d", relief="solid", borderwidth=1, padx=8, pady=5)
@@ -3647,10 +3666,11 @@ class OSRSAlchDashboard(tk.Tk):
             pass
         self.recalculate_guide_table()
 
-    def _render_smithing_material_tree(self, cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open):
+    def _render_smithing_material_tree(self, cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open, live_rate=0, detected_activity=""):
         coal_id = 453
         coal_price = self.api.get_price(coal_id, strat) or 140
         basis = "5m" if hasattr(self, "var_price_basis") and "5m" in self.var_price_basis.get() else self.state.config.get("price_basis", "5m")
+        best_active_item = None
 
         target_margin = 0
         if hasattr(self, "ent_guide_margin"):
@@ -4000,6 +4020,27 @@ class OSRSAlchDashboard(tk.Tk):
 
                 max_bar_str = f"≤ {tb_b:,} gp" if target_margin > 0 else f"≤ {be_b:,} gp"
 
+                mats_cycle = [{"id": bar_id, "name": bar_name, "qty": bars_cnt}]
+                cycle = calculate_skilling_cycle("Smithing", itm_name, smith_xp, mats_cycle)
+                cycle_rate = cycle.get("xp_per_hour", itm.get("xp_rate", 50000))
+                is_matching_active = bool(detected_activity and (detected_activity.lower() in itm_name.lower() or itm_name.lower() in detected_activity.lower()))
+                eff_rate = live_rate if (live_rate > 5000 and is_matching_active) else cycle_rate
+
+                prog = get_progression_eta(cur_lvl, cur_xp, cur_lvl + 1, smith_xp, cycle, live_rate=eff_rate if (live_rate > 5000 and is_matching_active) else 0)
+
+                if cur_lvl >= req_lvl:
+                    time_est_str = f"{prog['time_str_next']} (Next)"
+                    if best_active_item is None or req_lvl >= best_active_item.get("req_lvl", 0) or is_matching_active:
+                        best_active_item = {
+                            "name": itm_name,
+                            "req_lvl": req_lvl,
+                            "cycle": cycle,
+                            "prog": prog,
+                            "rate": eff_rate
+                        }
+                else:
+                    time_est_str = f"~{prog['time_str_next']}"
+
                 self.tree_guide.insert(tier_iid, "end", iid=itm_iid, text=f"    ↳ {itm_name}", values=(
                     status_str,
                     f"Lvl {req_lvl}",
@@ -4012,7 +4053,7 @@ class OSRSAlchDashboard(tk.Tk):
                     f"{'+' if chain_prof >= 0 else '-'}{format_gp(abs(chain_prof))}",
                     act_rec,
                     f"{xp_rt // 1000}k/hr",
-                    f"~{itm['out_qty']}x out" if itm["out_qty"] > 1 else "--",
+                    time_est_str,
                     verdict_text
                 ), tags=(tag,))
 
@@ -4043,7 +4084,9 @@ class OSRSAlchDashboard(tk.Tk):
                     "action_rec": act_rec,
                     "xp_rate": f"{xp_rt // 1000}k/hr",
                     "xp_rate_val": xp_rt,
-                    "time_est": f"{itm['out_qty']}x out" if itm["out_qty"] > 1 else "--",
+                    "time_est": time_est_str,
+                    "cycle": cycle,
+                    "prog": prog,
                     "verdict": verdict_text,
                     "output_id": itm_id,
                     "nature_cost": 1 if act_rec == "🪄 High Alch" else 0,
@@ -4147,6 +4190,81 @@ class OSRSAlchDashboard(tk.Tk):
             if (is_first_init and not prev_open) or tier_iid in prev_open:
                 self.tree_guide.item(tier_iid, open=True)
 
+        # Update top progress banner for Smithing tree
+        if best_active_item and hasattr(self, "lbl_guide_eta_badge"):
+            b_cycle = best_active_item["cycle"]
+            b_prog = best_active_item["prog"]
+            b_rate = best_active_item["rate"]
+
+            self.lbl_guide_eta_badge.config(text=f"⏱️ Est. Next Lvl: {b_prog.get('time_str_next', '--')}")
+
+            st_name = b_cycle.get("station_name", "Varrock West Anvil")
+            c_sec = b_cycle.get("cycle_secs", 0)
+            a_inv = b_cycle.get("actions_per_inv", 5)
+            pace_txt = f"⚡ Physical Pace: ~{c_sec:.1f}s cycle ({a_inv} items/inv @ {st_name})"
+            if live_rate > 5000:
+                pace_txt += f"  •  🟢 LIVE: {int(live_rate):,} XP/hr"
+            else:
+                pace_txt += f"  •  Est: {int(b_cycle.get('xp_per_hour', 0)):,} XP/hr"
+            if hasattr(self, "lbl_guide_pace_summary"):
+                self.lbl_guide_pace_summary.config(text=pace_txt)
+
+            trips_txt = f"🎒 Trips to Next Lvl: ~{b_prog.get('trips_next', 0)} inv ({b_prog.get('actions_next', 0):,} actions)"
+            if target_lvl > cur_lvl + 1:
+                trips_txt += f"  |  Goal Lvl {target_lvl}: ~{b_prog.get('trips_goal', 0)} inv ({b_prog.get('time_str_goal', '--')})"
+            if hasattr(self, "lbl_guide_trips_summary"):
+                self.lbl_guide_trips_summary.config(text=trips_txt)
+
+            self._guide_prog_data = {
+                "cur_lvl": cur_lvl,
+                "next_lvl": min(99, cur_lvl + 1),
+                "target_lvl": target_lvl,
+                "cur_xp": cur_xp,
+                "rem_xp_next": b_prog.get("rem_xp_next", 0),
+                "pct_next": b_prog.get("pct_to_next", 0.0),
+                "time_str_next": b_prog.get("time_str_next", "--")
+            }
+            self._draw_guide_progress_bar()
+
+    def _draw_guide_progress_bar(self):
+        if not hasattr(self, "canvas_guide_prog"):
+            return
+        c = self.canvas_guide_prog
+        w = c.winfo_width()
+        h = c.winfo_height()
+        if w < 10 or h < 5:
+            return
+        c.delete("all")
+
+        data = getattr(self, "_guide_prog_data", None)
+        if not data:
+            c.create_rectangle(0, 0, w, h, fill="#151518", outline="")
+            c.create_text(w // 2, h // 2, text="🎯 Set level or connect bridge to track pacing", font=("Segoe UI", 8), fill="#777777")
+            return
+
+        cur_lvl = data.get("cur_lvl", 1)
+        next_lvl = data.get("next_lvl", min(99, cur_lvl + 1))
+        target_lvl = data.get("target_lvl", 99)
+        pct_next = max(0.0, min(100.0, data.get("pct_next", 0.0)))
+        rem_xp_next = data.get("rem_xp_next", 0)
+        time_str_next = data.get("time_str_next", "--")
+
+        fill_w = int(w * (pct_next / 100.0))
+        # Background track
+        c.create_rectangle(0, 0, w, h, fill="#1c1c20", outline="")
+        # Progress fill
+        if fill_w > 0:
+            c.create_rectangle(0, 0, fill_w, h, fill="#00b4d8", outline="")
+
+        if cur_lvl >= target_lvl:
+            prog_txt = f"🏆 Goal Level {target_lvl} Complete! (100%)"
+        elif cur_lvl >= 99:
+            prog_txt = "👑 Level 99 Reached!"
+        else:
+            prog_txt = f"Level {cur_lvl} → {next_lvl}: {pct_next:.1f}% ({rem_xp_next:,} XP left)  •  ETA: {time_str_next}"
+
+        c.create_text(w // 2, h // 2, text=prog_txt, font=("Segoe UI", 8, "bold"), fill="#ffffff")
+
     def recalculate_guide_table(self):
         if not hasattr(self, "tree_guide"):
             return
@@ -4162,7 +4280,24 @@ class OSRSAlchDashboard(tk.Tk):
         except ValueError:
             target_lvl = 99
 
-        cur_xp = get_xp_for_level(cur_lvl)
+        # Check if connected account has exact XP and live skilling activity data
+        active_acc = self.var_active_account.get() if hasattr(self, "var_active_account") else ""
+        acc_info = self.state.accounts.get(active_acc, {}) if active_acc else {}
+        acc_xps = acc_info.get("xp", {})
+        exact_xp = acc_xps.get(active_skill)
+        if exact_xp is not None and exact_xp > 0:
+            cur_xp = int(exact_xp)
+        else:
+            cur_xp = get_xp_for_level(cur_lvl)
+
+        skilling_data = acc_info.get("skilling", {})
+        live_rate = 0
+        detected_activity = ""
+        if skilling_data and skilling_data.get("active_skill") == active_skill:
+            if time.time() - skilling_data.get("timestamp", 0) < 180:
+                live_rate = skilling_data.get("skilling_xp_hr", 0)
+                detected_activity = skilling_data.get("detected_activity", "")
+
         target_xp = get_xp_for_level(target_lvl)
         rem_xp = max(0, target_xp - cur_xp)
         pct_done = (1.0 - (rem_xp / max(1, target_xp))) * 100.0 if target_xp > 0 else 100.0
@@ -4221,9 +4356,10 @@ class OSRSAlchDashboard(tk.Tk):
 
         guide_view = self.var_guide_view.get() if hasattr(self, "var_guide_view") else "🌲 Material Chain Tree"
         if active_skill == "Smithing" and guide_view == "🌲 Material Chain Tree":
-            self._render_smithing_material_tree(cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open)
+            self._render_smithing_material_tree(cur_lvl, target_lvl, cur_xp, target_xp, rem_xp, mem_ok, style_filter, search_query, strat, nat_price, prev_open, live_rate=live_rate, detected_activity=detected_activity)
             return
 
+        active_bracket_obj = None
         current_step_found = False
 
         for b in brackets:
@@ -4399,13 +4535,30 @@ class OSRSAlchDashboard(tk.Tk):
                 else:
                     verdict_text = f"{verdict_text} [🎯 Breakeven Buy: ≤ {breakeven_p:,} gp ea (Market: {curr_mat_p:,} gp)]"
 
+            # Cycle & Progression ETA calculation
+            cycle = calculate_skilling_cycle(active_skill, b["name"], xp_ea, mats)
+            cycle_rate = cycle.get("xp_per_hour", b.get("xp_rate", 50000))
+            is_matching_active = bool(detected_activity and (detected_activity.lower() in b["name"].lower() or b["name"].lower() in detected_activity.lower()))
+            eff_rate = live_rate if (live_rate > 5000 and is_matching_active) else cycle_rate
+
+            prog = get_progression_eta(cur_lvl, cur_xp, cur_lvl + 1, xp_ea, cycle, live_rate=eff_rate if (live_rate > 5000 and is_matching_active) else 0)
+
             # Time estimate
-            xp_rate = b.get("xp_rate", 50000)
-            if xp_needed_bracket > 0 and xp_rate > 0:
-                hrs = xp_needed_bracket / xp_rate
-                time_est_str = f"{int(hrs)}h {int((hrs % 1) * 60):02d}m" if hrs >= 1 else f"{max(1, int(hrs * 60))}m"
-            elif xp_needed_bracket == 0:
-                time_est_str = "0m"
+            if status_tag == "current":
+                time_est_str = f"{prog['time_str_next']} (Next)"
+                if active_bracket_obj is None or is_matching_active:
+                    active_bracket_obj = {
+                        "name": b["name"],
+                        "cycle": cycle,
+                        "prog": prog,
+                        "rate": eff_rate
+                    }
+            elif cur_lvl >= max_l:
+                time_est_str = "0s"
+            elif xp_needed_bracket > 0 and cycle_rate > 0:
+                hrs = xp_needed_bracket / cycle_rate
+                secs = int(hrs * 3600.0)
+                time_est_str = format_skilling_duration(secs)
             else:
                 time_est_str = "--"
 
@@ -4446,9 +4599,11 @@ class OSRSAlchDashboard(tk.Tk):
                 "bracket_cost": bracket_cost_str,
                 "bracket_cost_val": total_cost,
                 "action_rec": action_rec,
-                "xp_rate": f"{xp_rate // 1000}k/hr" if xp_rate >= 1000 else f"{xp_rate}/hr",
-                "xp_rate_val": xp_rate,
+                "xp_rate": f"{int(cycle_rate) // 1000}k/hr" if cycle_rate >= 1000 else f"{int(cycle_rate)}/hr",
+                "xp_rate_val": cycle_rate,
                 "time_est": time_est_str,
+                "cycle": cycle,
+                "prog": prog,
                 "verdict": verdict_text,
                 "output_id": out_id,
                 "nature_cost": b.get("nature_cost", 0),
@@ -4568,6 +4723,59 @@ class OSRSAlchDashboard(tk.Tk):
             cur_summary = self.lbl_guide_xp_summary.cget("text")
             if "Target Buy:" not in cur_summary:
                 self.lbl_guide_xp_summary.config(text=f"{cur_summary}  |  🎯 Current Step Buy: {curr_step['max_buy']} ({curr_step.get('primary_mat_name', 'bars')})")
+
+        # Update top banner progression metrics for standard views
+        if active_bracket_obj and hasattr(self, "lbl_guide_eta_badge"):
+            b_cycle = active_bracket_obj["cycle"]
+            b_prog = active_bracket_obj["prog"]
+            b_rate = active_bracket_obj["rate"]
+
+            self.lbl_guide_eta_badge.config(text=f"⏱️ Est. Next Lvl: {b_prog.get('time_str_next', '--')}")
+
+            st_name = b_cycle.get("station_name", "Bank Booth")
+            c_sec = b_cycle.get("cycle_secs", 0)
+            a_inv = b_cycle.get("actions_per_inv", 27)
+            pace_txt = f"⚡ Physical Pace: ~{c_sec:.1f}s cycle ({a_inv} items/inv @ {st_name})"
+            if live_rate > 5000:
+                pace_txt += f"  •  🟢 LIVE: {int(live_rate):,} XP/hr"
+            else:
+                pace_txt += f"  •  Est: {int(b_cycle.get('xp_per_hour', 0)):,} XP/hr"
+            if hasattr(self, "lbl_guide_pace_summary"):
+                self.lbl_guide_pace_summary.config(text=pace_txt)
+
+            trips_txt = f"🎒 Trips to Next Lvl: ~{b_prog.get('trips_next', 0)} inv ({b_prog.get('actions_next', 0):,} actions)"
+            if target_lvl > cur_lvl + 1:
+                trips_txt += f"  |  Goal Lvl {target_lvl}: ~{b_prog.get('trips_goal', 0)} inv ({b_prog.get('time_str_goal', '--')})"
+            if hasattr(self, "lbl_guide_trips_summary"):
+                self.lbl_guide_trips_summary.config(text=trips_txt)
+
+            self._guide_prog_data = {
+                "cur_lvl": cur_lvl,
+                "next_lvl": min(99, cur_lvl + 1),
+                "target_lvl": target_lvl,
+                "cur_xp": cur_xp,
+                "rem_xp_next": b_prog.get("rem_xp_next", 0),
+                "pct_next": b_prog.get("pct_to_next", 0.0),
+                "time_str_next": b_prog.get("time_str_next", "--")
+            }
+            self._draw_guide_progress_bar()
+        elif cur_lvl >= target_lvl:
+            if hasattr(self, "lbl_guide_eta_badge"):
+                self.lbl_guide_eta_badge.config(text="⏱️ Goal Complete!")
+            if hasattr(self, "lbl_guide_pace_summary"):
+                self.lbl_guide_pace_summary.config(text="⚡ Target Level Reached! Congratulations!")
+            if hasattr(self, "lbl_guide_trips_summary"):
+                self.lbl_guide_trips_summary.config(text="🎒 Trips: 0 remaining")
+            self._guide_prog_data = {
+                "cur_lvl": cur_lvl,
+                "next_lvl": min(99, cur_lvl + 1),
+                "target_lvl": target_lvl,
+                "cur_xp": cur_xp,
+                "rem_xp_next": 0,
+                "pct_next": 100.0,
+                "time_str_next": "0s"
+            }
+            self._draw_guide_progress_bar()
 
     def get_selected_guide_row(self):
         sel = self.tree_guide.selection()
@@ -4906,6 +5114,22 @@ class OSRSAlchDashboard(tk.Tk):
             ("XP Rate / Hour:", row.get("xp_rate", "--"), "#f1f1f1"),
             ("Est. Grind Time:", row.get("time_est", "--"), "#f1c40f"),
         ])
+
+        cycle = row.get("cycle")
+        if cycle:
+            c_sec = cycle.get("cycle_secs", 0)
+            w_sec = cycle.get("walk_secs", 0)
+            b_sec = cycle.get("bank_secs", 0)
+            a_sec = cycle.get("action_secs", 0)
+            st_name = cycle.get("station_name", "Station")
+            w_desc = cycle.get("walk_desc", "")
+            rows.append(("Physical Loop:", f"~{c_sec:.1f}s/trip ({a_sec:.1f}s anim + {w_sec:.1f}s walk + {b_sec:.1f}s bank)", "#00e5ff"))
+            rows.append(("Location & Route:", f"{st_name} ({w_desc})", "#aaaaaa"))
+
+        prog = row.get("prog")
+        if prog:
+            rows.append(("Trips to Next Level:", f"~{prog.get('trips_next', 0)} inv ({prog.get('actions_next', 0):,} actions)", "#2ecc71"))
+            rows.append(("Est. Time Till Next:", f"{prog.get('time_str_next', '--')}", "#f1c40f"))
 
         warnings = []
         if row.get("verdict"):
@@ -8761,9 +8985,25 @@ class OSRSAlchDashboard(tk.Tk):
                 "Fletching": data.get("fletching", 99),
                 "Magic": data.get("magic", 99)
             }
+            xp = {
+                "Crafting": data.get("crafting_xp"),
+                "Smithing": data.get("smithing_xp"),
+                "Fletching": data.get("fletching_xp"),
+                "Magic": data.get("magic_xp")
+            }
+            skilling = {}
+            if data.get("active_skill"):
+                skilling = {
+                    "active_skill": data.get("active_skill"),
+                    "detected_activity": data.get("detected_activity"),
+                    "skilling_xp_hr": data.get("skilling_xp_hr", 0),
+                    "rem_xp_next": data.get("rem_xp_next", 0),
+                    "est_secs_next": data.get("est_secs_next", 0),
+                    "timestamp": time.time()
+                }
             coins = data.get("coins")
             nats = data.get("natureRunes")
-            self.state.update_account(account, coins=coins, nature_runes=nats, world=world, is_members=is_mem, levels=levels)
+            self.state.update_account(account, coins=coins, nature_runes=nats, world=world, is_members=is_mem, levels=levels, xp={k: v for k, v in xp.items() if v is not None}, skilling=skilling)
             if is_active:
                 self._apply_active_account_data()
                 if hasattr(self, "lbl_bridge_status"):
@@ -8798,7 +9038,23 @@ class OSRSAlchDashboard(tk.Tk):
                 "Fletching": data.get("fletching"),
                 "Magic": data.get("magic")
             }
-            self.state.update_account(account, levels={k: v for k, v in levels.items() if v is not None})
+            xp = {
+                "Crafting": data.get("crafting_xp"),
+                "Smithing": data.get("smithing_xp"),
+                "Fletching": data.get("fletching_xp"),
+                "Magic": data.get("magic_xp")
+            }
+            skilling = {}
+            if data.get("active_skill"):
+                skilling = {
+                    "active_skill": data.get("active_skill"),
+                    "detected_activity": data.get("detected_activity"),
+                    "skilling_xp_hr": data.get("skilling_xp_hr", 0),
+                    "rem_xp_next": data.get("rem_xp_next", 0),
+                    "est_secs_next": data.get("est_secs_next", 0),
+                    "timestamp": time.time()
+                }
+            self.state.update_account(account, levels={k: v for k, v in levels.items() if v is not None}, xp={k: v for k, v in xp.items() if v is not None}, skilling=skilling)
             if is_active:
                 self._apply_active_account_data()
                 self.recalculate_craft_table()
