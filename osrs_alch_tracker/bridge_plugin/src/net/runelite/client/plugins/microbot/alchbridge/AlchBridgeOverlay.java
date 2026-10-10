@@ -67,9 +67,10 @@ public class AlchBridgeOverlay extends OverlayPanel {
 
         // Alchs / Hour
         int alchsPerHour = plugin.getAlchsPerHour();
+        String alchsHrStr = alchs < 3 ? "Warming up..." : String.format("%,d / hr", alchsPerHour);
         panelComponent.getChildren().add(LineComponent.builder()
             .left("Alchs/hr:")
-            .right(alchs > 0 ? String.format("%,d / hr", alchsPerHour) : "--")
+            .right(alchsHrStr)
             .rightColor(new Color(0, 220, 255))
             .build());
 
@@ -77,9 +78,10 @@ public class AlchBridgeOverlay extends OverlayPanel {
         if (config.showProfit()) {
             long profitPerHour = plugin.getProfitPerHour();
             Color profitColor = profitPerHour >= 0 ? new Color(76, 175, 80) : new Color(244, 67, 54);
+            String profitHrStr = alchs < 3 ? "--" : ((profitPerHour >= 0 ? "+" : "") + formatGp(profitPerHour) + " / hr");
             panelComponent.getChildren().add(LineComponent.builder()
                 .left("Profit/hr:")
-                .right(alchs > 0 ? (profitPerHour >= 0 ? "+" : "") + formatGp(profitPerHour) + " / hr" : "--")
+                .right(profitHrStr)
                 .rightColor(profitColor)
                 .build());
 
@@ -95,9 +97,10 @@ public class AlchBridgeOverlay extends OverlayPanel {
         // Magic XP / Hour
         if (config.showMagicXp()) {
             int xpPerHour = plugin.getXpPerHour();
+            String xpHrStr = alchs < 3 ? "--" : String.format("%,d / hr", xpPerHour);
             panelComponent.getChildren().add(LineComponent.builder()
                 .left("XP/hr:")
-                .right(alchs > 0 ? String.format("%,d / hr", xpPerHour) : "--")
+                .right(xpHrStr)
                 .rightColor(new Color(255, 235, 59))
                 .build());
         }

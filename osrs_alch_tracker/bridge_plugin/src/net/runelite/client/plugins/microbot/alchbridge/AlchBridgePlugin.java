@@ -108,6 +108,13 @@ public class AlchBridgePlugin extends Plugin {
     private String lastAlchedItem = null;
     private final Map<Integer, Integer> lastInventoryItems = new ConcurrentHashMap<>();
 
+    // Rate caching & rolling smoothing (RuneLite 60s floor + rolling cast intervals)
+    private final java.util.ArrayDeque<Long> recentCastTimestamps = new java.util.ArrayDeque<>();
+    private int cachedAlchsPerHour = 0;
+    private long cachedProfitPerHour = 0;
+    private int cachedXpPerHour = 0;
+    private long lastRateUpdateTime = 0;
+
     @Provides
     AlchBridgeConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(AlchBridgeConfig.class);
@@ -456,6 +463,15 @@ public class AlchBridgePlugin extends Plugin {
         sessionAlchs++;
         sessionMagicXp += diff;
 
+        // Rolling cast timestamps (keep up to 15 recent casts)
+        recentCastTimestamps.addLast(now);
+        while (recentCastTimestamps.size() > 15) {
+            recentCastTimestamps.removeFirst();
+        }
+
+        // Immediately recalculate rates on cast completion
+        recalculateRates(now);
+
         Map<String, Object> data = new HashMap<>();
         data.put("event", "ALCH_CAST");
         data.put("account", getAccountName());
@@ -463,6 +479,45 @@ public class AlchBridgePlugin extends Plugin {
         data.put("magicLevel", magicLevel);
         data.put("timestamp", now / 1000.0);
         sendPayload(data);
+    }
+
+    private void recalculateRates(long now) {
+        lastRateUpdateTime = now;
+
+        if (sessionAlchs == 0) {
+            cachedAlchsPerHour = 0;
+            cachedProfitPerHour = 0;
+            cachedXpPerHour = 0;
+            return;
+        }
+
+        int calculatedRate;
+        // If we have at least 4 casts, use the precise rolling interval
+        if (recentCastTimestamps.size() >= 4) {
+            long spanMs = recentCastTimestamps.peekLast() - recentCastTimestamps.peekFirst();
+            if (spanMs > 0) {
+                double hours = spanMs / 3600000.0;
+                calculatedRate = (int) Math.round((recentCastTimestamps.size() - 1) / hours);
+            } else {
+                calculatedRate = 1200;
+            }
+        } else {
+            // Apply RuneLite's 60-second floor rule during initial warmup
+            long activeSec = getActiveDurationSeconds();
+            long effectiveSec = Math.max(60L, activeSec);
+            double hours = effectiveSec / 3600.0;
+            calculatedRate = (int) Math.round(sessionAlchs / hours);
+        }
+
+        // Hard mechanical cap in OSRS: 5 ticks = 3.0s = 1,200 casts/hr max
+        cachedAlchsPerHour = Math.min(1200, Math.max(0, calculatedRate));
+
+        // Stable Profit / Hour based on actual average return per cast
+        double avgProfit = (double) sessionProfit / (double) sessionAlchs;
+        cachedProfitPerHour = Math.round(cachedAlchsPerHour * avgProfit);
+
+        // Magic XP / Hour
+        cachedXpPerHour = cachedAlchsPerHour * 65;
     }
 
     @Subscribe
@@ -498,18 +553,17 @@ public class AlchBridgePlugin extends Plugin {
         return (System.currentTimeMillis() - lastAlchTimestamp) <= 15000;
     }
 
-    public long getActiveDurationMs() {
+    public long getActiveDurationSeconds() {
         if (sessionAlchs == 0) {
             return 0;
         }
         long now = System.currentTimeMillis();
         long extra = (now - lastAlchTimestamp <= 15000) ? (now - lastAlchTimestamp) : 0;
-        return totalActiveTimeMs + extra;
+        return (totalActiveTimeMs + extra) / 1000L;
     }
 
     public String getFormattedSessionTime() {
-        long ms = getActiveDurationMs();
-        long secs = ms / 1000;
+        long secs = getActiveDurationSeconds();
         long h = secs / 3600;
         long m = (secs % 3600) / 60;
         long s = secs % 60;
@@ -517,30 +571,19 @@ public class AlchBridgePlugin extends Plugin {
     }
 
     public int getAlchsPerHour() {
-        if (sessionAlchs == 0) {
-            return 0;
+        long now = System.currentTimeMillis();
+        if (now - lastRateUpdateTime >= 2000) {
+            recalculateRates(now);
         }
-        long ms = getActiveDurationMs();
-        double hours = Math.max(ms / 3600000.0, 3.0 / 3600.0);
-        return (int) Math.round(sessionAlchs / hours);
+        return cachedAlchsPerHour;
     }
 
     public long getProfitPerHour() {
-        if (sessionAlchs == 0) {
-            return 0;
-        }
-        long ms = getActiveDurationMs();
-        double hours = Math.max(ms / 3600000.0, 3.0 / 3600.0);
-        return Math.round(sessionProfit / hours);
+        return cachedProfitPerHour;
     }
 
     public int getXpPerHour() {
-        if (sessionAlchs == 0) {
-            return 0;
-        }
-        long ms = getActiveDurationMs();
-        double hours = Math.max(ms / 3600000.0, 3.0 / 3600.0);
-        return (int) Math.round(sessionMagicXp / hours);
+        return cachedXpPerHour;
     }
 
     public void resetSession() {
@@ -551,6 +594,11 @@ public class AlchBridgePlugin extends Plugin {
         lastAlchTimestamp = 0;
         totalActiveTimeMs = 0;
         lastAlchedItem = null;
+        recentCastTimestamps.clear();
+        cachedAlchsPerHour = 0;
+        cachedProfitPerHour = 0;
+        cachedXpPerHour = 0;
+        lastRateUpdateTime = 0;
         log.info("Alch session stats reset");
     }
 
