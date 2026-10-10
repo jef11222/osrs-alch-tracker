@@ -65,4 +65,24 @@ public interface AlchBridgeConfig extends Config {
     default boolean showMagicXp() {
         return true;
     }
+
+    @ConfigItem(
+        keyName = "costBasisMode",
+        name = "Profit Cost Basis",
+        description = "Calculate alch profit using W308 Player Trade price or Live GE price",
+        position = 6
+    )
+    default CostBasisMode costBasisMode() {
+        return CostBasisMode.W308_TRADE;
+    }
+
+    @ConfigItem(
+        keyName = "manualTradeBuyPrice",
+        name = "Manual W308 Buy Price",
+        description = "Optional fallback manual price per item if trade window wasn't captured (0 = auto-detect)",
+        position = 7
+    )
+    default int manualTradeBuyPrice() {
+        return 0;
+    }
 }

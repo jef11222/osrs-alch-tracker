@@ -36,12 +36,14 @@ import net.runelite.api.ItemID;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.WorldType;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
@@ -114,6 +116,22 @@ public class AlchBridgePlugin extends Plugin {
     private long cachedProfitPerHour = 0;
     private int cachedXpPerHour = 0;
     private long lastRateUpdateTime = 0;
+
+    // Cost Basis & Trade Tracking (W308 vs GE)
+    private CostBasisMode activeCostBasisOverride = null;
+    private final Map<Integer, Integer> lastW308TradePrices = new ConcurrentHashMap<>();
+    private String lastW308TradeItemName = null;
+    private int lastW308TradePrice = 0;
+    private int lastAlchedItemId = -1;
+
+    private int pendingTradeCoinsOffered = 0;
+    private final Map<Integer, Integer> pendingTradeItemsReceived = new ConcurrentHashMap<>();
+    private long lastTradeActivityTime = 0;
+
+    private final Map<Integer, Integer> sessionAlchedItemCounts = new ConcurrentHashMap<>();
+    private long sessionTotalHighAlchGp = 0;
+    private long sessionTotalNatCost = 0;
+    private long sessionUnknownItemProfit = 0;
 
     @Provides
     AlchBridgeConfig provideConfig(ConfigManager configManager) {
@@ -373,14 +391,20 @@ public class AlchBridgePlugin extends Plugin {
                         }
                     }
 
-                    long itemBuyPrice = itemManager.getItemPrice(unnotedId);
+                    lastAlchedItemId = unnotedId;
+                    sessionAlchedItemCounts.merge(unnotedId, 1, Integer::sum);
+                    sessionTotalHighAlchGp += deltaCoins;
+                    sessionTotalNatCost += natCost;
+
+                    long itemBuyPrice = getItemBuyCost(unnotedId);
                     int haPrice = deltaCoins;
                     long profit = haPrice - itemBuyPrice - natCost;
 
-                    sessionProfit += profit;
+                    sessionProfit = calculateSessionProfit();
                     lastAlchedItem = String.format("%s (%+d gp)", itemName, profit);
                 } else {
-                    sessionProfit += (deltaCoins - natCost);
+                    sessionUnknownItemProfit += (deltaCoins - natCost);
+                    sessionProfit = calculateSessionProfit();
                 }
             }
 
@@ -414,6 +438,64 @@ public class AlchBridgePlugin extends Plugin {
             data.put("timestamp", System.currentTimeMillis() / 1000.0);
 
             sendPayload(data);
+        } else if (event.getContainerId() == InventoryID.TRADE.getId()) {
+            ItemContainer trade = event.getItemContainer();
+            if (trade != null) {
+                int coins = trade.count(ItemID.COINS_995);
+                if (coins > 0) {
+                    pendingTradeCoinsOffered = coins;
+                    lastTradeActivityTime = System.currentTimeMillis();
+                }
+            }
+        } else if (event.getContainerId() == InventoryID.TRADEOTHER.getId()) {
+            ItemContainer tradeOther = event.getItemContainer();
+            if (tradeOther != null) {
+                Item[] items = tradeOther.getItems();
+                if (items != null) {
+                    Map<Integer, Integer> map = new HashMap<>();
+                    for (Item itm : items) {
+                        if (itm != null && itm.getId() > 0 && itm.getQuantity() > 0 && itm.getId() != ItemID.COINS_995) {
+                            int id = itm.getId();
+                            ItemComposition comp = itemManager.getItemComposition(id);
+                            int unnotedId = (comp.getNote() != -1 && comp.getLinkedNoteId() > 0) ? comp.getLinkedNoteId() : id;
+                            map.merge(unnotedId, itm.getQuantity(), Integer::sum);
+                        }
+                    }
+                    if (!map.isEmpty()) {
+                        pendingTradeItemsReceived.clear();
+                        pendingTradeItemsReceived.putAll(map);
+                        lastTradeActivityTime = System.currentTimeMillis();
+                    }
+                }
+            }
+        }
+    }
+
+    @Subscribe
+    public void onChatMessage(ChatMessage event) {
+        String msg = event.getMessage();
+        if (msg == null) {
+            return;
+        }
+
+        if (msg.contains("Accepted trade")) {
+            commitPendingTrade();
+        } else if (msg.contains("declined") || msg.contains("Declined")) {
+            clearPendingTrade();
+        }
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event) {
+        if ("alchbridge".equals(event.getGroup())) {
+            if ("costBasisMode".equals(event.getKey())) {
+                activeCostBasisOverride = null;
+                sessionProfit = calculateSessionProfit();
+                recalculateRates(System.currentTimeMillis());
+            } else if ("manualTradeBuyPrice".equals(event.getKey())) {
+                sessionProfit = calculateSessionProfit();
+                recalculateRates(System.currentTimeMillis());
+            }
         }
     }
 
@@ -523,8 +605,11 @@ public class AlchBridgePlugin extends Plugin {
     @Subscribe
     public void onOverlayMenuClicked(OverlayMenuClicked event) {
         if (event.getOverlay() == overlay) {
-            if ("Reset".equals(event.getEntry().getOption())) {
+            String option = event.getEntry().getOption();
+            if ("Reset".equals(option)) {
                 resetSession();
+            } else if ("Toggle Cost Basis".equals(option)) {
+                toggleCostBasisMode();
             }
         }
     }
@@ -544,6 +629,146 @@ public class AlchBridgePlugin extends Plugin {
 
     public String getLastAlchedItem() {
         return lastAlchedItem;
+    }
+
+    public CostBasisMode getCostBasisMode() {
+        if (activeCostBasisOverride != null) {
+            return activeCostBasisOverride;
+        }
+        return config.costBasisMode();
+    }
+
+    public void toggleCostBasisMode() {
+        CostBasisMode current = getCostBasisMode();
+        CostBasisMode next = (current == CostBasisMode.W308_TRADE) ? CostBasisMode.GRAND_EXCHANGE : CostBasisMode.W308_TRADE;
+        activeCostBasisOverride = next;
+        if (configManager != null) {
+            try {
+                configManager.setConfiguration("alchbridge", "costBasisMode", next);
+            } catch (Exception e) {
+                log.debug("Could not persist cost basis config: {}", e.getMessage());
+            }
+        }
+        sessionProfit = calculateSessionProfit();
+        recalculateRates(System.currentTimeMillis());
+        log.info("Cost basis toggled to: {}", next.getDisplayName());
+    }
+
+    public long getItemBuyCost(int unnotedId) {
+        CostBasisMode mode = getCostBasisMode();
+        if (mode == CostBasisMode.W308_TRADE) {
+            int manual = config.manualTradeBuyPrice();
+            if (manual > 0) {
+                return manual;
+            }
+            Integer tradePrice = lastW308TradePrices.get(unnotedId);
+            if (tradePrice != null && tradePrice > 0) {
+                return tradePrice;
+            }
+            return Math.max(0, itemManager.getItemPrice(unnotedId));
+        } else {
+            return Math.max(0, itemManager.getItemPrice(unnotedId));
+        }
+    }
+
+    public long calculateSessionProfit() {
+        long totalBuyCost = 0;
+        for (Map.Entry<Integer, Integer> entry : sessionAlchedItemCounts.entrySet()) {
+            int id = entry.getKey();
+            int count = entry.getValue();
+            totalBuyCost += getItemBuyCost(id) * count;
+        }
+        return (sessionTotalHighAlchGp - sessionTotalNatCost - totalBuyCost) + sessionUnknownItemProfit;
+    }
+
+    public int getActiveW308Price() {
+        int manual = config.manualTradeBuyPrice();
+        if (manual > 0) {
+            return manual;
+        }
+        if (lastW308TradePrice > 0) {
+            return lastW308TradePrice;
+        }
+        if (lastAlchedItemId > 0 && lastW308TradePrices.containsKey(lastAlchedItemId)) {
+            return lastW308TradePrices.get(lastAlchedItemId);
+        }
+        return 0;
+    }
+
+    public String getLastW308TradeItemName() {
+        return lastW308TradeItemName;
+    }
+
+    private void commitPendingTrade() {
+        if (pendingTradeCoinsOffered <= 0 || pendingTradeItemsReceived.isEmpty()) {
+            return;
+        }
+
+        if (System.currentTimeMillis() - lastTradeActivityTime > 120000) {
+            clearPendingTrade();
+            return;
+        }
+
+        int totalCoins = pendingTradeCoinsOffered;
+        int itemCount = pendingTradeItemsReceived.size();
+
+        if (itemCount == 1) {
+            Map.Entry<Integer, Integer> entry = pendingTradeItemsReceived.entrySet().iterator().next();
+            int unnotedId = entry.getKey();
+            int qty = entry.getValue();
+            if (qty > 0) {
+                int unitCost = (int) Math.round((double) totalCoins / (double) qty);
+                lastW308TradePrices.put(unnotedId, unitCost);
+                lastW308TradePrice = unitCost;
+                ItemComposition comp = itemManager.getItemComposition(unnotedId);
+                lastW308TradeItemName = comp != null ? comp.getName() : ("Item " + unnotedId);
+
+                log.info("W308 Trade detected: {} x {} for {} coins ({} ea)", lastW308TradeItemName, qty, totalCoins, unitCost);
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("event", "TRADE_ACCEPTED");
+                data.put("account", getAccountName());
+                data.put("itemId", unnotedId);
+                data.put("itemName", lastW308TradeItemName);
+                data.put("quantity", qty);
+                data.put("unitPrice", unitCost);
+                data.put("totalCoins", totalCoins);
+                data.put("timestamp", System.currentTimeMillis() / 1000.0);
+                sendPayload(data);
+            }
+        } else {
+            long totalEstValue = 0;
+            for (Map.Entry<Integer, Integer> entry : pendingTradeItemsReceived.entrySet()) {
+                int unnotedId = entry.getKey();
+                int qty = entry.getValue();
+                long price = Math.max(1, itemManager.getItemPrice(unnotedId));
+                totalEstValue += price * qty;
+            }
+
+            for (Map.Entry<Integer, Integer> entry : pendingTradeItemsReceived.entrySet()) {
+                int unnotedId = entry.getKey();
+                int qty = entry.getValue();
+                long price = Math.max(1, itemManager.getItemPrice(unnotedId));
+                double proportion = totalEstValue > 0 ? ((double) (price * qty) / (double) totalEstValue) : (1.0 / itemCount);
+                int allocatedCoins = (int) Math.round(totalCoins * proportion);
+                int unitCost = qty > 0 ? (int) Math.round((double) allocatedCoins / (double) qty) : 0;
+
+                lastW308TradePrices.put(unnotedId, unitCost);
+                lastW308TradePrice = unitCost;
+                ItemComposition comp = itemManager.getItemComposition(unnotedId);
+                lastW308TradeItemName = comp != null ? comp.getName() : ("Item " + unnotedId);
+
+                log.info("W308 Multi-Trade detected: {} x {} for {} coins ({} ea)", lastW308TradeItemName, qty, allocatedCoins, unitCost);
+            }
+        }
+
+        clearPendingTrade();
+    }
+
+    private void clearPendingTrade() {
+        pendingTradeCoinsOffered = 0;
+        pendingTradeItemsReceived.clear();
+        lastTradeActivityTime = 0;
     }
 
     public boolean isSessionActive() {
@@ -594,6 +819,11 @@ public class AlchBridgePlugin extends Plugin {
         lastAlchTimestamp = 0;
         totalActiveTimeMs = 0;
         lastAlchedItem = null;
+        lastAlchedItemId = -1;
+        sessionAlchedItemCounts.clear();
+        sessionTotalHighAlchGp = 0;
+        sessionTotalNatCost = 0;
+        sessionUnknownItemProfit = 0;
         recentCastTimestamps.clear();
         cachedAlchsPerHour = 0;
         cachedProfitPerHour = 0;

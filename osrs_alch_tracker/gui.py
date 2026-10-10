@@ -8878,6 +8878,23 @@ class OSRSAlchDashboard(tk.Tk):
             except Exception as e:
                 print(f"Error handling GE_SYNC: {e}")
 
+        elif event_type == "TRADE_ACCEPTED":
+            item_id = data.get("itemId", 0)
+            item_name = data.get("itemName", "")
+            qty = data.get("quantity", 0)
+            unit_price = data.get("unitPrice", 0)
+            if item_id > 0 and qty > 0 and unit_price > 0:
+                nat_price = self.get_effective_nature_price()
+                mdata = self.api.mapping.get(str(item_id), {})
+                high_alch = mdata.get("highalch", 0)
+                if high_alch > 0:
+                    entry = self.state.log_alch_batch(item_id, item_name, qty, unit_price, nat_price, high_alch, account=account, timestamp=data.get("timestamp"))
+                    self.update_session_display()
+                    if is_active:
+                        self.lbl_status_right.config(text=f"🤝 Logged W308 Trade: {qty:,}x {item_name} @ {unit_price:,} gp [{account}]", fg="#f39c12")
+                        if self.state.config.get("desktop_alerts"):
+                            FloatingToast(self, f"🤝 W308 Trade [{account}]", f"Bought {qty:,}x {item_name} @ {unit_price:,} gp ea (Profit: +{format_gp(entry['profit'])})")
+
         elif event_type == "ALCH_CAST":
             if is_active:
                 self.lbl_status_right.config(text=f"🪄 [{account}] High Alch Cast (+65 XP)", fg="#f39c12")

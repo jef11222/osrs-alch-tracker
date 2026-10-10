@@ -23,6 +23,7 @@ public class AlchBridgeOverlay extends OverlayPanel {
         this.config = config;
         setPosition(OverlayPosition.BOTTOM_RIGHT);
         setPriority(OverlayPriority.MED);
+        getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, "Toggle Cost Basis", "Alch Session"));
         getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, "Reset", "Alch Session"));
     }
 
@@ -72,6 +73,29 @@ public class AlchBridgeOverlay extends OverlayPanel {
             .left("Alchs/hr:")
             .right(alchsHrStr)
             .rightColor(new Color(0, 220, 255))
+            .build());
+
+        // Cost Basis Mode (W308 Trade vs Live GE)
+        CostBasisMode mode = plugin.getCostBasisMode();
+        String basisText;
+        Color basisColor;
+        if (mode == CostBasisMode.W308_TRADE) {
+            int price = plugin.getActiveW308Price();
+            if (price > 0) {
+                basisText = String.format("W308 (%,d gp)", price);
+            } else {
+                basisText = "W308 Trade";
+            }
+            basisColor = new Color(255, 179, 0);
+        } else {
+            basisText = "Live GE";
+            basisColor = new Color(79, 195, 247);
+        }
+
+        panelComponent.getChildren().add(LineComponent.builder()
+            .left("Basis:")
+            .right(basisText)
+            .rightColor(basisColor)
             .build());
 
         // Profit / Hour
